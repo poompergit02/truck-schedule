@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🚚 ระบบรอบรถ BCS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --purple-900:#2D0A6E;--purple-700:#5B21B6;--purple-500:#7C3AED;
+  --purple-400:#A78BFA;--purple-100:#EDE9FE;--purple-50:#F5F3FF;
+  --gold:#F59E0B;--gold-light:#FEF3C7;
+  --white:#FFFFFF;--gray-50:#F9FAFB;--gray-200:#E5E7EB;--gray-400:#9CA3AF;--gray-700:#374151;
+  --red:#DC2626;--green:#059669;
+  --day-mon:#F59E0B;--day-tue:#EC4899;--day-wed:#10B981;
+  --day-thu:#F97316;--day-fri:#3B82F6;--day-sat:#8B5CF6;--day-sun:#EF4444;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(91,33,182,0.10);
+  --shadow-card:0 2px 12px rgba(91,33,182,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--purple-50);color:var(--gray-700);min-height:100vh}
+
+/* NAV */
+nav{background:var(--purple-900);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.3)}
+.nav-logo{color:var(--white);font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.nav-logo span{font-size:1.4rem}
+.nav-branch{background:var(--purple-700);color:var(--purple-100);padding:4px 14px;border-radius:20px;font-size:.85rem;cursor:pointer;transition:.2s;border:1px solid var(--purple-400)}
+.nav-branch:hover{background:var(--purple-500)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.btn-refresh{background:transparent;border:1px solid var(--purple-400);color:var(--purple-100);padding:5px 14px;border-radius:20px;font-size:.85rem;cursor:pointer;transition:.2s;font-family:'Sarabun',sans-serif}
+.btn-refresh:hover{background:var(--purple-700)}
+
+/* TABS */
+.tab-bar{background:var(--white);border-bottom:2px solid var(--purple-100);display:flex;padding:0 24px;gap:4px}
+.tab{padding:14px 20px;font-size:.95rem;font-weight:600;color:var(--gray-400);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.2s}
+.tab.active{color:var(--purple-500);border-bottom-color:var(--purple-500)}
+.tab:hover:not(.active){color:var(--purple-700)}
+
+/* MAIN */
+.page{display:none;padding:24px;max-width:1200px;margin:0 auto}
+.page.active{display:block}
+
+/* ROAD / ANIMATION */
+.road-wrap{background:linear-gradient(135deg,var(--purple-900) 0%,#1a0050 100%);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;position:relative;height:130px}
+.road-canvas{width:100%;height:100%}
+.road-line{position:absolute;bottom:18px;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,var(--purple-400) 0,var(--purple-400) 20px,transparent 20px,transparent 40px)}
+
+/* FORM CARD */
+.form-card{background:var(--white);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-card);margin-bottom:20px;border:1px solid var(--purple-100)}
+.form-card h2{font-size:1.05rem;font-weight:700;color:var(--purple-900);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:.82rem;font-weight:600;color:var(--purple-700)}
+.form-group select,.form-group input{padding:9px 12px;border:1.5px solid var(--purple-100);border-radius:var(--radius-sm);font-size:.95rem;font-family:'Sarabun',sans-serif;color:var(--gray-700);background:var(--gray-50);transition:.2s;outline:none}
+.form-group select:focus,.form-group input:focus{border-color:var(--purple-400);background:var(--white);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+.arrow-label{display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;font-size:1.4rem;color:var(--purple-400);font-weight:700}
+.btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--purple-500),var(--purple-700));color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;letter-spacing:.3px;margin-top:4px}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.35)}
+.btn-submit:active{transform:translateY(0)}
+
+/* LOG */
+.log-card{background:var(--white);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card);border:1px solid var(--purple-100);max-height:160px;overflow-y:auto}
+.log-card h3{font-size:.9rem;font-weight:600;color:var(--gray-400);margin-bottom:10px}
+.log-item{font-size:.88rem;padding:4px 0;border-bottom:1px solid var(--purple-50);color:var(--gray-700)}
+.log-item:last-child{border:none}
+
+/* WEEK PAGE */
+.week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.week-header h2{font-size:1.1rem;font-weight:700;color:var(--purple-900)}
+.week-meta{font-size:.82rem;color:var(--gray-400)}
+.day-row{background:var(--white);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--purple-100)}
+.day-label{padding:12px 18px;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:10px;color:#fff}
+.day-label .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4)}
+.day-label .day-count{margin-left:auto;background:rgba(255,255,255,.2);padding:2px 10px;border-radius:12px;font-size:.78rem;font-weight:600}
+.cards-wrap{padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;min-height:58px}
+.empty-msg{color:var(--gray-400);font-size:.88rem;padding:10px 4px;align-self:center}
+
+/* TRUCK CARD */
+.truck-card{background:var(--purple-50);border:1.5px solid var(--purple-100);border-radius:var(--radius-sm);padding:10px 14px;min-width:190px;max-width:230px;position:relative;transition:.2s;cursor:grab}
+.truck-card:hover{box-shadow:0 4px 16px rgba(124,58,237,.15);transform:translateY(-2px)}
+.truck-card.cancelled{opacity:.4;filter:grayscale(1);cursor:default}
+.truck-card .tc-time{font-size:1rem;font-weight:700;color:var(--purple-900);display:flex;align-items:center;gap:6px}
+.truck-card .tc-route{font-size:.85rem;color:var(--purple-700);font-weight:600;margin:3px 0}
+.truck-card .tc-eta{font-size:.8rem;color:var(--green);font-weight:600}
+.truck-card .tc-note{font-size:.78rem;color:var(--gray-400);margin-top:2px}
+.truck-card .tc-cancel{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s}
+.truck-card:hover .tc-cancel{opacity:1}
+.truck-emoji{font-size:1.2rem}
+
+/* day colors applied via JS */
+[data-day="0"] .day-label{background:var(--day-mon)}
+[data-day="1"] .day-label{background:var(--day-tue)}
+[data-day="2"] .day-label{background:var(--day-wed)}
+[data-day="3"] .day-label{background:var(--day-thu)}
+[data-day="4"] .day-label{background:var(--day-fri)}
+[data-day="5"] .day-label{background:var(--day-sat)}
+[data-day="6"] .day-label{background:var(--day-sun)}
+
+/* HISTORY */
+.hist-controls{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.hist-controls select{padding:9px 14px;border:1.5px solid var(--purple-100);border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.95rem;color:var(--gray-700);background:var(--white);outline:none}
+.btn-load{padding:9px 20px;background:var(--purple-500);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.95rem;cursor:pointer;font-weight:600}
+.btn-load:hover{background:var(--purple-700)}
+
+/* NOTIFICATION TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:10px;max-width:340px}
+.toast{background:var(--purple-900);color:#fff;border-radius:var(--radius);padding:14px 18px;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:slideIn .3s ease;border-left:4px solid var(--gold)}
+.toast.alert{border-left-color:#EF4444;background:#7f1d1d}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast-title{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.toast-body{font-size:.85rem;opacity:.9}
+.toast-close{float:right;background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;margin-left:8px;opacity:.6}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);padding:32px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h2{color:var(--purple-900);margin-bottom:8px;font-size:1.2rem}
+.modal p{color:var(--gray-400);font-size:.9rem;margin-bottom:20px}
+.branch-btn{width:100%;padding:13px;margin-bottom:8px;border-radius:var(--radius-sm);border:2px solid var(--purple-100);background:var(--purple-50);color:var(--purple-900);font-family:'Sarabun',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:.2s;text-align:left}
+.branch-btn:hover{background:var(--purple-500);color:#fff;border-color:var(--purple-500)}
+
+/* TRUCK ANIM */
+.truck-anim{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+
+/* CRUSHER */
+.crusher-strip{background:linear-gradient(90deg,var(--purple-900),#4A148C);border-radius:var(--radius-sm);padding:10px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;border:1px dashed var(--purple-400)}
+.crusher-strip span{color:var(--purple-100);font-size:.88rem}
+.crusher-zone{width:80px;height:44px;background:#4A148C;border:2px dashed var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:.2s;margin-left:auto}
+.crusher-zone.hover{background:#880E4F;border-color:#EF4444;transform:scale(1.05)}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.badge-eta{background:var(--gold-light);color:#92400E}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .page{padding:16px}
+  .tab{padding:12px 12px;font-size:.85rem}
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--purple-50)}
+::-webkit-scrollbar-thumb{background:var(--purple-200,#ddd6fe);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span>🚚</span> ระบบรอบรถ BCS</div>
+  <div class="nav-right">
+    <button class="btn-refresh" onclick="refreshData()">🔄 Refresh</button>
+    <div class="nav-branch" onclick="openBranchModal()" id="navBranch">🏭 เลือกสาขา</div>
+  </div>
+</nav>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="showTab('live')">🚗 รอบรถสด</div>
+  <div class="tab" onclick="showTab('week')">📅 ตารางสัปดาห์</div>
+  <div class="tab" onclick="showTab('history')">📂 ประวัติ</div>
+</div>
+
+<!-- PAGE: LIVE -->
+<div class="page active" id="page-live">
+  <div class="road-wrap">
+    <canvas id="roadCanvas" class="road-canvas"></canvas>
+    <div class="road-line"></div>
+  </div>
+
+  <div class="form-card">
+    <h2>➕ เพิ่มรอบรถ</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>📅 วัน</label>
+        <select id="fDay">
+          <option value="0">จันทร์</option><option value="1">อังคาร</option>
+          <option value="2">พุธ</option><option value="3">พฤหัส</option>
+          <option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>⏰ เวลาออก</label>
+        <input type="time" id="fTime" value="08:00"/>
+      </div>
+      <div class="form-group">
+        <label>🏭 ต้นทาง</label>
+        <select id="fOrigin">
+          <option>HQ</option><option>CNS</option><option>Sriracha</option>
+          <option>Lampoon</option><option>Phitsanulok</option>
+        </select>
+      </div>
+      <div class="arrow-label">→</div>
+      <div class="form-group">
+        <label>📍 ปลายทาง</label>
+        <select id="fDest">
+          <option>HQ</option><option>CNS</option><option>Sriracha</option>
+          <option>Lampoon</option><option>Phitsanulok</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🕐 คาดถึง (ETA)</label>
+        <input type="time" id="fEta"/>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>📝 หมายเหตุ</label>
+      <input type="text" id="fNote" placeholder="เช่น สินค้าด่วน, เอกสาร..." maxlength="80"/>
+    </div>
+    <button class="btn-submit" onclick="submitSchedule()">🚚 ส่งรอบรถ</button>
+  </div>
+
+  <div class="log-card">
+    <h3>📋 รายการที่เพิ่มล่าสุด</h3>
+    <div id="logList"></div>
+  </div>
+</div>
+
+<!-- PAGE: WEEK -->
+<div class="page" id="page-week">
+  <div class="week-header">
+    <div>
+      <h2>📅 ตารางรอบรถสัปดาห์นี้</h2>
+      <div class="week-meta" id="weekMeta"></div>
+    </div>
+    <div class="week-meta" id="lastUpdate"></div>
+  </div>
+
+  <div class="crusher-strip">
+    <span>⚙️ ลากการ์ดรถมาวางที่นี่เพื่อยกเลิก</span>
+    <div class="crusher-zone" id="crusherZone">💥</div>
+  </div>
+
+  <div id="weekGrid"></div>
+</div>
+
+<!-- PAGE: HISTORY -->
+<div class="page" id="page-history">
+  <h2 style="color:var(--purple-900);margin-bottom:16px;font-size:1.1rem;font-weight:700">📂 ประวัติย้อนหลัง</h2>
+  <div class="hist-controls">
+    <select id="histWeekSel"></select>
+    <button class="btn-load" onclick="loadHistory()">🔍 ดูข้อมูล</button>
+  </div>
+  <div id="histGrid"></div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- BRANCH MODAL -->
+<div class="modal-bg" id="branchModal">
+  <div class="modal">
+    <h2>🏭 เลือกสาขาของคุณ</h2>
+    <p>ระบบจะแจ้งเตือนเมื่อมีรถมาถึงสาขาของคุณ</p>
+    <button class="branch-btn" onclick="setBranch('HQ')">🏢 HQ</button>
+    <button class="branch-btn" onclick="setBranch('CNS')">🏭 CNS</button>
+    <button class="branch-btn" onclick="setBranch('Sriracha')">🏭 Sriracha</button>
+    <button class="branch-btn" onclick="setBranch('Lampoon')">🏭 Lampoon</button>
+    <button class="branch-btn" onclick="setBranch('Phitsanulok')">🏭 Phitsanulok</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════
+//  SUPABASE CONFIG — ใส่ key ของคุณตรงนี้
+// ════════════════════════════════
+const SUPABASE_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════
+const DAY_NAMES = ['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];
+const DAY_COLORS= ['#F59E0B','#EC4899','#10B981','#F97316','#3B82F6','#8B5CF6','#EF4444'];
+const DAY_TEXT  = ['#222','#fff','#fff','#fff','#fff','#fff','#fff'];
+
+let myBranch = localStorage.getItem('myBranch') || null;
+let schedules = [];
+let notified  = new Set(JSON.parse(localStorage.getItem('notified')||'[]'));
+let realtimeCh= null;
+let logs = [];
+
+// ════════════════════════════════
+//  INIT
+// ════════════════════════════════
+window.onload = async () => {
+  initCanvas();
+  setWeekMeta();
+  updateBranchUI();
+  if (!myBranch) openBranchModal();
+  await refreshData();
+  subscribeRealtime();
+  setDefaultDay();
+  setInterval(checkNotifications, 30000);
+};
+
+function setDefaultDay(){
+  document.getElementById('fDay').value = new Date().getDay()==0?6:new Date().getDay()-1;
+  const now=new Date();
+  document.getElementById('fTime').value=`${String(now.getHours()).padStart(2,'0')}:00`;
+}
+
+// ════════════════════════════════
+//  SUPABASE CRUD
+// ════════════════════════════════
+async function refreshData(){
+  const weekKey = getWeekKey();
+  const {data,error} = await sb.from('schedules')
+    .select('*').eq('week_key',weekKey).order('created_at',{ascending:true});
+  if(error){showToast('❌ โหลดข้อมูลไม่สำเร็จ','error'); return;}
+  schedules = data||[];
+  renderWeek(schedules);
+  updateLastUpdate();
+  await loadHistoryWeeks();
+}
+
+async function submitSchedule(){
+  const day   = parseInt(document.getElementById('fDay').value);
+  const time  = document.getElementById('fTime').value;
+  const origin= document.getElementById('fOrigin').value;
+  const dest  = document.getElementById('fDest').value;
+  const eta   = document.getElementById('fEta').value;
+  const note  = document.getElementById('fNote').value.trim();
+  if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','error');return;}
+  if(!time){showToast('⚠️ กรุณาระบุเวลา','error');return;}
+
+  const {error} = await sb.from('schedules').insert({
+    week_key: getWeekKey(), day_index:day, day_name:DAY_NAMES[day],
+    time, origin, destination:dest, eta:eta||null, note:note||null,
+    cancelled:false, created_at:new Date().toISOString()
+  });
+  if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'error');return;}
+
+  addLog(`✅ [${DAY_NAMES[day]} ${time}] ${origin} → ${dest}${eta?' คาดถึง '+eta:''}`);
+  fireTruck(day,`${DAY_NAMES[day]} ${time}`,`${origin} → ${dest}`);
+  document.getElementById('fNote').value='';
+  showToast(`✅ เพิ่มรอบรถ ${DAY_NAMES[day]} ${time} สำเร็จ`);
+  await refreshData();
+}
+
+async function cancelSchedule(id){
+  if(!confirm('ยืนยันยกเลิกรอบรถนี้?')) return;
+  const {error}=await sb.from('schedules').update({cancelled:true}).eq('id',id);
+  if(error){showToast('❌ ยกเลิกไม่สำเร็จ','error');return;}
+  showToast('❌ ยกเลิกรอบรถแล้ว');
+  addLog('❌ ยกเลิกรอบรถ');
+  await refreshData();
+}
+
+// ════════════════════════════════
+//  REALTIME SUBSCRIPTION
+// ════════════════════════════════
+function subscribeRealtime(){
+  if(realtimeCh) sb.removeChannel(realtimeCh);
+  realtimeCh = sb.channel('schedules-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'schedules'},
+      payload=>{
+        refreshData();
+        if(payload.eventType==='INSERT'){
+          const s=payload.new;
+          showToast(`🚚 รอบรถใหม่! ${s.origin} → ${s.destination} ${s.time}`);
+          fireTruck(s.day_index,`${s.day_name} ${s.time}`,`${s.origin} → ${s.destination}`);
+        }
+      })
+    .subscribe();
+}
+
+// ════════════════════════════════
+//  RENDER WEEK
+// ════════════════════════════════
+function renderWeek(data){
+  const grid=document.getElementById('weekGrid');
+  const byDay={};
+  for(let i=0;i<7;i++) byDay[i]=[];
+  data.filter(s=>!s.cancelled).forEach(s=>byDay[s.day_index].push(s));
+
+  grid.innerHTML='';
+  for(let d=0;d<7;d++){
+    const items=byDay[d].sort((a,b)=>a.time.localeCompare(b.time));
+    const row=document.createElement('div');
+    row.className='day-row'; row.dataset.day=d;
+    row.innerHTML=`
+      <div class="day-label" style="background:${DAY_COLORS[d]};color:${DAY_TEXT[d]}">
+        <div class="dot"></div>
+        <span>${DAY_NAMES[d]}</span>
+        <span class="day-count">${items.length} รอบ</span>
+      </div>
+      <div class="cards-wrap" id="cards-${d}">
+        ${items.length===0?'<span class="empty-msg">— ไม่มีรอบรถสัปดาห์นี้ —</span>':''}
+      </div>`;
+    grid.appendChild(row);
+    items.forEach(s=>{
+      const card=document.createElement('div');
+      card.className='truck-card';
+      card.dataset.id=s.id;
+      card.draggable=true;
+      card.innerHTML=`
+        <button class="tc-cancel" onclick="cancelSchedule('${s.id}')" title="ยกเลิก">✕</button>
+        <div class="tc-time"><span class="truck-emoji">🚚</span> ${s.time}</div>
+        <div class="tc-route">${s.origin} → ${s.destination}</div>
+        ${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}
+        ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      card.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('scheduleId',s.id);
+        document.getElementById('crusherZone').classList.add('hover');
+      });
+      card.addEventListener('dragend',()=>{
+        document.getElementById('crusherZone').classList.remove('hover');
+      });
+      document.getElementById('cards-'+d).appendChild(card);
+    });
+  }
+  // crusher drop
+  const cz=document.getElementById('crusherZone');
+  cz.ondragover=e=>e.preventDefault();
+  cz.ondrop=e=>{
+    e.preventDefault();
+    const id=e.dataTransfer.getData('scheduleId');
+    if(id) cancelSchedule(id);
+    cz.classList.remove('hover');
+  };
+}
+
+// ════════════════════════════════
+//  HISTORY
+// ════════════════════════════════
+async function loadHistoryWeeks(){
+  const {data}=await sb.from('schedules').select('week_key').order('week_key',{ascending:false});
+  if(!data) return;
+  const weeks=[...new Set(data.map(r=>r.week_key))];
+  const sel=document.getElementById('histWeekSel');
+  sel.innerHTML=weeks.map(w=>`<option value="${w}">${formatWeekLabel(w)}</option>`).join('');
+}
+
+async function loadHistory(){
+  const wk=document.getElementById('histWeekSel').value;
+  if(!wk) return;
+  const {data}=await sb.from('schedules').select('*').eq('week_key',wk).order('day_index').order('time');
+  renderHistGrid(data||[],document.getElementById('histGrid'));
+}
+
+function renderHistGrid(data,container){
+  const byDay={};
+  for(let i=0;i<7;i++) byDay[i]=[];
+  data.forEach(s=>byDay[s.day_index].push(s));
+  container.innerHTML='';
+  for(let d=0;d<7;d++){
+    const items=byDay[d];
+    const row=document.createElement('div');
+    row.className='day-row'; row.dataset.day=d;
+    let cardsHtml=items.length===0?'<span class="empty-msg">— ไม่มีรอบรถ —</span>':
+      items.map(s=>`
+        <div class="truck-card ${s.cancelled?'cancelled':''}">
+          <div class="tc-time">🚚 ${s.time} ${s.cancelled?'<span style="color:var(--red);font-size:.75rem">ยกเลิก</span>':''}</div>
+          <div class="tc-route">${s.origin} → ${s.destination}</div>
+          ${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}
+          ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}
+        </div>`).join('');
+    row.innerHTML=`
+      <div class="day-label" style="background:${DAY_COLORS[d]};color:${DAY_TEXT[d]}">
+        <div class="dot"></div><span>${DAY_NAMES[d]}</span>
+        <span class="day-count">${items.length} รอบ</span>
+      </div>
+      <div class="cards-wrap">${cardsHtml}</div>`;
+    container.appendChild(row);
+  }
+}
+
+// ════════════════════════════════
+//  NOTIFICATION
+// ════════════════════════════════
+function checkNotifications(){
+  if(!myBranch) return;
+  const now=new Date();
+  const todayIdx=now.getDay()===0?6:now.getDay()-1;
+  schedules.filter(s=>!s.cancelled&&s.destination===myBranch&&s.day_index===todayIdx&&s.eta).forEach(s=>{
+    if(notified.has(s.id)) return;
+    const [h,m]=s.eta.split(':').map(Number);
+    const eta=new Date(); eta.setHours(h,m,0,0);
+    const mins=(eta-now)/60000;
+    if(mins>=13&&mins<=17){
+      notified.add(s.id);
+      localStorage.setItem('notified',JSON.stringify([...notified]));
+      showToast(`🔔 รถกำลังจะถึง ${myBranch}! ${s.origin}→${s.destination} คาดถึง ${s.eta}`,'alert');
+      fireTruck(s.day_index,`🔔 ${s.origin}→${s.destination}`,`คาดถึง ${s.eta} — 15 นาที!`,true);
+    }
+  });
+}
+
+// ════════════════════════════════
+//  TRUCK CANVAS ANIMATION
+// ════════════════════════════════
+let canvas,ctx,trucks=[];
+function initCanvas(){
+  canvas=document.getElementById('roadCanvas');
+  ctx=canvas.getContext('2d');
+  resize();
+  window.addEventListener('resize',resize);
+  animate();
+}
+function resize(){
+  canvas.width=canvas.offsetWidth;
+  canvas.height=canvas.offsetHeight;
+}
+function fireTruck(dayIdx,l1,l2,alert=false){
+  const colors=['#F59E0B','#EC4899','#10B981','#F97316','#3B82F6','#8B5CF6','#EF4444'];
+  const tcs=['#222','#fff','#fff','#fff','#fff','#fff','#fff'];
+  const slot=trucks.filter(t=>!t.done).length%3;
+  trucks.push({x:-220,y:45+slot*52,color:colors[dayIdx],tc:tcs[dayIdx],l1,l2,done:false,spd:alert?7:5,alert});
+}
+function animate(){
+  requestAnimationFrame(animate);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  trucks.forEach(t=>{
+    if(!t.done){t.x+=t.spd; if(t.x>canvas.width+30){t.done=true;return;}}
+    drawTruck(t);
+  });
+  trucks=trucks.filter(t=>!t.done);
+}
+function drawTruck(t){
+  const {x,y,color,tc,l1,l2,alert}=t;
+  if(alert&&Math.floor(Date.now()/250)%2===0){
+    ctx.strokeStyle='#EF4444';ctx.lineWidth=3;
+    ctx.strokeRect(x-4,y-32,210,56);
+  }
+  ctx.fillStyle=color;ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(x,y-26,125,38,4);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.roundRect(x+125,y-22,70,34,4);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#AEE8FF';ctx.strokeStyle='#555';
+  ctx.beginPath();ctx.moveTo(x+125,y-22);ctx.lineTo(x+140,y-34);ctx.lineTo(x+188,y-34);ctx.lineTo(x+195,y-22);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#FFE87C';ctx.fillRect(x+190,y-8,10,12);
+  [[x+18,y+14],[x+90,y+14],[x+140,y+14],[x+178,y+14]].forEach(([wx,wy])=>{
+    ctx.fillStyle='#222';ctx.beginPath();ctx.ellipse(wx,wy,10,10,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#777';ctx.beginPath();ctx.ellipse(wx,wy,4,4,0,0,Math.PI*2);ctx.fill();
+  });
+  ctx.fillStyle=tc;ctx.font='bold 10px Sarabun,Tahoma,sans-serif';ctx.textAlign='center';
+  ctx.fillText(l1,x+62,y-8);
+  ctx.font='9px Sarabun,Tahoma,sans-serif';
+  ctx.fillText(l2,x+62,y+6);
+}
+
+// ════════════════════════════════
+//  TOAST
+// ════════════════════════════════
+function showToast(msg,type='info'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast'+(type==='error'||type==='alert'?' alert':'');
+  t.innerHTML=`<button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    <div class="toast-title">${type==='alert'?'🔔 แจ้งเตือน!':type==='error'?'⚠️ แจ้งเตือน':'✅ สำเร็จ'}</div>
+    <div class="toast-body">${msg}</div>`;
+  wrap.appendChild(t);
+  setTimeout(()=>t.remove(),6000);
+}
+
+// ════════════════════════════════
+//  BRANCH
+// ════════════════════════════════
+function openBranchModal(){ document.getElementById('branchModal').classList.add('open'); }
+function setBranch(b){
+  myBranch=b; localStorage.setItem('myBranch',b);
+  updateBranchUI();
+  document.getElementById('branchModal').classList.remove('open');
+  showToast(`✅ ตั้งสาขา ${b} เรียบร้อย`);
+}
+function updateBranchUI(){
+  document.getElementById('navBranch').textContent=myBranch?`🏭 ${myBranch}`:'🏭 เลือกสาขา';
+}
+
+// ════════════════════════════════
+//  UTILS
+// ════════════════════════════════
+function showTab(t){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function getWeekKey(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  return d.toISOString().slice(0,10);
+}
+
+function formatWeekLabel(wk){
+  const d=new Date(wk);
+  return `จันทร์ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;
+}
+
+function setWeekMeta(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt=x=>`${x.getDate()}/${x.getMonth()+1}/${x.getFullYear()+543}`;
+  document.getElementById('weekMeta').textContent=`สัปดาห์: ${fmt(mon)} – ${fmt(sun)}`;
+}
+
+function updateLastUpdate(){
+  document.getElementById('lastUpdate').textContent=`อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
+}
+
+function addLog(msg){
+  logs.unshift({msg,time:new Date().toLocaleTimeString('th-TH')});
+  if(logs.length>20) logs.pop();
+  const el=document.getElementById('logList');
+  el.innerHTML=logs.map(l=>`<div class="log-item">${l.time} — ${l.msg}</div>`).join('');
+}
+</script>
+</body>
+</html>
