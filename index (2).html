@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🚚 TSI - ระบบรอบรถ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --p9:#2D0A6E;--p7:#5B21B6;--p5:#7C3AED;--p4:#A78BFA;--p1:#EDE9FE;--p0:#F5F3FF;
+  --gold:#F59E0B;--g2:#E5E7EB;--g4:#9CA3AF;--g7:#374151;
+  --red:#DC2626;--green:#059669;--r:14px;--rs:8px;
+  --sh:0 2px 12px rgba(91,33,182,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--p0);color:var(--g7);min-height:100vh}
+nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3)}
+.nav-logo{color:#fff;font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-branch{background:var(--p7);color:var(--p1);padding:4px 12px;border-radius:20px;font-size:.82rem;cursor:pointer;border:1px solid var(--p4)}
+.btn-sm{background:transparent;border:1px solid var(--p4);color:var(--p1);padding:4px 10px;border-radius:20px;font-size:.8rem;cursor:pointer;font-family:'Sarabun',sans-serif}
+.btn-sm:hover{background:var(--p7)}
+.btn-sm.danger{border-color:#EF4444;color:#FCA5A5}
+.btn-sm.danger:hover{background:#7f1d1d}
+.tab-bar{background:#fff;border-bottom:2px solid var(--p1);display:flex;padding:0 20px;gap:2px;overflow-x:auto}
+.tab{padding:12px 16px;font-size:.9rem;font-weight:600;color:var(--g4);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.2s}
+.tab.active{color:var(--p5);border-bottom-color:var(--p5)}
+.page{display:none;padding:20px;max-width:1200px;margin:0 auto}
+.page.active{display:block}
+
+.map-wrap{border-radius:var(--r);overflow:hidden;margin-bottom:16px;position:relative;background:#1a3a5c}
+#mapCanvas{width:100%;display:block}
+
+.form-card{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:16px;border:1px solid var(--p1)}
+.form-card h2{font-size:1rem;font-weight:700;color:var(--p9);margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:10px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
+.form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
+.form-group select:focus,.form-group input:focus{border-color:var(--p4);background:#fff}
+.arrow-lbl{display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font-size:1.2rem;color:var(--p4);font-weight:700}
+.btn-submit{width:100%;padding:12px;background:linear-gradient(135deg,var(--p5),var(--p7));color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-submit:hover{opacity:.9;transform:translateY(-1px)}
+
+.week-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.week-hdr h2{font-size:1rem;font-weight:700;color:var(--p9)}
+.btn-refresh{padding:6px 14px;background:var(--p5);color:#fff;border:none;border-radius:var(--rs);font-size:.85rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600}
+.crusher-bar{background:linear-gradient(90deg,#4A148C,#6A1B9A);border-radius:var(--rs);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crusher-bar span{color:#E1BEE7;font-size:.82rem;flex:1}
+.crusher-zone{min-width:70px;height:36px;background:#4A148C;border:2px dashed var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#FFD700;transition:.2s;cursor:crosshair}
+.crusher-zone.hover{background:#880E4F;border-color:#EF4444;transform:scale(1.05)}
+.day-row{background:#fff;border-radius:10px;margin-bottom:8px;overflow:hidden;box-shadow:var(--sh);border:1px solid var(--p1)}
+.day-lbl{padding:7px 14px;font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:8px;color:#fff}
+.day-lbl .cnt{margin-left:auto;background:rgba(255,255,255,.2);padding:1px 8px;border-radius:10px;font-size:.72rem}
+.cards-wrap{padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;min-height:42px;align-items:flex-start}
+.empty-msg{color:var(--g4);font-size:.82rem;padding:6px 4px;align-self:center}
+.tc{background:var(--p0);border:1.5px solid var(--p1);border-radius:var(--rs);padding:7px 10px;min-width:155px;max-width:195px;position:relative;cursor:grab;transition:.2s;user-select:none}
+.tc:hover{box-shadow:0 4px 14px rgba(124,58,237,.15);transform:translateY(-1px)}
+.tc.cancelled{opacity:.4;filter:grayscale(1);cursor:default}
+.tc-time{font-size:.88rem;font-weight:700;color:var(--p9)}
+.tc-route{font-size:.78rem;color:var(--p7);font-weight:600;margin:2px 0}
+.tc-eta{font-size:.74rem;color:var(--green);font-weight:600}
+.tc-note{font-size:.72rem;color:var(--g4);margin-top:1px}
+.tc-type{font-size:.7rem;background:var(--p1);color:var(--p7);padding:1px 6px;border-radius:8px;display:inline-block;margin-top:2px}
+.tc-cancel{position:absolute;top:4px;right:4px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s}
+.tc:hover .tc-cancel{opacity:1}
+.hist-ctrl{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.hist-ctrl select{padding:7px 12px;border:1.5px solid var(--p1);border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.88rem;background:#fff;outline:none}
+.btn-load{padding:7px 14px;background:var(--p5);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.88rem;cursor:pointer;font-weight:600}
+.btn-export{padding:7px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.88rem;cursor:pointer;font-weight:600}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:300px}
+.toast{background:var(--p9);color:#fff;border-radius:var(--r);padding:11px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:sIn .3s ease;border-left:4px solid var(--gold)}
+.toast.err{border-left-color:#EF4444;background:#7f1d1d}
+@keyframes sIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast-bod{font-size:.82rem}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:var(--r);padding:26px;width:340px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h2{color:var(--p9);margin-bottom:6px;font-size:1.05rem}
+.modal p{color:var(--g4);font-size:.83rem;margin-bottom:14px}
+.branch-btn{width:100%;padding:10px;margin-bottom:6px;border-radius:var(--rs);border:2px solid var(--p1);background:var(--p0);color:var(--p9);font-family:'Sarabun',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;text-align:left}
+.branch-btn:hover{background:var(--p5);color:#fff;border-color:var(--p5)}
+.pw-input{width:100%;padding:10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.95rem;font-family:'Sarabun',sans-serif;margin-bottom:10px;outline:none}
+.pw-input:focus{border-color:var(--p4)}
+.btn-confirm{width:100%;padding:10px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
+.update-lbl{font-size:.72rem;color:var(--g4)}
+.map-legend{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.65);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:3px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.72rem;color:#ddd}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🚚 TSI</div>
+  <div class="nav-right">
+    <button class="btn-sm danger" onclick="openResetModal()">🗑️ Reset</button>
+    <button class="btn-sm" onclick="refreshData()">🔄</button>
+    <div class="nav-branch" onclick="openBranchModal()" id="navBranch">🏭 เลือกสาขา</div>
+  </div>
+</nav>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="showTab('live',this)">🗺️ แผนที่</div>
+  <div class="tab" onclick="showTab('week',this)">📅 ตารางสัปดาห์</div>
+  <div class="tab" onclick="showTab('history',this)">📂 ประวัติ</div>
+</div>
+
+<div class="page active" id="page-live">
+  <div class="map-wrap">
+    <canvas id="mapCanvas"></canvas>
+    <div class="map-legend" id="mapLegend"></div>
+  </div>
+  <div class="form-card">
+    <h2>➕ เพิ่มรอบรถ</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>📅 วัน</label>
+        <select id="fDay">
+          <option value="0">จันทร์</option><option value="1">อังคาร</option>
+          <option value="2">พุธ</option><option value="3">พฤหัส</option>
+          <option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>⏰ เวลาออก</label>
+        <input type="time" id="fTime" value="08:00"/>
+      </div>
+      <div class="form-group">
+        <label>🚗 ประเภทรถ</label>
+        <select id="fType">
+          <option value="truck">🚛 รถบรรทุก</option>
+          <option value="car">🚗 รถยนต์</option>
+          <option value="van">🚐 อื่นๆ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🏭 ต้นทาง</label>
+        <select id="fOrigin">
+          <option>HQ</option><option>CNS</option><option>Sriracha</option>
+          <option>Lampoon</option><option>Phitsanulok</option>
+        </select>
+      </div>
+      <div class="arrow-lbl">→</div>
+      <div class="form-group">
+        <label>📍 ปลายทาง</label>
+        <select id="fDest">
+          <option>HQ</option><option>CNS</option><option>Sriracha</option>
+          <option>Lampoon</option><option>Phitsanulok</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🕐 คาดถึง (ETA)</label>
+        <input type="time" id="fEta"/>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>📝 หมายเหตุ</label>
+      <input type="text" id="fNote" placeholder="เช่น สินค้าด่วน..." maxlength="80"/>
+    </div>
+    <button class="btn-submit" onclick="submitSchedule()">🚚 ส่งรอบรถ</button>
+  </div>
+</div>
+
+<div class="page" id="page-week">
+  <div class="week-hdr">
+    <div>
+      <h2>📅 ตารางสัปดาห์นี้</h2>
+      <div class="update-lbl" id="lastUpdate"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-export" onclick="exportCurrentWeek()">📊 Excel</button>
+      <button class="btn-refresh" onclick="refreshData()">🔄 Refresh</button>
+    </div>
+  </div>
+  <div class="crusher-bar">
+    <span>⚙️ ลากการ์ดรถมาวางที่เครื่องบด → ยกเลิกรอบ</span>
+    <div class="crusher-zone" id="crusherZone">💥 บดทิ้ง</div>
+  </div>
+  <div id="weekGrid"></div>
+</div>
+
+<div class="page" id="page-history">
+  <h2 style="color:var(--p9);margin-bottom:14px;font-size:1rem;font-weight:700">📂 ประวัติย้อนหลัง</h2>
+  <div class="hist-ctrl">
+    <select id="histWeekSel"></select>
+    <button class="btn-load" onclick="loadHistory()">🔍 ดูข้อมูล</button>
+    <button class="btn-export" onclick="exportHistory()">📊 Export Excel</button>
+  </div>
+  <div id="histGrid"></div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Branch Modal -->
+<div class="modal-bg" id="branchModal">
+  <div class="modal">
+    <h2>🏭 เลือกสาขาของคุณ</h2>
+    <p>ระบบจะแจ้งเตือนเมื่อมีรถมาถึงสาขาของคุณ</p>
+    <button class="branch-btn" onclick="setBranch('HQ')">🏢 HQ — ปทุมธานี</button>
+    <button class="branch-btn" onclick="setBranch('CNS')">🏭 CNS — ปทุมธานี</button>
+    <button class="branch-btn" onclick="setBranch('Sriracha')">🏭 Sriracha — ชลบุรี</button>
+    <button class="branch-btn" onclick="setBranch('Lampoon')">🏭 Lampoon — ลำพูน</button>
+    <button class="branch-btn" onclick="setBranch('Phitsanulok')">🏭 Phitsanulok — พิษณุโลก</button>
+  </div>
+</div>
+
+<!-- Reset Modal -->
+<div class="modal-bg" id="resetModal">
+  <div class="modal">
+    <h2>🗑️ Reset รอบรถทั้งหมด</h2>
+    <p>ใส่รหัสผ่านเพื่อลบรอบรถทั้งหมดในสัปดาห์นี้ (ไม่สามารถกู้คืนได้)</p>
+    <input class="pw-input" type="password" id="resetPw" placeholder="รหัสผ่าน..." onkeydown="if(event.key==='Enter')confirmReset()"/>
+    <button class="btn-confirm" onclick="confirmReset()">🗑️ ยืนยัน Reset</button>
+    <button style="width:100%;padding:8px;margin-top:8px;background:none;border:1px solid var(--g2);border-radius:var(--rs);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.9rem" onclick="closeResetModal()">ยกเลิก</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
+const RESET_PASSWORD='itpoom';
+const {createClient}=supabase;
+const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const DAY_NAMES=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];
+const DAY_COLORS=['#F59E0B','#EC4899','#10B981','#F97316','#3B82F6','#8B5CF6','#EF4444'];
+
+// Branch positions — CNS แยกออกไปชัดขึ้น
+const BRANCHES={
+  HQ:          {label:'HQ',          lat:14.05, lng:100.70, color:'#A78BFA'},
+  CNS:         {label:'CNS',         lat:14.10, lng:100.40, color:'#60A5FA'},
+  Sriracha:    {label:'Sriracha',    lat:13.12, lng:100.92, color:'#F87171'},
+  Lampoon:     {label:'Lampoon',     lat:18.57, lng:99.01,  color:'#34D399'},
+  Phitsanulok: {label:'Phitsanulok', lat:16.82, lng:100.27, color:'#FBBF24'},
+};
+
+const LAT_MIN=5.2,LAT_MAX=20.8,LNG_MIN=97.2,LNG_MAX=105.8;
+
+// Thailand outline (simplified real coords)
+const TH_PATH=[
+  [102.1,5.6],[102.9,5.8],[103.5,6.0],[104.2,6.2],[104.8,6.5],[105.6,6.0],
+  [105.65,6.5],[105.1,7.0],[104.5,7.3],[103.8,7.8],[103.2,8.1],[102.6,8.0],
+  [102.1,8.3],[101.6,8.6],[101.1,8.9],[100.6,8.7],[100.1,9.0],[99.7,9.6],
+  [99.4,10.1],[99.0,10.6],[98.7,11.2],[98.4,12.0],[98.0,12.8],[97.8,13.5],
+  [97.75,14.2],[97.8,15.0],[97.9,15.8],[98.1,16.5],[98.3,17.2],[98.5,18.0],
+  [98.8,18.6],[99.1,19.2],[99.5,19.7],[100.0,20.1],[100.4,20.4],[100.8,20.3],
+  [101.1,20.1],[101.4,19.6],[101.2,19.0],[101.5,18.4],[102.0,17.9],[102.7,17.6],
+  [103.2,18.0],[103.7,17.8],[104.1,17.4],[104.5,16.8],[104.9,16.1],[105.1,15.4],
+  [105.2,14.8],[104.8,14.2],[104.2,13.8],[103.7,13.2],[103.2,12.5],[102.8,11.7],
+  [102.5,10.8],[102.3,9.8],[102.1,8.8],[102.1,7.5],[102.1,6.5],[102.1,5.6]
+];
+
+// Mountain ranges (simplified)
+const MOUNTAINS=[
+  {pts:[[98.5,18.5],[99.0,18.8],[99.5,19.0],[100.0,18.5],[99.5,18.2],[99.0,18.0]]},
+  {pts:[[98.0,16.0],[98.5,16.5],[99.0,16.0],[98.5,15.5]]},
+  {pts:[[101.5,14.5],[102.0,15.0],[102.5,14.5],[102.0,14.0]]},
+];
+
+// Forest areas
+const FORESTS=[
+  {lat:18.0,lng:99.5,r:0.6},{lat:17.5,lng:98.8,r:0.5},
+  {lat:16.0,lng:101.5,r:0.4},{lat:15.5,lng:99.0,r:0.5},
+  {lat:14.5,lng:101.0,r:0.4},{lat:13.5,lng:100.5,r:0.3},
+  {lat:12.0,lng:101.5,r:0.4},{lat:10.0,lng:99.0,r:0.5},
+  {lat:8.0,lng:100.0,r:0.4},{lat:6.5,lng:101.5,r:0.3},
+  {lat:19.0,lng:100.5,r:0.5},{lat:20.0,lng:100.2,r:0.4},
+];
+
+// Rivers
+const RIVERS=[
+  [[100.5,20.3],[100.1,19.5],[100.0,18.5],[100.2,17.5],[100.0,16.5],[100.1,15.5],[100.0,14.5],[100.2,13.5]],
+  [[101.5,17.5],[101.0,16.5],[100.8,15.5],[100.5,14.5]],
+];
+
+let myBranch=localStorage.getItem('myBranch')||null;
+let schedules=[];
+let notified=new Set(JSON.parse(localStorage.getItem('notified')||'[]'));
+let activeRoutes=[];
+let histData=[];
+let canvas,ctx,mapW=0,mapH=0;
+
+function latlng(lat,lng){
+  return [(lng-LNG_MIN)/(LNG_MAX-LNG_MIN)*mapW,(1-(lat-LAT_MIN)/(LAT_MAX-LAT_MIN))*mapH];
+}
+
+function initMap(){
+  canvas=document.getElementById('mapCanvas');
+  resizeMap();
+  ctx=canvas.getContext('2d');
+  requestAnimationFrame(mapLoop);
+}
+function resizeMap(){
+  mapW=canvas.parentElement.clientWidth;
+  mapH=Math.round(mapW*0.68);
+  canvas.width=mapW; canvas.height=mapH;
+}
+
+function mapLoop(){
+  requestAnimationFrame(mapLoop);
+  if(!ctx) return;
+  ctx.clearRect(0,0,mapW,mapH);
+  drawMapBase();
+  drawRoutes();
+  drawBranches();
+}
+
+function drawMapBase(){
+  // sea background
+  ctx.fillStyle='#1a3a5c';
+  ctx.fillRect(0,0,mapW,mapH);
+
+  // Thailand land
+  ctx.beginPath();
+  TH_PATH.forEach(([lng,lat],i)=>{
+    const [x,y]=latlng(lat,lng);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.closePath();
+  ctx.fillStyle='#2d6a4f';
+  ctx.fill();
+  ctx.strokeStyle='#52b788';
+  ctx.lineWidth=Math.max(1,mapW/600);
+  ctx.stroke();
+
+  // mountain highlights
+  MOUNTAINS.forEach(m=>{
+    ctx.beginPath();
+    m.pts.forEach(([lng,lat],i)=>{
+      const [x,y]=latlng(lat,lng);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle='#6b705c';
+    ctx.fill();
+    ctx.strokeStyle='#a3a380';
+    ctx.lineWidth=0.5;
+    ctx.stroke();
+    // snow caps
+    const [tx,ty]=latlng(m.pts[1][1],m.pts[1][0]);
+    ctx.beginPath();
+    ctx.arc(tx,ty-2,mapW/120,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.3)';
+    ctx.fill();
+  });
+
+  // forest dots
+  FORESTS.forEach(f=>{
+    const [fx,fy]=latlng(f.lat,f.lng);
+    const r=f.r*mapW/100;
+    ctx.save();
+    ctx.globalAlpha=0.5;
+    ctx.fillStyle='#1b4332';
+    ctx.beginPath();ctx.ellipse(fx,fy,r,r*0.7,0,0,Math.PI*2);ctx.fill();
+    // tree tops
+    for(let t=0;t<4;t++){
+      const tx=fx+(Math.random()-.5)*r*1.5;
+      const ty2=fy+(Math.random()-.5)*r*1.5*0.7;
+      ctx.fillStyle='#40916c';
+      ctx.beginPath();ctx.arc(tx,ty2,r*0.18,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  // rivers
+  RIVERS.forEach(river=>{
+    ctx.beginPath();
+    river.forEach(([lng,lat],i)=>{
+      const [x,y]=latlng(lat,lng);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle='#4895ef';
+    ctx.lineWidth=Math.max(1,mapW/500);
+    ctx.globalAlpha=0.5;
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+
+  // Gulf of Thailand label
+  const [gx,gy]=latlng(9.5,101.5);
+  ctx.fillStyle='rgba(100,180,255,.5)';
+  ctx.font=`italic ${Math.max(9,mapW/80)}px Sarabun,sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillText('อ่าวไทย',gx,gy);
+
+  const [ax,ay]=latlng(9.0,98.5);
+  ctx.fillText('อันดามัน',ax,ay);
+}
+
+function drawRoutes(){
+  const now=Date.now();
+  activeRoutes=activeRoutes.filter(r=>{
+    const from=BRANCHES[r.from],to=BRANCHES[r.to];
+    if(!from||!to) return false;
+
+    // Check ETA — keep route alive until ETA passes
+    if(r.eta){
+      const [h,m]=r.eta.split(':').map(Number);
+      const etaDt=new Date(); etaDt.setHours(h,m,0,0);
+      if(now>etaDt.getTime()) return false; // ETA passed, remove
+    } else {
+      // no ETA: animate for 10 seconds then stay as ghost for 60s
+      if(now-r.startTime>70000) return false;
+    }
+
+    const elapsed=now-r.startTime;
+    const animDur=8000;
+    const progress=Math.min(1,elapsed/animDur);
+
+    const [fx,fy]=latlng(from.lat,from.lng);
+    const [tx,ty]=latlng(to.lat,to.lng);
+
+    // dashed animated line
+    ctx.save();
+    ctx.strokeStyle=r.color;
+    ctx.lineWidth=Math.max(1.5,mapW/400);
+    ctx.setLineDash([6,4]);
+    ctx.lineDashOffset=-(now/50)%20;
+    ctx.globalAlpha=0.75;
+    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+    ctx.restore();
+
+    // truck moving
+    const px=fx+(tx-fx)*progress;
+    const py=fy+(ty-fy)*progress;
+    const angle=Math.atan2(ty-fy,tx-fx);
+    drawVehicle(px,py,angle,r.color,r.vehicleType);
+
+    return true;
+  });
+}
+
+function drawVehicle(px,py,angle,color,type){
+  ctx.save();
+  ctx.translate(px,py);
+  ctx.rotate(angle);
+  const sc=Math.max(0.6,mapW/900);
+  ctx.scale(sc,sc);
+
+  if(type==='truck'){
+    // รถบรรทุกใหญ่
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-18,-6,28,12,2);ctx.fill();ctx.stroke();
+    // cab
+    ctx.beginPath();ctx.roundRect(8,-8,12,16,2);ctx.fill();ctx.stroke();
+    // windshield
+    ctx.fillStyle='#AEE8FF';
+    ctx.beginPath();ctx.roundRect(10,-6,8,6,1);ctx.fill();
+    // wheels (4)
+    ctx.fillStyle='#111';
+    [[-12,7],[-2,7],[10,7],[16,7]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();
+    });
+    // stack smoke
+    ctx.fillStyle='rgba(200,200,200,.5)';
+    ctx.beginPath();ctx.ellipse(20,-8,3,4,0,0,Math.PI*2);ctx.fill();
+  } else if(type==='car'){
+    // รถยนต์เล็ก
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.roundRect(-11,-4,20,9,3);ctx.fill();ctx.stroke();
+    // roof
+    ctx.fillStyle=color;
+    ctx.beginPath();ctx.roundRect(-6,-8,12,6,2);ctx.fill();ctx.stroke();
+    // windshield
+    ctx.fillStyle='#AEE8FF';
+    ctx.beginPath();ctx.roundRect(-4,-7,9,4,1);ctx.fill();
+    // wheels
+    ctx.fillStyle='#111';
+    [[-7,5],[6,5]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,2.8,2.8,0,0,Math.PI*2);ctx.fill();
+    });
+  } else {
+    // van/อื่นๆ ขนาดกลาง
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.roundRect(-14,-6,24,12,3);ctx.fill();ctx.stroke();
+    // windows
+    ctx.fillStyle='#AEE8FF';
+    [[-8,-4],[-2,-4],[4,-4]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.roundRect(wx,wy,4,5,1);ctx.fill();
+    });
+    // wheels
+    ctx.fillStyle='#111';
+    [[-9,6],[8,6]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();
+    });
+  }
+  ctx.restore();
+}
+
+function drawBranches(){
+  const now=Date.now();
+  Object.entries(BRANCHES).forEach(([key,b])=>{
+    const [x,y]=latlng(b.lat,b.lng);
+    // pulse
+    const pulse=Math.sin(now/700+x)*0.4+0.6;
+    ctx.save();
+    ctx.globalAlpha=pulse*0.35;
+    ctx.strokeStyle=b.color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    // dot
+    ctx.fillStyle=b.color;
+    ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.stroke();
+    // label bg
+    const fs=Math.max(9,mapW/90);
+    ctx.font=`bold ${fs}px Sarabun,sans-serif`;
+    ctx.textAlign='center';
+    const tw=ctx.measureText(b.label).width+8;
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.beginPath();ctx.roundRect(x-tw/2,y-fs-14,tw,fs+4,3);ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.fillText(b.label,x,y-fs-6);
+  });
+}
+
+function addRoute(from,to,eta,vehicleType){
+  const colors=['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#FF8B94','#B8F2E6','#FFA69E','#AED9E0'];
+  const color=colors[Math.floor(Math.random()*colors.length)];
+  // remove existing same route
+  activeRoutes=activeRoutes.filter(r=>!(r.from===from&&r.to===to));
+  activeRoutes.push({from,to,color,startTime:Date.now(),eta:eta||null,vehicleType:vehicleType||'van'});
+}
+
+// rebuild active routes from current schedules
+function rebuildRoutes(){
+  activeRoutes=[];
+  const now=new Date();
+  const todayIdx=now.getDay()===0?6:now.getDay()-1;
+  schedules.filter(s=>!s.cancelled&&s.day_index===todayIdx).forEach(s=>{
+    if(s.eta){
+      const [h,m]=s.eta.split(':').map(Number);
+      const etaDt=new Date();etaDt.setHours(h,m,0,0);
+      if(etaDt>now) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');
+    }
+  });
+}
+
+function updateLegend(){
+  const el=document.getElementById('mapLegend');
+  el.innerHTML=Object.entries(BRANCHES).map(([k,b])=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${b.color}"></div>${b.label}</div>`
+  ).join('');
+}
+
+// ── SUPABASE ──
+async function refreshData(){
+  const {data,error}=await sb.from('schedules').select('*').eq('week_key',getWeekKey()).order('day_index').order('time');
+  if(error){showToast('❌ โหลดข้อมูลไม่สำเร็จ','err');return;}
+  schedules=data||[];
+  renderWeek(schedules);
+  rebuildRoutes();
+  document.getElementById('lastUpdate').textContent=`อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
+  await loadHistoryWeeks();
+  checkNotifications();
+}
+
+async function submitSchedule(){
+  const day=parseInt(document.getElementById('fDay').value);
+  const time=document.getElementById('fTime').value;
+  const type=document.getElementById('fType').value;
+  const origin=document.getElementById('fOrigin').value;
+  const dest=document.getElementById('fDest').value;
+  const eta=document.getElementById('fEta').value;
+  const note=document.getElementById('fNote').value.trim();
+  if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
+  const {error}=await sb.from('schedules').insert({
+    week_key:getWeekKey(),day_index:day,day_name:DAY_NAMES[day],
+    time,vehicle_type:type,origin,destination:dest,
+    eta:eta||null,note:note||null,cancelled:false,
+    created_at:new Date().toISOString()
+  });
+  if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
+  addRoute(origin,dest,eta||null,type);
+  showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest}`);
+  document.getElementById('fNote').value='';
+  await refreshData();
+}
+
+async function cancelSchedule(id){
+  if(!confirm('ยืนยันยกเลิกรอบรถนี้?'))return;
+  await sb.from('schedules').update({cancelled:true}).eq('id',id);
+  showToast('❌ ยกเลิกรอบรถแล้ว');
+  await refreshData();
+}
+
+// ── RESET ──
+function openResetModal(){document.getElementById('resetModal').classList.add('open');document.getElementById('resetPw').value='';setTimeout(()=>document.getElementById('resetPw').focus(),100);}
+function closeResetModal(){document.getElementById('resetModal').classList.remove('open');}
+async function confirmReset(){
+  const pw=document.getElementById('resetPw').value;
+  if(pw!==RESET_PASSWORD){showToast('❌ รหัสผ่านไม่ถูกต้อง','err');return;}
+  const wk=getWeekKey();
+  const {error}=await sb.from('schedules').delete().eq('week_key',wk);
+  if(error){showToast('❌ Reset ไม่สำเร็จ','err');return;}
+  closeResetModal();
+  activeRoutes=[];
+  showToast('🗑️ Reset รอบรถทั้งหมดสำเร็จ');
+  await refreshData();
+}
+
+// ── RENDER WEEK ──
+function typeLabel(t){return t==='truck'?'🚛 รถบรรทุก':t==='car'?'🚗 รถยนต์':'🚐 อื่นๆ';}
+
+function renderWeek(data){
+  const grid=document.getElementById('weekGrid');
+  const byDay={};
+  for(let i=0;i<7;i++) byDay[i]=[];
+  data.filter(s=>!s.cancelled).forEach(s=>byDay[s.day_index].push(s));
+  grid.innerHTML='';
+  for(let d=0;d<7;d++){
+    const items=byDay[d].sort((a,b)=>a.time.localeCompare(b.time));
+    const row=document.createElement('div');row.className='day-row';
+    row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length} รอบ</span></div>
+      <div class="cards-wrap" id="cw-${d}">${items.length===0?'<span class="empty-msg">— ไม่มีรอบรถ —</span>':''}</div>`;
+    grid.appendChild(row);
+    items.forEach(s=>{
+      const c=document.createElement('div');
+      c.className='tc';c.draggable=true;c.dataset.id=s.id;
+      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button>
+        <div class="tc-time">${s.time}</div>
+        <div class="tc-route">${s.origin} → ${s.destination}</div>
+        ${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}
+        ${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}
+        ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      c.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);document.getElementById('crusherZone').classList.add('hover');});
+      c.addEventListener('dragend',()=>document.getElementById('crusherZone').classList.remove('hover'));
+      document.getElementById('cw-'+d).appendChild(c);
+    });
+  }
+  const cz=document.getElementById('crusherZone');
+  cz.ondragover=e=>e.preventDefault();
+  cz.ondrop=e=>{e.preventDefault();const id=e.dataTransfer.getData('sid');if(id)cancelSchedule(id);cz.classList.remove('hover');};
+}
+
+// ── HISTORY ──
+async function loadHistoryWeeks(){
+  const {data}=await sb.from('schedules').select('week_key').order('week_key',{ascending:false});
+  if(!data)return;
+  const weeks=[...new Set(data.map(r=>r.week_key))];
+  const sel=document.getElementById('histWeekSel');
+  sel.innerHTML=weeks.map(w=>`<option value="${w}">${fmtWeek(w)}</option>`).join('');
+}
+async function loadHistory(){
+  const wk=document.getElementById('histWeekSel').value;
+  if(!wk)return;
+  const {data}=await sb.from('schedules').select('*').eq('week_key',wk).order('day_index').order('time');
+  histData=data||[];
+  const container=document.getElementById('histGrid');container.innerHTML='';
+  const byDay={};for(let i=0;i<7;i++) byDay[i]=[];
+  histData.forEach(s=>byDay[s.day_index].push(s));
+  for(let d=0;d<7;d++){
+    const items=byDay[d];if(!items.length)continue;
+    const row=document.createElement('div');row.className='day-row';
+    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}">
+      <div class="tc-time">${s.time} ${s.cancelled?'<span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div>
+      <div class="tc-route">${s.origin} → ${s.destination}</div>
+      ${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}
+      ${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}
+      ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}
+    </div>`).join('');
+    row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length}</span></div><div class="cards-wrap">${html}</div>`;
+    container.appendChild(row);
+  }
+}
+
+// ── EXPORT ──
+function exportToExcel(data,filename){
+  if(!data||!data.length){showToast('⚠️ ไม่มีข้อมูล','err');return;}
+  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่สร้าง':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'รอบรถ');
+  XLSX.writeFile(wb,filename+'.xlsx');
+  showToast('📊 Export สำเร็จ!');
+}
+function exportCurrentWeek(){exportToExcel(schedules,`TSI_รอบรถ_${getWeekKey()}`);}
+function exportHistory(){
+  if(!histData.length){showToast('⚠️ กด "ดูข้อมูล" ก่อนแล้วค่อย Export','err');return;}
+  exportToExcel(histData,`TSI_ประวัติ_${document.getElementById('histWeekSel').value}`);
+}
+
+// ── NOTIFICATION ──
+function checkNotifications(){
+  if(!myBranch)return;
+  const now=new Date();const todayIdx=now.getDay()===0?6:now.getDay()-1;
+  schedules.filter(s=>!s.cancelled&&s.destination===myBranch&&s.day_index===todayIdx&&s.eta).forEach(s=>{
+    if(notified.has(s.id))return;
+    const [h,m]=s.eta.split(':').map(Number);
+    const eta=new Date();eta.setHours(h,m,0,0);
+    const mins=(eta-now)/60000;
+    if(mins>=13&&mins<=17){
+      notified.add(s.id);localStorage.setItem('notified',JSON.stringify([...notified]));
+      showToast(`🔔 รถกำลังจะถึง ${myBranch}! ${s.origin}→${s.destination} คาดถึง ${s.eta}`);
+    }
+  });
+}
+
+// ── REALTIME ──
+function subscribeRealtime(){
+  sb.channel('sc').on('postgres_changes',{event:'*',schema:'public',table:'schedules'},()=>{refreshData();}).subscribe();
+}
+
+// ── UI ──
+function openBranchModal(){document.getElementById('branchModal').classList.add('open');}
+function setBranch(b){myBranch=b;localStorage.setItem('myBranch',b);document.getElementById('navBranch').textContent=`🏭 ${b}`;document.getElementById('branchModal').classList.remove('open');showToast(`✅ ตั้งสาขา ${b}`);}
+function showToast(msg,type='ok'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');t.className='toast'+(type==='err'?' err':'');
+  t.innerHTML=`<div class="toast-bod">${msg}</div>`;
+  wrap.appendChild(t);setTimeout(()=>t.remove(),5000);
+}
+function showTab(t,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');el.classList.add('active');
+}
+function getWeekKey(){
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10);
+}
+function fmtWeek(wk){const d=new Date(wk);return `จันทร์ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;}
+
+window.onload=async()=>{
+  initMap();updateLegend();
+  if(!myBranch)openBranchModal();
+  else document.getElementById('navBranch').textContent=`🏭 ${myBranch}`;
+  document.getElementById('fDay').value=new Date().getDay()===0?6:new Date().getDay()-1;
+  document.getElementById('fDest').value='CNS';
+  await refreshData();
+  subscribeRealtime();
+  setInterval(checkNotifications,30000);
+  setInterval(refreshData,30000);
+  window.addEventListener('resize',()=>{resizeMap();});
+};
+</script>
+</body>
+</html>
