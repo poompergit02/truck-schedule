@@ -29,7 +29,7 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .tab.active{color:var(--p5);border-bottom-color:var(--p5)}
 .page{display:none;padding:20px;max-width:960px;margin:0 auto}
 .page.active{display:block}
-.map-wrap{border-radius:var(--r);overflow:hidden;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.map-wrap{border-radius:var(--r);overflow:hidden;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,.18);display:flex;justify-content:center;background:#22C55E}
 #mapCanvas{display:block;width:100%}
 .form-card{background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:16px;border:1px solid var(--p1)}
 .form-card h2{font-size:1rem;font-weight:700;color:var(--p9);margin-bottom:16px}
@@ -192,7 +192,7 @@ const CW=560, CH=480;
 
 // ── สาขา: ตำแหน่งบน canvas ที่ทุกอันอยู่บนแผ่นดิน ──
 const BRANCHES = {
-  Lampoon:     { x:148, y: 72, color:'#CA8A04', label:'Lampoon',     sub:'ลำพูน',     type:'office' },
+  Lampoon:     { x:148, y:110, color:'#CA8A04', label:'Lampoon',     sub:'ลำพูน',     type:'office' },
   Phitsanulok: { x:290, y:148, color:'#16A34A', label:'Phitsanulok', sub:'พิษณุโลก', type:'office' },
   CNS:         { x:175, y:278, color:'#2563EB', label:'CNS',         sub:'ปทุมธานี',  type:'warehouse' },
   HQ:          { x:270, y:292, color:'#7C3AED', label:'HQ',          sub:'สำนักงานใหญ่', type:'hq' },
@@ -274,7 +274,7 @@ function initMap(){
   window.addEventListener('resize',setResponsive);
 }
 function setResponsive(){
-  const maxW=Math.min(document.querySelector('.map-wrap').clientWidth,720);
+  const maxW=document.querySelector('.map-wrap').clientWidth;
   canvas.style.width=maxW+'px';
   canvas.style.height=Math.round(CH*(maxW/CW))+'px';
 }
