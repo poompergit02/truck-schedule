@@ -16,7 +16,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Sarabun',sans-serif;background:var(--p0);color:var(--g7);min-height:100vh}
 nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.4)}
-.nav-logo{color:#fff;font-size:1.15rem;font-weight:700;letter-spacing:.5px}
+.nav-logo{color:#fff;font-size:1.15rem;font-weight:700}
 .nav-right{display:flex;align-items:center;gap:8px}
 .nav-branch{background:var(--p7);color:var(--p1);padding:5px 14px;border-radius:20px;font-size:.82rem;cursor:pointer;border:1px solid var(--p4);transition:.2s}
 .nav-branch:hover{background:var(--p5)}
@@ -37,9 +37,9 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
 .form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
-.form-group select:focus,.form-group input:focus{border-color:var(--p4);background:#fff;box-shadow:0 0 0 3px rgba(167,139,250,.15)}
+.form-group select:focus,.form-group input:focus{border-color:var(--p4);background:#fff}
 .arrow-lbl{display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font-size:1.3rem;color:var(--p4);font-weight:700}
-.btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--p5),var(--p7));color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;margin-top:4px;letter-spacing:.3px}
+.btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--p5),var(--p7));color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;margin-top:4px}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.35)}
 .week-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .week-hdr h2{font-size:1rem;font-weight:700;color:var(--p9)}
@@ -79,10 +79,9 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .modal p{color:var(--g4);font-size:.83rem;margin-bottom:16px}
 .branch-btn{width:100%;padding:11px 14px;margin-bottom:7px;border-radius:var(--rs);border:2px solid var(--p1);background:var(--p0);color:var(--p9);font-family:'Sarabun',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;text-align:left;display:flex;align-items:center;gap:8px}
 .branch-btn:hover{background:var(--p5);color:#fff;border-color:var(--p5)}
-.pw-input{width:100%;padding:10px 12px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.95rem;font-family:'Sarabun',sans-serif;margin-bottom:10px;outline:none;transition:.2s}
+.pw-input{width:100%;padding:10px 12px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.95rem;font-family:'Sarabun',sans-serif;margin-bottom:10px;outline:none}
 .pw-input:focus{border-color:var(--p4)}
-.btn-confirm{width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s}
-.btn-confirm:hover{background:#B91C1C}
+.btn-confirm{width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
 .update-lbl{font-size:.72rem;color:var(--g4)}
 </style>
 </head>
@@ -107,19 +106,11 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
     <h2>➕ เพิ่มรอบรถ</h2>
     <div class="form-grid">
       <div class="form-group"><label>📅 วัน</label>
-        <select id="fDay">
-          <option value="0">จันทร์</option><option value="1">อังคาร</option>
-          <option value="2">พุธ</option><option value="3">พฤหัส</option>
-          <option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option>
-        </select>
+        <select id="fDay"><option value="0">จันทร์</option><option value="1">อังคาร</option><option value="2">พุธ</option><option value="3">พฤหัส</option><option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option></select>
       </div>
       <div class="form-group"><label>⏰ เวลาออก</label><input type="time" id="fTime" value="08:00"/></div>
       <div class="form-group"><label>🚗 ประเภทรถ</label>
-        <select id="fType">
-          <option value="truck">🚛 รถบรรทุก</option>
-          <option value="car">🚗 รถยนต์</option>
-          <option value="van">🚐 อื่นๆ</option>
-        </select>
+        <select id="fType"><option value="truck">🚛 รถบรรทุก</option><option value="car">🚗 รถยนต์</option><option value="van">🚐 อื่นๆ</option></select>
       </div>
       <div class="form-group"><label>🏭 ต้นทาง</label>
         <select id="fOrigin"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
@@ -168,18 +159,18 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
   <div class="modal">
     <h2>🏭 เลือกสาขาของคุณ</h2>
     <p>ระบบจะแจ้งเตือนเมื่อมีรถมาถึงสาขาของคุณ</p>
-    <button class="branch-btn" onclick="setBranch('HQ')"><span>🟣</span>HQ — ปทุมธานี</button>
-    <button class="branch-btn" onclick="setBranch('CNS')"><span>🔵</span>CNS — ปทุมธานี (ตะวันตก)</button>
-    <button class="branch-btn" onclick="setBranch('Sriracha')"><span>🔴</span>Sriracha — ชลบุรี</button>
-    <button class="branch-btn" onclick="setBranch('Lampoon')"><span>🟡</span>Lampoon — ลำพูน</button>
-    <button class="branch-btn" onclick="setBranch('Phitsanulok')"><span>🟢</span>Phitsanulok — พิษณุโลก</button>
+    <button class="branch-btn" onclick="setBranch('HQ')">🏢 HQ — ปทุมธานี (สำนักงานใหญ่)</button>
+    <button class="branch-btn" onclick="setBranch('CNS')">🏬 CNS — ปทุมธานี (คลังสินค้า)</button>
+    <button class="branch-btn" onclick="setBranch('Sriracha')">🏢 Sriracha — ชลบุรี</button>
+    <button class="branch-btn" onclick="setBranch('Lampoon')">🏢 Lampoon — ลำพูน</button>
+    <button class="branch-btn" onclick="setBranch('Phitsanulok')">🏢 Phitsanulok — พิษณุโลก</button>
   </div>
 </div>
 
 <div class="modal-bg" id="resetModal">
   <div class="modal">
     <h2>🗑️ Reset รอบรถทั้งหมด</h2>
-    <p>ใส่รหัสผ่านเพื่อลบรอบรถทั้งหมดในสัปดาห์นี้ (ไม่สามารถกู้คืนได้)</p>
+    <p>ใส่รหัสผ่านเพื่อลบรอบรถทั้งหมดในสัปดาห์นี้</p>
     <input class="pw-input" type="password" id="resetPw" placeholder="รหัสผ่าน..." onkeydown="if(event.key==='Enter')confirmReset()"/>
     <button class="btn-confirm" onclick="confirmReset()">🗑️ ยืนยัน Reset</button>
     <button style="width:100%;padding:9px;margin-top:8px;background:none;border:1.5px solid #E5E7EB;border-radius:var(--rs);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.9rem;color:var(--g7)" onclick="closeResetModal()">ยกเลิก</button>
@@ -187,8 +178,8 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 </div>
 
 <script>
-const SUPABASE_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
+const SUPABASE_URL='YOUR_SUPABASE_URL';
+const SUPABASE_KEY='YOUR_SUPABASE_ANON_KEY';
 const RESET_PASSWORD='itpoom';
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -196,423 +187,386 @@ const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
 const DAY_NAMES=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];
 const DAY_COLORS=['#D97706','#DB2777','#059669','#EA580C','#2563EB','#7C3AED','#DC2626'];
 
-// ── สาขา: ตำแหน่ง pixel บน canvas 480x520 ──
-// แยกกันชัดเจน ไม่ทับกัน
+// ── Canvas size ──
+const CW=560, CH=480;
+
+// ── สาขา: ตำแหน่งบน canvas ที่ทุกอันอยู่บนแผ่นดิน ──
 const BRANCHES = {
-  Lampoon:     { x:155, y: 68, color:'#EAB308', label:'Lampoon',     sub:'ลำพูน' },
-  Phitsanulok: { x:285, y:138, color:'#22C55E', label:'Phitsanulok', sub:'พิษณุโลก' },
-  CNS:         { x: 88, y:248, color:'#3B82F6', label:'CNS',         sub:'ปทุมธานี ตะวันตก' },
-  HQ:          { x:240, y:268, color:'#A855F7', label:'HQ',          sub:'ปทุมธานี' },
-  Sriracha:    { x:320, y:318, color:'#EF4444', label:'Sriracha',    sub:'ชลบุรี' },
+  Lampoon:     { x:148, y: 72, color:'#CA8A04', label:'Lampoon',     sub:'ลำพูน',     type:'office' },
+  Phitsanulok: { x:290, y:148, color:'#16A34A', label:'Phitsanulok', sub:'พิษณุโลก', type:'office' },
+  CNS:         { x:175, y:278, color:'#2563EB', label:'CNS',         sub:'ปทุมธานี',  type:'warehouse' },
+  HQ:          { x:270, y:292, color:'#7C3AED', label:'HQ',          sub:'สำนักงานใหญ่', type:'hq' },
+  Sriracha:    { x:355, y:330, color:'#DC2626', label:'Sriracha',    sub:'ชลบุรี',    type:'office' },
 };
 
-// ── วาดรูปแผนที่ไทย (ไม่มีจังหวัด สวยงาม) ──
-// outline อิงรูปจริง pixel บน 480x520
-const TH_OUTLINE = [
-  // ภาคเหนือ
-  [230,12],[245,18],[265,14],[280,22],[300,16],[318,28],[322,42],
-  [308,50],[295,44],[280,54],[272,68],[278,82],[268,90],[255,84],
-  [242,90],[235,82],[225,88],[218,78],[210,66],[215,52],[208,38],
-  [212,26],[225,18],[230,12],
-  // ต่อลงมาภาคอีสาน
-  [265,14],[278,22],[295,18],[315,24],[335,38],[348,55],[358,72],
-  [365,90],[370,110],[372,130],[368,150],[360,168],[350,182],
-  [340,195],[328,205],[315,212],[305,220],[295,228],[288,238],
-  // ภาคกลาง-ตะวันออก
-  [288,238],[295,250],[305,262],[310,275],[305,285],[295,292],
-  [285,298],[278,310],[272,322],[268,335],[265,348],
-  // ภาคใต้ตอนบน (ตัดออกไม่ให้ยาวเกิน)
-  [265,348],[258,360],[252,372],[248,385],[244,398],[242,412],[240,425],
-  // ฝั่งตะวันตก-ใต้
-  [240,425],[232,420],[225,410],[220,398],[216,385],[212,372],
-  [208,360],[205,348],[202,335],[198,322],[194,310],[190,298],
-  [185,285],[180,275],[175,262],[170,250],[165,238],
-  // ภาคกลางตะวันตก
-  [165,238],[158,225],[152,212],[148,200],[144,188],[140,175],
-  [137,162],[135,148],[133,135],[132,120],[131,105],[130,90],
-  [129,75],[130,60],[133,46],[138,34],[145,24],[155,16],
-  [168,12],[185,10],[200,12],[215,10],[225,12],[230,12]
+// ── outline ไทย (ครอบทุกสาขา ทั้ง CNS ซ้าย และ Sriracha ขวา) ──
+const TH = [
+  // เริ่มภาคเหนือตะวันตก
+  [118,18],[135,12],[155,8],[175,12],[195,8],[215,14],[235,10],[255,16],
+  [272,12],[292,8],[310,14],[328,10],[345,20],[360,30],[368,44],[372,58],
+  // ภาคเหนือตะวันออก-อีสาน
+  [368,58],[374,75],[376,92],[374,110],[370,128],[364,146],[356,162],
+  [346,176],[334,188],[322,198],[310,208],[298,216],[286,224],[276,232],
+  [268,240],[262,250],[258,262],[256,272],[258,284],[262,296],[264,308],
+  // ภาคกลาง-ใต้ตอนบน
+  [264,308],[260,320],[255,332],[250,344],[245,356],[240,368],
+  [238,380],[236,392],[234,404],[232,416],[230,428],[229,442],[228,458],
+  [227,472],[226,480],
+  // ปลายใต้ฝั่งตะวันตก
+  [226,480],[220,476],[216,465],[214,452],[212,440],[210,428],[208,416],
+  [206,404],[204,392],[202,380],[200,368],[198,356],[195,344],[192,332],
+  [189,320],[186,308],[182,296],[178,284],[174,272],[170,262],[166,252],
+  [162,242],[158,232],[154,222],[150,212],[146,202],[142,192],[138,182],
+  [134,172],[130,162],[126,152],[122,142],[118,132],[114,122],[110,112],
+  [107,102],[104,92],[102,82],[100,72],[99,62],[98,52],[99,42],[102,32],
+  [108,24],[118,18]
 ];
 
-// เส้นแม่น้ำ
+// แม่น้ำ
 const RIVERS = [
-  [[228,72],[232,90],[235,108],[238,125],[240,145],[242,165],[244,185],[246,205],[248,225],[250,248],[252,268]],
-  [[252,268],[255,285],[258,300]],
+  [[238,60],[242,80],[244,100],[246,120],[248,140],[250,160],[252,180],
+   [254,200],[256,220],[258,242],[260,264],[262,285],[264,308]],
 ];
 
-// ภูเขา (สามเหลี่ยมเล็กๆ)
-const MTNS = [
-  [145,52],[160,38],[175,52],
-  [168,70],[180,58],[192,70],
-  [118,120],[130,108],[142,120],
-  [320,55],[332,42],[344,55],
-  [335,80],[345,68],[355,80],
+// ป่า
+const FORESTS=[
+  {x:130,y:60,r:14},{x:155,y:90,r:12},{x:118,y:108,r:11},
+  {x:175,y:52,r:10},{x:200,y:72,r:11},{x:340,y:40,r:10},
+  {x:360,y:72,r:9},{x:318,y:90,r:10},{x:142,y:145,r:9},
+  {x:122,y:175,r:8},{x:310,y:170,r:8},{x:340,y:145,r:7},
 ];
 
-// ป่า (วงกลมเขียว)
-const FORESTS = [
-  {x:145,y:75,r:12},{x:170,y:95,r:10},{x:200,y:65,r:9},
-  {x:130,y:140,r:11},{x:350,y:60,r:10},{x:340,y:95,r:9},
-  {x:155,y:165,r:8},{x:310,y:135,r:8},
+// ภูเขา (x1,y1, peak, x2,y2)
+const MTNS=[
+  [116,58],[128,44],[140,58],
+  [138,90],[150,76],[162,90],
+  [104,120],[116,106],[128,120],
+  [340,30],[352,18],[364,30],
+  [355,60],[365,48],[375,60],
+  [320,110],[330,98],[340,110],
 ];
 
 let myBranch=localStorage.getItem('myBranch')||null;
 let schedules=[], notified=new Set(JSON.parse(localStorage.getItem('notified')||'[]'));
 let routes=[], histData=[];
-let canvas, ctx, CW=480, CH=440;
+let canvas, ctx;
 
 function initMap(){
   canvas=document.getElementById('mapCanvas');
-  setSize();
+  canvas.width=CW; canvas.height=CH;
+  setResponsive();
   ctx=canvas.getContext('2d');
   requestAnimationFrame(loop);
-  window.addEventListener('resize', setSize);
+  window.addEventListener('resize',setResponsive);
+}
+function setResponsive(){
+  const maxW=Math.min(document.querySelector('.map-wrap').clientWidth,720);
+  canvas.style.width=maxW+'px';
+  canvas.style.height=Math.round(CH*(maxW/CW))+'px';
 }
 
-function setSize(){
-  const maxW = Math.min(document.querySelector('.map-wrap').clientWidth, 720);
-  const scale = maxW / CW;
-  canvas.style.width = maxW + 'px';
-  canvas.style.height = Math.round(CH * scale) + 'px';
-  canvas.width = CW;
-  canvas.height = CH;
-}
+function loop(){ requestAnimationFrame(loop); if(!ctx)return; ctx.clearRect(0,0,CW,CH); drawBg(); drawRoutes(); drawBranches(); }
 
-function loop(){
-  requestAnimationFrame(loop);
-  if(!ctx) return;
-  ctx.clearRect(0,0,CW,CH);
-  drawBackground();
-  drawRoutes();
-  drawBranches();
-}
+function drawBg(){
+  // ทะเล
+  const sg=ctx.createLinearGradient(0,0,CW,CH);
+  sg.addColorStop(0,'#38BDF8'); sg.addColorStop(1,'#0369A1');
+  ctx.fillStyle=sg; ctx.fillRect(0,0,CW,CH);
 
-function drawBackground(){
-  // ── ทะเล gradient ──
-  const sea = ctx.createLinearGradient(0,0,CW,CH);
-  sea.addColorStop(0,'#0EA5E9');
-  sea.addColorStop(1,'#0369A1');
-  ctx.fillStyle = sea;
-  ctx.fillRect(0,0,CW,CH);
-
-  // grid เล็กๆ บนทะเล
-  ctx.save();
-  ctx.strokeStyle='rgba(255,255,255,.06)';
-  ctx.lineWidth=1;
-  for(let x=0;x<CW;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.stroke();}
-  for(let y=0;y<CH;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CW,y);ctx.stroke();}
+  // grid ทะเล
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+  for(let x=0;x<CW;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.stroke();}
+  for(let y=0;y<CH;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CW,y);ctx.stroke();}
   ctx.restore();
 
-  // ── แผ่นดิน shadow ──
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.35)';
-  ctx.shadowBlur=12; ctx.shadowOffsetX=4; ctx.shadowOffsetY=4;
-  ctx.beginPath();
-  TH_OUTLINE.forEach(([x,y],i)=> i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
-  ctx.closePath();
-  const land = ctx.createLinearGradient(130,10,370,440);
-  land.addColorStop(0,'#6EE7B7');
-  land.addColorStop(0.4,'#34D399');
-  land.addColorStop(0.75,'#10B981');
-  land.addColorStop(1,'#059669');
-  ctx.fillStyle=land;
-  ctx.fill();
-  ctx.restore();
+  // แผ่นดิน shadow
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=16; ctx.shadowOffsetX=5; ctx.shadowOffsetY=5;
+  ctx.beginPath(); TH.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.closePath();
+  const lg=ctx.createLinearGradient(100,8,380,480);
+  lg.addColorStop(0,'#86EFAC'); lg.addColorStop(0.35,'#4ADE80');
+  lg.addColorStop(0.65,'#22C55E'); lg.addColorStop(1,'#15803D');
+  ctx.fillStyle=lg; ctx.fill(); ctx.restore();
 
-  // ขอบ
-  ctx.beginPath();
-  TH_OUTLINE.forEach(([x,y],i)=> i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
-  ctx.closePath();
-  ctx.strokeStyle='#064E3B'; ctx.lineWidth=2; ctx.stroke();
+  // ขอบแผ่นดิน
+  ctx.beginPath(); TH.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.closePath();
+  ctx.strokeStyle='#14532D'; ctx.lineWidth=2; ctx.stroke();
 
-  // ── ป่า ──
+  // ป่า
   FORESTS.forEach(f=>{
-    ctx.save(); ctx.globalAlpha=0.55;
+    ctx.save(); ctx.globalAlpha=.5;
     ctx.fillStyle='#14532D';
-    ctx.beginPath();ctx.ellipse(f.x,f.y,f.r*1.4,f.r,0,0,Math.PI*2);ctx.fill();
-    // ต้นไม้เล็กๆ
+    ctx.beginPath();ctx.ellipse(f.x,f.y,f.r*1.4,f.r*.9,0,0,Math.PI*2);ctx.fill();
     for(let i=0;i<3;i++){
-      const tx=f.x+(i-1)*f.r*.8, ty=f.y;
+      const tx=f.x+(i-1)*f.r*.75,ty=f.y-2;
       ctx.fillStyle='#166534';
-      ctx.beginPath();ctx.arc(tx,ty-3,f.r*.35,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(tx,ty,f.r*.32,0,Math.PI*2);ctx.fill();
     }
     ctx.restore();
   });
 
-  // ── ภูเขา ──
+  // ภูเขา
   for(let i=0;i<MTNS.length;i+=3){
     const [x1,y1,x2,y2,x3,y3]=[MTNS[i][0],MTNS[i][1],MTNS[i+1][0],MTNS[i+1][1],MTNS[i+2][0],MTNS[i+2][1]];
     ctx.save();
-    ctx.fillStyle='#6B7280'; ctx.strokeStyle='#9CA3AF'; ctx.lineWidth=.8;
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.closePath();
-    ctx.fill();ctx.stroke();
-    // หิมะ
-    ctx.fillStyle='rgba(255,255,255,.5)';
-    ctx.beginPath();ctx.moveTo(x2-4,y2+6);ctx.lineTo(x2,y2);ctx.lineTo(x2+4,y2+6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#78716C'; ctx.strokeStyle='#A8A29E'; ctx.lineWidth=.8;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.45)';
+    ctx.beginPath();ctx.moveTo(x2-3,y2+5);ctx.lineTo(x2,y2);ctx.lineTo(x2+3,y2+5);ctx.closePath();ctx.fill();
     ctx.restore();
   }
 
-  // ── แม่น้ำ ──
-  RIVERS.forEach(river=>{
-    ctx.save();
-    ctx.strokeStyle='#7DD3FC'; ctx.lineWidth=2; ctx.globalAlpha=0.65;
-    ctx.setLineDash([4,3]);
-    ctx.beginPath();
-    river.forEach(([x,y],i)=> i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
-    ctx.stroke();
+  // แม่น้ำ
+  RIVERS.forEach(r=>{
+    ctx.save(); ctx.strokeStyle='#7DD3FC'; ctx.lineWidth=2; ctx.globalAlpha=.6;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath(); r.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.stroke();
     ctx.restore();
   });
 
-  // ── ป้ายทะเล ──
+  // ป้ายทะเล
+  ctx.save(); ctx.font='italic 11px Sarabun,sans-serif'; ctx.fillStyle='rgba(255,255,255,.7)'; ctx.textAlign='center';
+  ctx.fillText('อ่าวไทย',455,300); ctx.fillText('อันดามัน',65,330); ctx.restore();
+}
+
+// ── icon วาดด้วย canvas ──
+function drawIcon(x, y, type, color){
   ctx.save();
-  ctx.font='italic 11px Sarabun,sans-serif';
-  ctx.fillStyle='rgba(255,255,255,.7)'; ctx.textAlign='center';
-  ctx.fillText('อ่าวไทย', 390, 290);
-  ctx.fillText('อันดามัน', 78, 310);
-  ctx.restore();
-}
+  ctx.translate(x, y);
 
-// ── เส้นทางและรถ ──
-// แยกเส้นไป-กลับโดย offset ตั้งฉาก
-function offsetLine(fx,fy,tx,ty,offset){
-  const dx=tx-fx, dy=ty-fy;
-  const len=Math.sqrt(dx*dx+dy*dy)||1;
-  const nx=-dy/len*offset, ny=dx/len*offset;
-  return [fx+nx, fy+ny, tx+nx, ty+ny];
-}
-
-function drawRoutes(){
-  const now=Date.now();
-  routes=routes.filter(r=>{
-    const from=BRANCHES[r.from], to=BRANCHES[r.to];
-    if(!from||!to) return false;
-    const elapsed=now-r.startTime;
-    if(r.eta){
-      const [hh,mm]=r.eta.split(':').map(Number);
-      const etaDt=new Date(); etaDt.setHours(hh,mm,0,0);
-      if(now>etaDt.getTime()) return false;
-    } else {
-      if(elapsed>60000) return false;
-    }
-    r.progress=Math.min(1,elapsed/9000);
-
-    // offset +8 หรือ -8 ตามทิศทาง เพื่อแยกเส้นไป-กลับ
-    // ถ้า from > to ตาม key order ให้ offset ลบ
-    const keys=Object.keys(BRANCHES);
-    const fi=keys.indexOf(r.from), ti=keys.indexOf(r.to);
-    const off = fi < ti ? 8 : -8;
-    const [fx,fy,tx,ty]=offsetLine(from.x,from.y,to.x,to.y,off);
-
-    // shadow
-    ctx.save();
-    ctx.setLineDash([8,5]);
-    ctx.lineDashOffset=-(now/38)%26;
-    ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=5;
-    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
-    // เส้นหลัก
-    ctx.strokeStyle=r.color; ctx.lineWidth=3; ctx.globalAlpha=.92;
-    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
-    // หัวลูกศรที่ปลาย
-    const angle=Math.atan2(ty-fy,tx-fx);
-    const arrowX=fx+(tx-fx)*.85, arrowY=fy+(ty-fy)*.85;
-    ctx.globalAlpha=1;
-    ctx.fillStyle=r.color;
-    ctx.beginPath();
-    ctx.moveTo(arrowX+Math.cos(angle)*10, arrowY+Math.sin(angle)*10);
-    ctx.lineTo(arrowX+Math.cos(angle+2.4)*7, arrowY+Math.sin(angle+2.4)*7);
-    ctx.lineTo(arrowX+Math.cos(angle-2.4)*7, arrowY+Math.sin(angle-2.4)*7);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-
-    // รถ
-    const px=fx+(tx-fx)*r.progress;
-    const py=fy+(ty-fy)*r.progress;
-    drawVehicle(px,py,angle,r.color,r.vtype);
-    return true;
-  });
-}
-
-function drawVehicle(px,py,angle,color,type){
-  ctx.save();
-  ctx.translate(px,py); ctx.rotate(angle);
-  ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=5;
-
-  if(type==='truck'){
-    // ตัวใหญ่
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.roundRect(-18,-6,28,12,3);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.roundRect(8,-8,14,16,3);ctx.fill();ctx.stroke();
+  if(type==='hq'){
+    // สำนักงานใหญ่ — ตึกใหญ่มีธง
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    // ตึกหลัก
+    ctx.beginPath();ctx.roundRect(-11,-20,22,20,2);ctx.fill();ctx.stroke();
+    // หน้าต่าง
     ctx.fillStyle='#BAE6FD';
-    ctx.beginPath();ctx.roundRect(10,-6,9,6,2);ctx.fill();
-    ctx.fillStyle='#FFE87C';
-    ctx.beginPath();ctx.roundRect(20,-2,3,4,1);ctx.fill();
-    ctx.fillStyle='#1E293B';
-    [[-11,7],[-2,7],[10,7],[17,7]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3.8,3.8,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.5,1.5,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1E293B';
+    [[-7,-17],[-1,-17],[5,-17],[-7,-11],[-1,-11],[5,-11],[-7,-5],[-1,-5],[5,-5]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.roundRect(wx,wy,4,4,1);ctx.fill();
     });
-    ctx.save();ctx.globalAlpha=.35;ctx.fillStyle='#E5E7EB';
-    ctx.beginPath();ctx.ellipse(22,-9,3,4.5,0,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.ellipse(26,-13,2.5,3,0,0,Math.PI*2);ctx.fill();
-    ctx.restore();
-  } else if(type==='car'){
-    // เล็ก
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-11,-4,20,8,3);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.roundRect(-7,-8,13,6,3);ctx.fill();ctx.stroke();
+    // เสาธง
+    ctx.fillStyle='#fff';
+    ctx.fillRect(-1,-28,1.5,10);
+    // ธง
+    ctx.fillStyle='#EF4444';
+    ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(8,-25);ctx.lineTo(0,-22);ctx.closePath();ctx.fill();
+    // ป้าย HQ
+    ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-8,0,16,6,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 5px Sarabun,sans-serif';ctx.textAlign='center';
+    ctx.fillText('HQ',0,5);
+
+  }else if(type==='warehouse'){
+    // คลังสินค้า — โกดังหลังคาจั่ว
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    // ผนัง
+    ctx.beginPath();ctx.rect(-14,-12,28,14);ctx.fill();ctx.stroke();
+    // หลังคา
+    ctx.fillStyle=darken(color,20);
+    ctx.beginPath();ctx.moveTo(-16,-12);ctx.lineTo(0,-24);ctx.lineTo(16,-12);ctx.closePath();ctx.fill();ctx.stroke();
+    // ประตูโกดัง
+    ctx.fillStyle='#1E3A5F';
+    ctx.beginPath();ctx.roundRect(-5,-10,10,12,1);ctx.fill();
+    // แนวเส้นประตู
+    ctx.strokeStyle='#4B8EC8';ctx.lineWidth=.8;
+    ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,2);ctx.stroke();
+    // หน้าต่างข้าง
     ctx.fillStyle='#BAE6FD';
-    ctx.beginPath();ctx.roundRect(-5,-7,10,4,2);ctx.fill();
-    ctx.fillStyle='#FFE87C';
-    ctx.beginPath();ctx.roundRect(8,-1,2,3,1);ctx.fill();
-    ctx.fillStyle='#1E293B';
-    [[-6,5],[6,5]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();
+    [[-11,-10],[-11,-5],[7,-10],[7,-5]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.roundRect(wx,wy,3,3,1);ctx.fill();
     });
-  } else {
-    // van กลาง
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-14,-5,25,11,3);ctx.fill();ctx.stroke();
+
+  }else{
+    // office — อาคารทั่วไป
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(-9,-18,18,18,2);ctx.fill();ctx.stroke();
+    // หน้าต่าง
     ctx.fillStyle='#BAE6FD';
-    [[-9,-3],[-4,-3],[1,-3]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.roundRect(wx,wy,4,5,1);ctx.fill();
+    [[-6,-15],[1,-15],[-6,-9],[1,-9],[-6,-3],[1,-3]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.roundRect(wx,wy,4,4,1);ctx.fill();
     });
-    ctx.fillStyle='#FFE87C';
-    ctx.beginPath();ctx.roundRect(10,-1,2,3,1);ctx.fill();
-    ctx.fillStyle='#1E293B';
-    [[-8,6],[8,6]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();
-    });
+    // ประตู
+    ctx.fillStyle=darken(color,30);
+    ctx.beginPath();ctx.roundRect(-3,0,6,2,1);ctx.fill();
   }
   ctx.restore();
+}
+
+function darken(hex, pct){
+  let n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,((n>>16)&255)-pct);
+  const g=Math.max(0,((n>>8)&255)-pct);
+  const b=Math.max(0,(n&255)-pct);
+  return `rgb(${r},${g},${b})`;
 }
 
 function drawBranches(){
   const now=Date.now();
   Object.entries(BRANCHES).forEach(([k,b])=>{
-    const {x,y,color,label,sub}=b;
+    const {x,y,color,label,sub,type}=b;
     const pulse=Math.sin(now/700+x)*.5+.5;
 
     // pulse ring
-    ctx.save(); ctx.globalAlpha=pulse*.28;
-    ctx.fillStyle=color;
-    ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();
+    ctx.save(); ctx.globalAlpha=pulse*.25;
+    ctx.fillStyle=color; ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();
     ctx.restore();
 
-    // dot outline
-    ctx.fillStyle='rgba(0,0,0,.3)';
-    ctx.beginPath();ctx.arc(x+1,y+1,9,0,Math.PI*2);ctx.fill();
-    // dot
-    ctx.fillStyle=color;
-    ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2.5;
-    ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.stroke();
-    // center dot
-    ctx.fillStyle='rgba(255,255,255,.8)';
-    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+    // วาด icon
+    drawIcon(x, y-8, type, color);
+
+    // เส้นต่อ label
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
+    ctx.beginPath();ctx.moveTo(x,y-30);ctx.lineTo(x,y-42);ctx.stroke();
+    ctx.setLineDash([]);
 
     // label box
-    const fs=12;
+    const fs=11;
     ctx.font=`bold ${fs}px Sarabun,sans-serif`;
     ctx.textAlign='center';
-    const tw=Math.max(ctx.measureText(label).width, ctx.measureText(sub).width);
-    const pad=8, bw=tw+pad*2, bh=fs*2+10;
-    // ป้ายอยู่เหนือจุด
-    const bx=x-bw/2, by=y-bh-14;
+    const tw=Math.max(ctx.measureText(label).width, ctx.measureText(sub).width)+16;
+    const bh=fs*2+10, bx=x-tw/2, by=y-42-bh;
+
     // shadow
-    ctx.save(); ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=6;
-    ctx.fillStyle='rgba(15,5,30,.82)';
-    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,5);ctx.fill();
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8;
+    ctx.fillStyle='rgba(10,3,25,.88)';
+    ctx.beginPath();ctx.roundRect(bx,by,tw,bh,5);ctx.fill();
     ctx.restore();
     // ขอบสี
-    ctx.strokeStyle=color; ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,5);ctx.stroke();
+    ctx.strokeStyle=color; ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.roundRect(bx,by,tw,bh,5);ctx.stroke();
     // ชื่อ
     ctx.fillStyle='#fff'; ctx.font=`bold ${fs}px Sarabun,sans-serif`;
     ctx.fillText(label,x,by+fs+2);
     ctx.fillStyle=color; ctx.font=`${fs-1}px Sarabun,sans-serif`;
     ctx.fillText(sub,x,by+bh-4);
-    // เส้นต่อ
-    ctx.strokeStyle=color; ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(x,by+bh);ctx.lineTo(x,y-8);ctx.stroke();
   });
 }
 
-// ── route management ──
+// ── เส้นทาง offset ไป-กลับ ──
+function offsetLine(fx,fy,tx,ty,off){
+  const dx=tx-fx, dy=ty-fy, len=Math.sqrt(dx*dx+dy*dy)||1;
+  const nx=-dy/len*off, ny=dx/len*off;
+  return [fx+nx,fy+ny,tx+nx,ty+ny];
+}
+
+function drawRoutes(){
+  const now=Date.now();
+  routes=routes.filter(r=>{
+    const from=BRANCHES[r.from], to=BRANCHES[r.to]; if(!from||!to) return false;
+    const elapsed=now-r.startTime;
+    if(r.eta){const [hh,mm]=r.eta.split(':').map(Number);const ed=new Date();ed.setHours(hh,mm,0,0);if(now>ed.getTime())return false;}
+    else if(elapsed>60000) return false;
+    r.progress=Math.min(1,elapsed/9000);
+
+    const keys=Object.keys(BRANCHES);
+    const off=keys.indexOf(r.from)<keys.indexOf(r.to)?9:-9;
+    const [fx,fy,tx,ty]=offsetLine(from.x,from.y-8,to.x,to.y-8,off);
+    const angle=Math.atan2(ty-fy,tx-fx);
+
+    ctx.save();
+    ctx.setLineDash([8,5]); ctx.lineDashOffset=-(now/38)%26;
+    ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+    ctx.strokeStyle=r.color; ctx.lineWidth=3; ctx.globalAlpha=.92;
+    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+
+    // ลูกศร
+    const ax=fx+(tx-fx)*.82, ay=fy+(ty-fy)*.82;
+    ctx.globalAlpha=1; ctx.fillStyle=r.color; ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(ax+Math.cos(angle)*11,ay+Math.sin(angle)*11);
+    ctx.lineTo(ax+Math.cos(angle+2.5)*7,ay+Math.sin(angle+2.5)*7);
+    ctx.lineTo(ax+Math.cos(angle-2.5)*7,ay+Math.sin(angle-2.5)*7);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // รถ
+    drawVehicle(fx+(tx-fx)*r.progress, fy+(ty-fy)*r.progress, angle, r.color, r.vtype);
+    return true;
+  });
+}
+
+function drawVehicle(px,py,angle,color,type){
+  ctx.save(); ctx.translate(px,py); ctx.rotate(angle);
+  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=5;
+  if(type==='truck'){
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.roundRect(-18,-6,28,12,3);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(8,-8,14,16,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(10,-6,9,6,2);ctx.fill();
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(20,-2,3,4,1);ctx.fill();
+    ctx.fillStyle='#1E293B';
+    [[-11,7],[-2,7],[10,7],[17,7]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3.8,3.8,0,0,Math.PI*2);ctx.fill();
+    });
+    ctx.save();ctx.globalAlpha=.3;ctx.fillStyle='#E5E7EB';
+    ctx.beginPath();ctx.ellipse(22,-9,3,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  }else if(type==='car'){
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-11,-4,20,8,3);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(-7,-8,13,6,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(-5,-7,10,4,2);ctx.fill();
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(8,-1,2,3,1);ctx.fill();
+    ctx.fillStyle='#1E293B';
+    [[-6,5],[6,5]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();});
+  }else{
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-14,-5,25,11,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD';
+    [[-9,-3],[-4,-3],[1,-3]].forEach(([wx,wy])=>{ctx.beginPath();ctx.roundRect(wx,wy,4,5,1);ctx.fill();});
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(10,-1,2,3,1);ctx.fill();
+    ctx.fillStyle='#1E293B';
+    [[-8,6],[8,6]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();});
+  }
+  ctx.restore();
+}
+
 function addRoute(from,to,eta,vtype){
   const palette=['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF922B','#CC5DE8','#FF8787','#74C0FC'];
-  const color=palette[Math.floor(Math.random()*palette.length)];
-  // ไม่ลบ route เดิม ถ้าเป็น pair เดียวกัน ให้อยู่คู่กัน (ไป-กลับ)
-  routes.push({from,to,color,vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null});
+  routes.push({from,to,color:palette[Math.floor(Math.random()*palette.length)],
+    vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null});
 }
-
 function rebuildRoutes(){
   routes=[];
-  const now=new Date(), ti=now.getDay()===0?6:now.getDay()-1;
+  const now=new Date(),ti=now.getDay()===0?6:now.getDay()-1;
   schedules.filter(s=>!s.cancelled&&s.day_index===ti).forEach(s=>{
-    if(s.eta){
-      const [h,m]=s.eta.split(':').map(Number);
-      const ed=new Date();ed.setHours(h,m,0,0);
-      if(ed>now) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');
-    } else {
-      addRoute(s.origin,s.destination,null,s.vehicle_type||'van');
-    }
+    if(s.eta){const [h,m]=s.eta.split(':').map(Number);const ed=new Date();ed.setHours(h,m,0,0);if(ed>now)addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');}
+    else addRoute(s.origin,s.destination,null,s.vehicle_type||'van');
   });
 }
 
-// ── SUPABASE ──
 async function refreshData(){
   const {data,error}=await sb.from('schedules').select('*').eq('week_key',getWeekKey()).order('day_index').order('time');
   if(error){showToast('❌ โหลดข้อมูลไม่สำเร็จ','err');return;}
-  schedules=data||[];
-  renderWeek(schedules);
-  rebuildRoutes();
+  schedules=data||[]; renderWeek(schedules); rebuildRoutes();
   document.getElementById('lastUpdate').textContent=`อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
-  await loadHistoryWeeks();
-  checkNotifications();
+  await loadHistoryWeeks(); checkNotifications();
 }
-
 async function submitSchedule(){
   const day=parseInt(document.getElementById('fDay').value);
-  const time=document.getElementById('fTime').value;
-  const type=document.getElementById('fType').value;
-  const origin=document.getElementById('fOrigin').value;
-  const dest=document.getElementById('fDest').value;
-  const eta=document.getElementById('fEta').value;
-  const note=document.getElementById('fNote').value.trim();
+  const time=document.getElementById('fTime').value, type=document.getElementById('fType').value;
+  const origin=document.getElementById('fOrigin').value, dest=document.getElementById('fDest').value;
+  const eta=document.getElementById('fEta').value, note=document.getElementById('fNote').value.trim();
   if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
-  const {error}=await sb.from('schedules').insert({
-    week_key:getWeekKey(),day_index:day,day_name:DAY_NAMES[day],
-    time,vehicle_type:type,origin,destination:dest,
-    eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()
-  });
+  const {error}=await sb.from('schedules').insert({week_key:getWeekKey(),day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
   addRoute(origin,dest,eta||null,type);
   showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest}`);
-  document.getElementById('fNote').value='';
-  await refreshData();
+  document.getElementById('fNote').value=''; await refreshData();
 }
-
 async function cancelSchedule(id){
   if(!confirm('ยืนยันยกเลิกรอบรถนี้?'))return;
   await sb.from('schedules').update({cancelled:true}).eq('id',id);
-  showToast('❌ ยกเลิกรอบรถแล้ว');
-  await refreshData();
+  showToast('❌ ยกเลิกรอบรถแล้ว'); await refreshData();
 }
-
 function openResetModal(){document.getElementById('resetModal').classList.add('open');document.getElementById('resetPw').value='';setTimeout(()=>document.getElementById('resetPw').focus(),100);}
 function closeResetModal(){document.getElementById('resetModal').classList.remove('open');}
 async function confirmReset(){
   if(document.getElementById('resetPw').value!==RESET_PASSWORD){showToast('❌ รหัสผ่านไม่ถูกต้อง','err');return;}
   const {error}=await sb.from('schedules').delete().eq('week_key',getWeekKey());
   if(error){showToast('❌ Reset ไม่สำเร็จ','err');return;}
-  closeResetModal(); routes=[];
-  showToast('🗑️ Reset สำเร็จ');
-  await refreshData();
+  closeResetModal(); routes=[]; showToast('🗑️ Reset สำเร็จ'); await refreshData();
 }
-
 function typeLabel(t){return t==='truck'?'🚛 รถบรรทุก':t==='car'?'🚗 รถยนต์':'🚐 อื่นๆ';}
-
 function renderWeek(data){
   const grid=document.getElementById('weekGrid');
   const byDay={};for(let i=0;i<7;i++) byDay[i]=[];
@@ -621,17 +575,11 @@ function renderWeek(data){
   for(let d=0;d<7;d++){
     const items=byDay[d].sort((a,b)=>a.time.localeCompare(b.time));
     const row=document.createElement('div');row.className='day-row';
-    row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length} รอบ</span></div>
-      <div class="cards-wrap" id="cw-${d}">${!items.length?'<span class="empty-msg">— ไม่มีรอบรถ —</span>':''}</div>`;
+    row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length} รอบ</span></div><div class="cards-wrap" id="cw-${d}">${!items.length?'<span class="empty-msg">— ไม่มีรอบรถ —</span>':''}</div>`;
     grid.appendChild(row);
     items.forEach(s=>{
       const c=document.createElement('div');c.className='tc';c.draggable=true;
-      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button>
-        <div class="tc-time">${s.time}</div>
-        <div class="tc-route">${s.origin} → ${s.destination}</div>
-        ${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}
-        ${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}
-        ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
       c.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);document.getElementById('crusherZone').classList.add('hover');});
       c.addEventListener('dragend',()=>document.getElementById('crusherZone').classList.remove('hover'));
       document.getElementById('cw-'+d).appendChild(c);
@@ -641,7 +589,6 @@ function renderWeek(data){
   cz.ondragover=e=>e.preventDefault();
   cz.ondrop=e=>{e.preventDefault();const id=e.dataTransfer.getData('sid');if(id)cancelSchedule(id);cz.classList.remove('hover');};
 }
-
 async function loadHistoryWeeks(){
   const {data}=await sb.from('schedules').select('week_key').order('week_key',{ascending:false});
   if(!data)return;
@@ -658,18 +605,11 @@ async function loadHistory(){
   for(let d=0;d<7;d++){
     const items=byDay[d];if(!items.length)continue;
     const row=document.createElement('div');row.className='day-row';
-    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}">
-      <div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div>
-      <div class="tc-route">${s.origin} → ${s.destination}</div>
-      ${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}
-      ${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}
-      ${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}
-    </div>`).join('');
+    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}"><div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}</div>`).join('');
     row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length}</span></div><div class="cards-wrap">${html}</div>`;
     container.appendChild(row);
   }
 }
-
 function exportToExcel(data,filename){
   if(!data||!data.length){showToast('⚠️ ไม่มีข้อมูล','err');return;}
   const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
@@ -677,29 +617,18 @@ function exportToExcel(data,filename){
   XLSX.writeFile(wb,filename+'.xlsx');showToast('📊 Export สำเร็จ!');
 }
 function exportCurrentWeek(){exportToExcel(schedules,`TSI_รอบรถ_${getWeekKey()}`);}
-function exportHistory(){
-  if(!histData.length){showToast('⚠️ กด "ดูข้อมูล" ก่อน','err');return;}
-  exportToExcel(histData,`TSI_ประวัติ_${document.getElementById('histWeekSel').value}`);
-}
-
+function exportHistory(){if(!histData.length){showToast('⚠️ กด "ดูข้อมูล" ก่อน','err');return;}exportToExcel(histData,`TSI_ประวัติ_${document.getElementById('histWeekSel').value}`);}
 function checkNotifications(){
   if(!myBranch)return;
   const now=new Date(),ti=now.getDay()===0?6:now.getDay()-1;
   schedules.filter(s=>!s.cancelled&&s.destination===myBranch&&s.day_index===ti&&s.eta).forEach(s=>{
     if(notified.has(s.id))return;
-    const [h,m]=s.eta.split(':').map(Number);
-    const eta=new Date();eta.setHours(h,m,0,0);
+    const [h,m]=s.eta.split(':').map(Number);const eta=new Date();eta.setHours(h,m,0,0);
     const mins=(eta-now)/60000;
-    if(mins>=13&&mins<=17){
-      notified.add(s.id);localStorage.setItem('notified',JSON.stringify([...notified]));
-      showToast(`🔔 รถกำลังจะถึง ${myBranch}! ${s.origin}→${s.destination} คาดถึง ${s.eta}`);
-    }
+    if(mins>=13&&mins<=17){notified.add(s.id);localStorage.setItem('notified',JSON.stringify([...notified]));showToast(`🔔 รถกำลังจะถึง ${myBranch}! ${s.origin}→${s.destination} คาดถึง ${s.eta}`);}
   });
 }
-
-function subscribeRealtime(){
-  sb.channel('sc').on('postgres_changes',{event:'*',schema:'public',table:'schedules'},()=>refreshData()).subscribe();
-}
+function subscribeRealtime(){sb.channel('sc').on('postgres_changes',{event:'*',schema:'public',table:'schedules'},()=>refreshData()).subscribe();}
 function openBranchModal(){document.getElementById('branchModal').classList.add('open');}
 function setBranch(b){myBranch=b;localStorage.setItem('myBranch',b);document.getElementById('navBranch').textContent=`🏭 ${b}`;document.getElementById('branchModal').classList.remove('open');showToast(`✅ ตั้งสาขา ${b}`);}
 function showToast(msg,type='ok'){
@@ -712,21 +641,16 @@ function showTab(t,el){
   document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
   document.getElementById('page-'+t).classList.add('active');el.classList.add('active');
 }
-function getWeekKey(){
-  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10);
-}
+function getWeekKey(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10);}
 function fmtWeek(wk){const d=new Date(wk);return `จันทร์ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;}
-
 window.onload=async()=>{
   initMap();
-  if(!myBranch) openBranchModal();
+  if(!myBranch)openBranchModal();
   else document.getElementById('navBranch').textContent=`🏭 ${myBranch}`;
   document.getElementById('fDay').value=new Date().getDay()===0?6:new Date().getDay()-1;
   document.getElementById('fDest').value='CNS';
-  await refreshData();
-  subscribeRealtime();
-  setInterval(checkNotifications,30000);
-  setInterval(refreshData,30000);
+  await refreshData(); subscribeRealtime();
+  setInterval(checkNotifications,30000); setInterval(refreshData,30000);
 };
 </script>
 </body>
