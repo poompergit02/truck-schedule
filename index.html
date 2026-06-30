@@ -224,19 +224,29 @@ const TH = [
 
 // แม่น้ำ
 const RIVERS = [
-  [[238,60],[242,80],[244,100],[246,120],[248,140],[250,160],[252,180],
-   [254,200],[256,220],[258,242],[260,264],[262,285],[264,308]],
+// แม่น้ำ — กระจายทั่วพื้นที่
+const RIVERS = [
+  [[238,20],[242,50],[244,80],[246,110],[248,140],[250,170],[252,200],
+   [254,230],[256,260],[258,290],[260,320],[262,350],[264,380],[264,420],[262,460]],
+  [[100,30],[110,60],[105,95],[115,130],[108,165],[120,200]],
+  [[400,40],[395,80],[405,120],[398,160],[408,200],[400,240]],
+  [[160,300],[180,330],[200,360],[220,390]],
 ];
 
-// ป่า
+// ป่า — กระจายทั่วทุกมุม
 const FORESTS=[
   {x:130,y:60,r:14},{x:155,y:90,r:12},{x:118,y:108,r:11},
   {x:175,y:52,r:10},{x:200,y:72,r:11},{x:340,y:40,r:10},
   {x:360,y:72,r:9},{x:318,y:90,r:10},{x:142,y:145,r:9},
   {x:122,y:175,r:8},{x:310,y:170,r:8},{x:340,y:145,r:7},
+  {x:60,y:200,r:10},{x:50,y:250,r:9},{x:70,y:320,r:11},
+  {x:460,y:150,r:10},{x:480,y:220,r:9},{x:450,y:280,r:10},
+  {x:200,y:380,r:9},{x:300,y:400,r:10},{x:380,y:380,r:8},
+  {x:90,y:380,r:8},{x:420,y:340,r:9},{x:250,y:440,r:9},
+  {x:40,y:120,r:8},{x:500,y:90,r:9},{x:480,y:340,r:8},
 ];
 
-// ภูเขา (x1,y1, peak, x2,y2)
+// ภูเขา — กระจายทั่วพื้นที่ (groups of 3: peak triangle)
 const MTNS=[
   [116,58],[128,44],[140,58],
   [138,90],[150,76],[162,90],
@@ -244,6 +254,12 @@ const MTNS=[
   [340,30],[352,18],[364,30],
   [355,60],[365,48],[375,60],
   [320,110],[330,98],[340,110],
+  [60,160],[72,146],[84,160],
+  [440,180],[452,166],[464,180],
+  [200,420],[212,406],[224,420],
+  [350,420],[362,406],[374,420],
+  [30,300],[42,286],[54,300],
+  [470,260],[482,246],[494,260],
 ];
 
 let myBranch=localStorage.getItem('myBranch')||null;
@@ -268,21 +284,14 @@ function setResponsive(){
 function loop(){ requestAnimationFrame(loop); if(!ctx)return; ctx.clearRect(0,0,CW,CH); drawBg(); drawRoutes(); drawBranches(); }
 
 function drawBg(){
-  // พื้นหลังสีเดียว (ไม่เป็นทะเล)
-  ctx.fillStyle='#E0E7FF';
+  // พื้นหลังสีเขียวเต็มพื้นที่ (ไม่มีทะเล ไม่มีพื้นสีอื่น)
+  const bgGrad=ctx.createLinearGradient(0,0,CW,CH);
+  bgGrad.addColorStop(0,'#86EFAC');
+  bgGrad.addColorStop(0.4,'#4ADE80');
+  bgGrad.addColorStop(0.7,'#22C55E');
+  bgGrad.addColorStop(1,'#15803D');
+  ctx.fillStyle=bgGrad;
   ctx.fillRect(0,0,CW,CH);
-
-  // แผ่นดิน shadow
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=16; ctx.shadowOffsetX=5; ctx.shadowOffsetY=5;
-  ctx.beginPath(); TH.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.closePath();
-  const lg=ctx.createLinearGradient(100,8,380,480);
-  lg.addColorStop(0,'#86EFAC'); lg.addColorStop(0.35,'#4ADE80');
-  lg.addColorStop(0.65,'#22C55E'); lg.addColorStop(1,'#15803D');
-  ctx.fillStyle=lg; ctx.fill(); ctx.restore();
-
-  // ขอบแผ่นดิน
-  ctx.beginPath(); TH.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)); ctx.closePath();
-  ctx.strokeStyle='#14532D'; ctx.lineWidth=2; ctx.stroke();
 
   // ป่า
   FORESTS.forEach(f=>{
@@ -510,10 +519,10 @@ function drawVehicle(px,py,angle,color,type){
   ctx.restore();
 }
 
-function addRoute(from,to,eta,vtype){
-  const palette=['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF922B','#CC5DE8','#FF8787','#74C0FC'];
-  routes.push({from,to,color:palette[Math.floor(Math.random()*palette.length)],
-    vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null});
+function addRoute(from,to,eta,vtype,dayIdx){
+  const color = DAY_COLORS[dayIdx] || '#7C3AED';
+  routes.push({from,to,color,
+    vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null,dayIdx});
 }
 function rebuildRoutes(){
   // เก็บ route ที่กำลังวิ่งอยู่ (ยังไม่ครบ animation) ไว้ ไม่ลบทิ้ง
@@ -529,9 +538,9 @@ function rebuildRoutes(){
     if(s.eta){
       const [h,m]=s.eta.split(':').map(Number);
       const ed=new Date();ed.setHours(h,m,0,0);
-      if(ed>today) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');
+      if(ed>today) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van',s.day_index);
     } else {
-      addRoute(s.origin,s.destination,null,s.vehicle_type||'van');
+      addRoute(s.origin,s.destination,null,s.vehicle_type||'van',s.day_index);
     }
   });
 }
@@ -551,7 +560,7 @@ async function submitSchedule(){
   if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
   const {error}=await sb.from('schedules').insert({week_key:getWeekKey(),day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
-  addRoute(origin,dest,eta||null,type);
+  addRoute(origin,dest,eta||null,type,day);
   showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest}`);
   document.getElementById('fNote').value=''; await refreshData();
 }
