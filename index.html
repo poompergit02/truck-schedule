@@ -268,16 +268,9 @@ function setResponsive(){
 function loop(){ requestAnimationFrame(loop); if(!ctx)return; ctx.clearRect(0,0,CW,CH); drawBg(); drawRoutes(); drawBranches(); }
 
 function drawBg(){
-  // ทะเล
-  const sg=ctx.createLinearGradient(0,0,CW,CH);
-  sg.addColorStop(0,'#38BDF8'); sg.addColorStop(1,'#0369A1');
-  ctx.fillStyle=sg; ctx.fillRect(0,0,CW,CH);
-
-  // grid ทะเล
-  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
-  for(let x=0;x<CW;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.stroke();}
-  for(let y=0;y<CH;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CW,y);ctx.stroke();}
-  ctx.restore();
+  // พื้นหลังสีเดียว (ไม่เป็นทะเล)
+  ctx.fillStyle='#E0E7FF';
+  ctx.fillRect(0,0,CW,CH);
 
   // แผ่นดิน shadow
   ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=16; ctx.shadowOffsetX=5; ctx.shadowOffsetY=5;
@@ -323,9 +316,6 @@ function drawBg(){
     ctx.restore();
   });
 
-  // ป้ายทะเล
-  ctx.save(); ctx.font='italic 11px Sarabun,sans-serif'; ctx.fillStyle='rgba(255,255,255,.7)'; ctx.textAlign='center';
-  ctx.fillText('อ่าวไทย',455,300); ctx.fillText('อันดามัน',65,330); ctx.restore();
 }
 
 // ── icon วาดด้วย canvas ──
@@ -526,11 +516,23 @@ function addRoute(from,to,eta,vtype){
     vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null});
 }
 function rebuildRoutes(){
-  routes=[];
-  const now=new Date(),ti=now.getDay()===0?6:now.getDay()-1;
+  // เก็บ route ที่กำลังวิ่งอยู่ (ยังไม่ครบ animation) ไว้ ไม่ลบทิ้ง
+  const now=Date.now();
+  const stillAnimating = routes.filter(r => (now - r.startTime) < 9000);
+
+  routes=[...stillAnimating];
+  const today=new Date(), ti=today.getDay()===0?6:today.getDay()-1;
   schedules.filter(s=>!s.cancelled&&s.day_index===ti).forEach(s=>{
-    if(s.eta){const [h,m]=s.eta.split(':').map(Number);const ed=new Date();ed.setHours(h,m,0,0);if(ed>now)addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');}
-    else addRoute(s.origin,s.destination,null,s.vehicle_type||'van');
+    // อย่าเพิ่มซ้ำถ้ามีอยู่แล้ว (จาก stillAnimating)
+    const exists = routes.some(r=>r.from===s.origin&&r.to===s.destination);
+    if(exists) return;
+    if(s.eta){
+      const [h,m]=s.eta.split(':').map(Number);
+      const ed=new Date();ed.setHours(h,m,0,0);
+      if(ed>today) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van');
+    } else {
+      addRoute(s.origin,s.destination,null,s.vehicle_type||'van');
+    }
   });
 }
 
