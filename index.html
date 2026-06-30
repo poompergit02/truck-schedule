@@ -43,6 +43,12 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.35)}
 .week-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .week-hdr h2{font-size:1rem;font-weight:700;color:var(--p9)}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.btn-weeknav{padding:7px 14px;background:var(--p1);color:var(--p7);border:1.5px solid var(--p4);border-radius:var(--rs);font-size:.85rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;transition:.2s}
+.btn-weeknav:hover{background:var(--p4);color:#fff}
+.btn-weeknav.today{background:var(--p5);color:#fff;border-color:var(--p5)}
+.btn-weeknav.today:hover{background:var(--p7)}
+#weekJump{padding:7px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.85rem;background:#fff;outline:none;color:var(--g7)}
 .btn-refresh{padding:7px 16px;background:var(--p5);color:#fff;border:none;border-radius:var(--rs);font-size:.85rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600}
 .crusher-bar{background:linear-gradient(90deg,#3B0764,#6B21A8);border-radius:var(--rs);padding:9px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .crusher-bar span{color:#DDD6FE;font-size:.82rem;flex:1}
@@ -105,8 +111,8 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
   <div class="form-card">
     <h2>➕ เพิ่มรอบรถ</h2>
     <div class="form-grid">
-      <div class="form-group"><label>📅 วัน</label>
-        <select id="fDay"><option value="0">จันทร์</option><option value="1">อังคาร</option><option value="2">พุธ</option><option value="3">พฤหัส</option><option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option></select>
+      <div class="form-group"><label>📅 วันที่</label>
+        <input type="date" id="fDate"/>
       </div>
       <div class="form-group"><label>⏰ เวลาออก</label><input type="time" id="fTime" value="08:00"/></div>
       <div class="form-group"><label>🚗 ประเภทรถ</label>
@@ -121,6 +127,7 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
       </div>
       <div class="form-group"><label>🕐 คาดถึง (ETA)</label><input type="time" id="fEta"/></div>
     </div>
+    <div class="form-group" style="margin-bottom:4px"><span id="fDateHint" style="font-size:.78rem;color:var(--p7);font-weight:600"></span></div>
     <div class="form-group" style="margin-bottom:12px"><label>📝 หมายเหตุ</label>
       <input type="text" id="fNote" placeholder="เช่น สินค้าด่วน..." maxlength="80"/>
     </div>
@@ -130,11 +137,17 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 
 <div class="page" id="page-week">
   <div class="week-hdr">
-    <div><h2>📅 ตารางสัปดาห์นี้</h2><div class="update-lbl" id="lastUpdate"></div></div>
+    <div><h2 id="weekTitle">📅 ตารางสัปดาห์นี้</h2><div class="update-lbl" id="lastUpdate"></div></div>
     <div style="display:flex;gap:8px">
       <button class="btn-export" onclick="exportCurrentWeek()">📊 Excel</button>
       <button class="btn-refresh" onclick="refreshData()">🔄 Refresh</button>
     </div>
+  </div>
+  <div class="week-nav">
+    <button class="btn-weeknav" onclick="changeWeek(-1)">◀ สัปดาห์ก่อน</button>
+    <button class="btn-weeknav today" onclick="goToCurrentWeek()">📍 สัปดาห์นี้</button>
+    <input type="date" id="weekJump" onchange="jumpToWeek(this.value)"/>
+    <button class="btn-weeknav" onclick="changeWeek(1)">สัปดาห์ถัดไป ▶</button>
   </div>
   <div class="crusher-bar">
     <span>⚙️ ลากการ์ดรถมาวางที่เครื่องบด → ยกเลิกรอบ</span>
@@ -264,6 +277,7 @@ let myBranch=localStorage.getItem('myBranch')||null;
 let schedules=[], notified=new Set(JSON.parse(localStorage.getItem('notified')||'[]'));
 let routes=[], histData=[];
 let canvas, ctx;
+let currentWeekKey = getMondayKey(new Date()); // สัปดาห์ที่กำลังดูอยู่ (เปลี่ยนได้ด้วยปุ่มเลื่อนสัปดาห์)
 
 function initMap(){
   canvas=document.getElementById('mapCanvas');
@@ -450,9 +464,18 @@ function drawRoutes(){
   routes=routes.filter(r=>{
     const from=BRANCHES[r.from], to=BRANCHES[r.to]; if(!from||!to) return false;
     const elapsed=now-r.startTime;
-    if(r.eta){const [hh,mm]=r.eta.split(':').map(Number);const ed=new Date();ed.setHours(hh,mm,0,0);if(now>ed.getTime())return false;}
-    else if(elapsed>60000) return false;
-    r.progress=Math.min(1,elapsed/9000);
+    if(r.eta){
+      // มี ETA: รถวิ่งครั้งเดียวจนถึงเวลา ETA จริง แล้วหายไป
+      const [hh,mm]=r.eta.split(':').map(Number);
+      const ed=new Date();ed.setHours(hh,mm,0,0);
+      if(now>ed.getTime())return false;
+      r.progress=Math.min(1,elapsed/9000);
+    } else {
+      // ไม่มี ETA: วิ่งวนซ้ำตลอดเวลา (loop) เพื่อให้เห็นภาพรวมทั้งสัปดาห์อยู่เสมอ
+      const cycle = 7000; // 7 วิ วิ่งไปกลับ + พัก
+      const t = elapsed % cycle;
+      r.progress = t < 5000 ? Math.min(1, t/5000) : 1; // วิ่ง 5 วิ แล้วจอดพัก 2 วิ ก่อนเริ่มรอบใหม่
+    }
 
     const keys=Object.keys(BRANCHES);
     const off=keys.indexOf(r.from)<keys.indexOf(r.to)?9:-9;
@@ -528,16 +551,22 @@ function rebuildRoutes(){
   const stillAnimating = routes.filter(r => (now - r.startTime) < 9000);
 
   routes=[...stillAnimating];
-  const today=new Date(), ti=today.getDay()===0?6:today.getDay()-1;
-  schedules.filter(s=>!s.cancelled&&s.day_index===ti).forEach(s=>{
+  const isViewingCurrentWeek = currentWeekKey === getMondayKey(new Date());
+  const today=new Date();
+
+  // แสดงรอบรถ "ทุกวัน" ของสัปดาห์ที่กำลังดูอยู่ (ไม่ใช่แค่วันนี้)
+  schedules.filter(s=>!s.cancelled).forEach(s=>{
     // อย่าเพิ่มซ้ำถ้ามีอยู่แล้ว (จาก stillAnimating)
-    const exists = routes.some(r=>r.from===s.origin&&r.to===s.destination);
+    const exists = routes.some(r=>r.from===s.origin&&r.to===s.destination&&r.dayIdx===s.day_index);
     if(exists) return;
-    if(s.eta){
+
+    if(isViewingCurrentWeek && s.day_index===(today.getDay()===0?6:today.getDay()-1) && s.eta){
+      // วันนี้ + มี ETA: เคลื่อนไหวจนกว่าจะถึง ETA จริง
       const [h,m]=s.eta.split(':').map(Number);
       const ed=new Date();ed.setHours(h,m,0,0);
       if(ed>today) addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van',s.day_index);
     } else {
+      // วันอื่นๆ ในสัปดาห์ หรือไม่มี ETA: แสดงเป็นรถวิ่งวนซ้ำให้เห็นภาพรวมทั้งสัปดาห์
       addRoute(s.origin,s.destination,null,s.vehicle_type||'van',s.day_index);
     }
   });
@@ -548,19 +577,31 @@ async function refreshData(){
   if(error){showToast('❌ โหลดข้อมูลไม่สำเร็จ','err');return;}
   schedules=data||[]; renderWeek(schedules); rebuildRoutes();
   document.getElementById('lastUpdate').textContent=`อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
+  updateWeekTitle();
   await loadHistoryWeeks(); checkNotifications();
 }
 async function submitSchedule(){
-  const day=parseInt(document.getElementById('fDay').value);
+  const dateStr=document.getElementById('fDate').value;
+  if(!dateStr){showToast('⚠️ กรุณาเลือกวันที่','err');return;}
+  const picked=new Date(dateStr+'T00:00:00');
+  const day = picked.getDay()===0 ? 6 : picked.getDay()-1; // 0=จันทร์...6=อาทิตย์
+  const scheduleWeekKey = getMondayKey(picked);
   const time=document.getElementById('fTime').value, type=document.getElementById('fType').value;
   const origin=document.getElementById('fOrigin').value, dest=document.getElementById('fDest').value;
   const eta=document.getElementById('fEta').value, note=document.getElementById('fNote').value.trim();
   if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
-  const {error}=await sb.from('schedules').insert({week_key:getWeekKey(),day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()});
+  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
-  addRoute(origin,dest,eta||null,type,day);
-  showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest}`);
-  document.getElementById('fNote').value=''; await refreshData();
+  showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest} วันที่ ${picked.getDate()}/${picked.getMonth()+1}`);
+  document.getElementById('fNote').value='';
+
+  // ถ้าสัปดาห์ที่เพิ่มตรงกับสัปดาห์ที่กำลังดูอยู่ ให้รีเฟรชหน้าจอทันที (รวมแสดงรถวิ่ง)
+  if(scheduleWeekKey===currentWeekKey){
+    addRoute(origin,dest,eta||null,type,day);
+    await refreshData();
+  } else {
+    showToast(`📌 บันทึกไว้ในสัปดาห์ ${fmtWeek(scheduleWeekKey)} แล้ว — กดดูได้ที่ปุ่มเลื่อนสัปดาห์`);
+  }
 }
 async function cancelSchedule(id){
   if(!confirm('ยืนยันยกเลิกรอบรถนี้?'))return;
@@ -627,10 +668,21 @@ function exportToExcel(data,filename){
 }
 function exportCurrentWeek(){exportToExcel(schedules,`TSI_รอบรถ_${getWeekKey()}`);}
 function exportHistory(){if(!histData.length){showToast('⚠️ กด "ดูข้อมูล" ก่อน','err');return;}exportToExcel(histData,`TSI_ประวัติ_${document.getElementById('histWeekSel').value}`);}
-function checkNotifications(){
+async function checkNotifications(){
   if(!myBranch)return;
-  const now=new Date(),ti=now.getDay()===0?6:now.getDay()-1;
-  schedules.filter(s=>!s.cancelled&&s.destination===myBranch&&s.day_index===ti&&s.eta).forEach(s=>{
+  const now=new Date(), ti=now.getDay()===0?6:now.getDay()-1;
+  const realCurrentWeekKey = getMondayKey(now);
+
+  // ใช้ schedules ที่โหลดไว้แล้วถ้ากำลังดูสัปดาห์ปัจจุบันอยู่ ไม่งั้นค่อยดึงข้อมูลสัปดาห์ปัจจุบันแยกต่างหาก
+  let todaysSchedules;
+  if(currentWeekKey === realCurrentWeekKey){
+    todaysSchedules = schedules;
+  } else {
+    const {data} = await sb.from('schedules').select('*').eq('week_key', realCurrentWeekKey);
+    todaysSchedules = data || [];
+  }
+
+  todaysSchedules.filter(s=>!s.cancelled&&s.destination===myBranch&&s.day_index===ti&&s.eta).forEach(s=>{
     if(notified.has(s.id))return;
     const [h,m]=s.eta.split(':').map(Number);const eta=new Date();eta.setHours(h,m,0,0);
     const mins=(eta-now)/60000;
@@ -650,17 +702,66 @@ function showTab(t,el){
   document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
   document.getElementById('page-'+t).classList.add('active');el.classList.add('active');
 }
-function getWeekKey(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10);}
+function getMondayKey(date){
+  const d=new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  return d.toISOString().slice(0,10);
+}
+function getWeekKey(){ return currentWeekKey; } // สัปดาห์ที่กำลังดูอยู่บนหน้าจอ
 function fmtWeek(wk){const d=new Date(wk);return `จันทร์ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;}
+
+// ── เปลี่ยนสัปดาห์ ──
+function changeWeek(deltaWeeks){
+  const d=new Date(currentWeekKey);
+  d.setDate(d.getDate()+deltaWeeks*7);
+  currentWeekKey=getMondayKey(d);
+  refreshData();
+}
+function goToCurrentWeek(){
+  currentWeekKey=getMondayKey(new Date());
+  refreshData();
+}
+function jumpToWeek(dateStr){
+  if(!dateStr) return;
+  currentWeekKey=getMondayKey(new Date(dateStr));
+  refreshData();
+}
+function updateWeekTitle(){
+  const mon=new Date(currentWeekKey);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt=x=>`${x.getDate()}/${x.getMonth()+1}/${x.getFullYear()+543}`;
+  const isCurrent = currentWeekKey === getMondayKey(new Date());
+  const title = document.getElementById('weekTitle');
+  if(title) title.textContent = `📅 ตารางสัปดาห์ ${fmt(mon)} – ${fmt(sun)}${isCurrent?' (สัปดาห์นี้)':''}`;
+}
 window.onload=async()=>{
   initMap();
   if(!myBranch)openBranchModal();
   else document.getElementById('navBranch').textContent=`🏭 ${myBranch}`;
-  document.getElementById('fDay').value=new Date().getDay()===0?6:new Date().getDay()-1;
+
+  // ตั้งค่าเริ่มต้นของฟอร์ม: วันนี้
+  const todayStr = new Date().toISOString().slice(0,10);
+  document.getElementById('fDate').value = todayStr;
   document.getElementById('fDest').value='CNS';
+  updateDateHint();
+  document.getElementById('fDate').addEventListener('change', updateDateHint);
+
+  document.getElementById('weekJump').value = todayStr;
+
   await refreshData(); subscribeRealtime();
   setInterval(checkNotifications,30000); setInterval(refreshData,30000);
 };
+
+function updateDateHint(){
+  const v=document.getElementById('fDate').value;
+  const hint=document.getElementById('fDateHint');
+  if(!v){hint.textContent='';return;}
+  const d=new Date(v+'T00:00:00');
+  const dayIdx=d.getDay()===0?6:d.getDay()-1;
+  const wk=getMondayKey(d);
+  const isCurrentWk = wk===getMondayKey(new Date());
+  hint.textContent = `📌 ${DAY_NAMES[dayIdx]} ที่ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543} — ${isCurrentWk?'อยู่ในสัปดาห์นี้':'สัปดาห์ของวันที่ '+fmtWeek(wk)}`;
+}
 </script>
 </body>
 </html>
