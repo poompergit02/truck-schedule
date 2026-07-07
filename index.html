@@ -93,6 +93,20 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .pw-input:focus{border-color:var(--p4)}
 .btn-confirm{width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
 .update-lbl{font-size:.72rem;color:var(--g4)}
+.btn-manage{padding:0 10px;background:var(--p1);color:var(--p7);border:1.5px solid var(--p4);border-radius:var(--rs);cursor:pointer;font-size:.9rem}
+.btn-manage:hover{background:var(--p4);color:#fff}
+.manage-list{max-height:220px;overflow-y:auto;margin-bottom:14px;border:1px solid var(--p1);border-radius:var(--rs)}
+.manage-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--p0)}
+.manage-item:last-child{border-bottom:none}
+.manage-item span{flex:1;font-size:.9rem;color:var(--g7)}
+.manage-item input{flex:1;padding:5px 8px;border:1.5px solid var(--p4);border-radius:6px;font-family:'Sarabun',sans-serif;font-size:.88rem;outline:none}
+.manage-item button{background:none;border:none;cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px}
+.manage-item button:hover{background:var(--p0)}
+.manage-add{display:flex;gap:6px;margin-bottom:6px}
+.manage-add input{flex:1;padding:9px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.9rem;outline:none}
+.manage-add input:focus{border-color:var(--p4)}
+.manage-add button{padding:9px 16px;background:var(--p5);color:#fff;border:none;border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:.9rem;cursor:pointer;font-weight:600}
+.manage-empty{padding:20px;text-align:center;color:var(--g4);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -135,6 +149,18 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
         <select id="fDest"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
       </div>
       <div class="form-group"><label>🕐 คาดถึง (ETA)</label><input type="time" id="fEta"/></div>
+      <div class="form-group"><label>👤 คนขับรถ</label>
+        <div style="display:flex;gap:4px">
+          <select id="fDriver" style="flex:1"></select>
+          <button type="button" class="btn-manage" onclick="openManageModal('driver')" title="จัดการรายชื่อคนขับ">⚙️</button>
+        </div>
+      </div>
+      <div class="form-group"><label>🚙 เลขทะเบียนรถ</label>
+        <div style="display:flex;gap:4px">
+          <select id="fPlate" style="flex:1"></select>
+          <button type="button" class="btn-manage" onclick="openManageModal('plate')" title="จัดการเลขทะเบียน">⚙️</button>
+        </div>
+      </div>
     </div>
     <div class="form-group" style="margin-bottom:4px"><span id="fDateHint" style="font-size:.78rem;color:var(--p7);font-weight:600"></span></div>
     <div class="form-group" style="margin-bottom:12px"><label>📝 หมายเหตุ</label>
@@ -186,6 +212,19 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
     <button class="branch-btn" onclick="setBranch('Sriracha')">🏢 Sriracha — ชลบุรี</button>
     <button class="branch-btn" onclick="setBranch('Lampoon')">🏢 Lampoon — ลำพูน</button>
     <button class="branch-btn" onclick="setBranch('Phitsanulok')">🏢 Phitsanulok — พิษณุโลก</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="manageModal">
+  <div class="modal">
+    <h2 id="manageTitle">⚙️ จัดการรายชื่อ</h2>
+    <p id="manageDesc">เพิ่ม แก้ไข หรือลบรายการได้ที่นี่</p>
+    <div class="manage-add">
+      <input type="text" id="manageNewInput" placeholder="พิมพ์ชื่อ/เลขทะเบียนใหม่..." onkeydown="if(event.key==='Enter')addManageItem()"/>
+      <button onclick="addManageItem()">➕ เพิ่ม</button>
+    </div>
+    <div class="manage-list" id="manageList"></div>
+    <button style="width:100%;padding:9px;background:none;border:1.5px solid #E5E7EB;border-radius:var(--rs);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.9rem;color:var(--g7)" onclick="closeManageModal()">ปิด</button>
   </div>
 </div>
 
@@ -288,6 +327,8 @@ let routes=[], histData=[];
 let canvas, ctx;
 let currentWeekKey = getMondayKey(new Date());
 let mapWeekKey = getMondayKey(new Date()); // สัปดาห์ที่แผนที่กำลังแสดงอยู่
+let drivers=[], plates=[]; // รายชื่อคนขับ / เลขทะเบียน (เก็บใน Supabase ใช้ร่วมกันทุกเครื่อง)
+let manageMode=null; // 'driver' หรือ 'plate' กำลังจัดการอันไหนอยู่
 
 function initMap(){
   canvas=document.getElementById('mapCanvas');
@@ -609,8 +650,11 @@ async function submitSchedule(){
   const time=document.getElementById('fTime').value, type=document.getElementById('fType').value;
   const origin=document.getElementById('fOrigin').value, dest=document.getElementById('fDest').value;
   const eta=document.getElementById('fEta').value, note=document.getElementById('fNote').value.trim();
+  const driver=document.getElementById('fDriver').value;
+  const plate=document.getElementById('fPlate').value;
   if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
-  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,cancelled:false,created_at:new Date().toISOString()});
+  if(!driver){showToast('⚠️ กรุณาเลือกคนขับรถ ก่อนส่งรอบรถ','err');return;}
+  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,driver:driver||null,plate:plate||null,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
   showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest} วันที่ ${picked.getDate()}/${picked.getMonth()+1}`);
   document.getElementById('fNote').value='';
@@ -639,6 +683,130 @@ async function confirmReset(){
   if(error){showToast('❌ Reset ไม่สำเร็จ','err');return;}
   closeResetModal(); routes=[]; showToast('🗑️ Reset สำเร็จ'); await refreshData();
 }
+
+// ── รายชื่อคนขับ / เลขทะเบียนรถ (เก็บบน Supabase table "lists" ใช้ร่วมกันทุกเครื่อง) ──
+async function loadLists(){
+  const {data,error}=await sb.from('lists').select('*').order('created_at');
+  if(error){
+    // ตาราง lists ยังไม่ถูกสร้าง — ใช้ localStorage แทนชั่วคราว
+    drivers=JSON.parse(localStorage.getItem('drivers')||'[]');
+    plates=JSON.parse(localStorage.getItem('plates')||'[]');
+  } else {
+    drivers=(data||[]).filter(r=>r.type==='driver').map(r=>({id:r.id,value:r.value}));
+    plates=(data||[]).filter(r=>r.type==='plate').map(r=>({id:r.id,value:r.value}));
+  }
+  renderDriverPlateSelects();
+}
+
+function renderDriverPlateSelects(){
+  const dSel=document.getElementById('fDriver');
+  const pSel=document.getElementById('fPlate');
+  const curD=dSel.value, curP=pSel.value;
+  dSel.innerHTML = drivers.length
+    ? drivers.map(d=>`<option value="${escAttr(d.value)}">${escHtml(d.value)}</option>`).join('')
+    : `<option value="">-- ยังไม่มีรายชื่อ --</option>`;
+  pSel.innerHTML = plates.length
+    ? plates.map(p=>`<option value="${escAttr(p.value)}">${escHtml(p.value)}</option>`).join('')
+    : `<option value="">-- ยังไม่มีเลขทะเบียน --</option>`;
+  if(drivers.some(d=>d.value===curD)) dSel.value=curD;
+  if(plates.some(p=>p.value===curP)) pSel.value=curP;
+}
+
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return escHtml(s); }
+
+function openManageModal(type){
+  manageMode=type;
+  const isDriver = type==='driver';
+  document.getElementById('manageTitle').textContent = isDriver ? '👤 จัดการรายชื่อคนขับ' : '🚙 จัดการเลขทะเบียนรถ';
+  document.getElementById('manageDesc').textContent = isDriver
+    ? 'เพิ่ม แก้ไข หรือลบรายชื่อคนขับได้ที่นี่'
+    : 'เพิ่ม แก้ไข หรือลบเลขทะเบียนรถได้ที่นี่';
+  document.getElementById('manageNewInput').placeholder = isDriver ? 'พิมพ์ชื่อคนขับใหม่...' : 'พิมพ์เลขทะเบียนใหม่...';
+  document.getElementById('manageNewInput').value='';
+  renderManageList();
+  document.getElementById('manageModal').classList.add('open');
+}
+function closeManageModal(){
+  document.getElementById('manageModal').classList.remove('open');
+  manageMode=null;
+}
+function renderManageList(){
+  const list = manageMode==='driver' ? drivers : plates;
+  const container=document.getElementById('manageList');
+  if(!list.length){ container.innerHTML='<div class="manage-empty">ยังไม่มีรายการ — เพิ่มด้านบนได้เลย</div>'; return; }
+  container.innerHTML = list.map((item,idx)=>`
+    <div class="manage-item" data-idx="${idx}">
+      <span>${escHtml(item.value)}</span>
+      <button onclick="editManageItem(${idx})" title="แก้ไข">✏️</button>
+      <button onclick="deleteManageItem(${idx})" title="ลบ">🗑️</button>
+    </div>`).join('');
+}
+async function addManageItem(){
+  const input=document.getElementById('manageNewInput');
+  const val=input.value.trim();
+  if(!val){showToast('⚠️ กรุณาพิมพ์ข้อมูลก่อน','err');return;}
+  const list = manageMode==='driver' ? drivers : plates;
+  if(list.some(x=>x.value===val)){showToast('⚠️ มีรายการนี้อยู่แล้ว','err');return;}
+
+  const {data,error}=await sb.from('lists').insert({type:manageMode,value:val,created_at:new Date().toISOString()}).select();
+  if(error){
+    // fallback localStorage
+    list.push({id:'local_'+Date.now(),value:val});
+    localStorage.setItem(manageMode==='driver'?'drivers':'plates', JSON.stringify(list));
+  } else {
+    list.push({id:data[0].id,value:val});
+  }
+  input.value='';
+  renderManageList();
+  renderDriverPlateSelects();
+  showToast('✅ เพิ่มรายการสำเร็จ');
+}
+async function editManageItem(idx){
+  const list = manageMode==='driver' ? drivers : plates;
+  const item=list[idx];
+  const el=document.querySelector(`.manage-item[data-idx="${idx}"]`);
+  el.innerHTML = `<input type="text" value="${escAttr(item.value)}" id="editInput${idx}" onkeydown="if(event.key==='Enter')saveManageItem(${idx})"/>
+    <button onclick="saveManageItem(${idx})" title="บันทึก">✅</button>
+    <button onclick="renderManageList()" title="ยกเลิก">✕</button>`;
+  document.getElementById(`editInput${idx}`).focus();
+}
+async function saveManageItem(idx){
+  const list = manageMode==='driver' ? drivers : plates;
+  const newVal=document.getElementById(`editInput${idx}`).value.trim();
+  if(!newVal){showToast('⚠️ กรุณาพิมพ์ข้อมูล','err');return;}
+  const item=list[idx];
+  const oldVal=item.value;
+  item.value=newVal;
+
+  if(String(item.id).startsWith('local_')){
+    localStorage.setItem(manageMode==='driver'?'drivers':'plates', JSON.stringify(list));
+  } else {
+    const {error}=await sb.from('lists').update({value:newVal}).eq('id',item.id);
+    if(error){showToast('❌ แก้ไขไม่สำเร็จ','err'); item.value=oldVal; renderManageList(); return;}
+  }
+  renderManageList();
+  renderDriverPlateSelects();
+  showToast('✅ แก้ไขสำเร็จ');
+}
+async function deleteManageItem(idx){
+  const list = manageMode==='driver' ? drivers : plates;
+  const item=list[idx];
+  if(!confirm(`ลบ "${item.value}" ใช่ไหม?`)) return;
+
+  if(String(item.id).startsWith('local_')){
+    list.splice(idx,1);
+    localStorage.setItem(manageMode==='driver'?'drivers':'plates', JSON.stringify(list));
+  } else {
+    const {error}=await sb.from('lists').delete().eq('id',item.id);
+    if(error){showToast('❌ ลบไม่สำเร็จ','err');return;}
+    list.splice(idx,1);
+  }
+  renderManageList();
+  renderDriverPlateSelects();
+  showToast('🗑️ ลบสำเร็จ');
+}
+
 function typeLabel(t){return t==='truck'?'🚛 รถบรรทุก':t==='car'?'🚗 รถยนต์':'🚐 อื่นๆ';}
 function renderWeek(data){
   const grid=document.getElementById('weekGrid');
@@ -652,7 +820,7 @@ function renderWeek(data){
     grid.appendChild(row);
     items.forEach(s=>{
       const c=document.createElement('div');c.className='tc';c.draggable=true;
-      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
       c.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);document.getElementById('crusherZone').classList.add('hover');});
       c.addEventListener('dragend',()=>document.getElementById('crusherZone').classList.remove('hover'));
       document.getElementById('cw-'+d).appendChild(c);
@@ -697,14 +865,14 @@ async function loadHistory(){
   for(let d=0;d<7;d++){
     const items=byDay[d];if(!items.length)continue;
     const row=document.createElement('div');row.className='day-row';
-    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}"><div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}</div>`).join('');
+    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}"><div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}</div>`).join('');
     row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length}</span></div><div class="cards-wrap">${html}</div>`;
     container.appendChild(row);
   }
 }
 function exportToExcel(data,filename){
   if(!data||!data.length){showToast('⚠️ ไม่มีข้อมูล','err');return;}
-  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
+  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','คนขับ':s.driver||'','เลขทะเบียน':s.plate||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
   const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'รอบรถ');
   XLSX.writeFile(wb,filename+'.xlsx');showToast('📊 Export สำเร็จ!');
 }
@@ -757,8 +925,9 @@ function getMondayKey(date){
 }
 function getWeekKey(){ return currentWeekKey; }
 function fmtWeek(wk){
-  const d=parseLocalDate(wk);
-  return `จันทร์ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;
+  const mon=parseLocalDate(wk);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  return `${mon.getDate()}/${mon.getMonth()+1}/${mon.getFullYear()+543}-${sun.getDate()}/${sun.getMonth()+1}/${sun.getFullYear()+543}`;
 }
 
 // ── เปลี่ยนสัปดาห์ ──
@@ -801,6 +970,7 @@ window.onload=async()=>{
 
   document.getElementById('weekJump').value = todayStr;
 
+  await loadLists();
   await refreshData(); subscribeRealtime();
   setInterval(checkNotifications,30000); setInterval(refreshData,30000);
 };
