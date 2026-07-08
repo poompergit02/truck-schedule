@@ -38,6 +38,8 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .form-card{background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:16px;border:1px solid var(--p1)}
 .form-card h2{font-size:1rem;font-weight:700;color:var(--p9);margin-bottom:16px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:12px}
+.form-row-driver{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+@media(max-width:520px){.form-row-driver{grid-template-columns:1fr}}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
 .form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
@@ -149,14 +151,16 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
         <select id="fDest"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
       </div>
       <div class="form-group"><label>🕐 คาดถึง (ETA)</label><input type="time" id="fEta"/></div>
+    </div>
+    <div class="form-row-driver">
       <div class="form-group"><label>👤 คนขับรถ</label>
-        <div style="display:flex;gap:4px">
+        <div style="display:flex;gap:6px">
           <select id="fDriver" style="flex:1"></select>
           <button type="button" class="btn-manage" onclick="openManageModal('driver')" title="จัดการรายชื่อคนขับ">⚙️</button>
         </div>
       </div>
       <div class="form-group"><label>🚙 เลขทะเบียนรถ</label>
-        <div style="display:flex;gap:4px">
+        <div style="display:flex;gap:6px">
           <select id="fPlate" style="flex:1"></select>
           <button type="button" class="btn-manage" onclick="openManageModal('plate')" title="จัดการเลขทะเบียน">⚙️</button>
         </div>
