@@ -230,8 +230,8 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 
 <div class="modal-bg" id="resetModal">
   <div class="modal">
-    <h2>🗑️ Reset รอบรถทั้งหมด</h2>
-    <p>ใส่รหัสผ่านเพื่อลบรอบรถทั้งหมดในสัปดาห์นี้</p>
+    <h2>🗑️ Reset ข้อมูลทั้งหมด</h2>
+    <p>ใส่รหัสผ่านเพื่อลบรอบรถ<b>ทั้งหมดทุกสัปดาห์</b> (ไม่สามารถกู้คืนได้)</p>
     <input class="pw-input" type="password" id="resetPw" placeholder="รหัสผ่าน..." onkeydown="if(event.key==='Enter')confirmReset()"/>
     <button class="btn-confirm" onclick="confirmReset()">🗑️ ยืนยัน Reset</button>
     <button style="width:100%;padding:9px;margin-top:8px;background:none;border:1.5px solid #E5E7EB;border-radius:var(--rs);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.9rem;color:var(--g7)" onclick="closeResetModal()">ยกเลิก</button>
@@ -679,9 +679,14 @@ function openResetModal(){document.getElementById('resetModal').classList.add('o
 function closeResetModal(){document.getElementById('resetModal').classList.remove('open');}
 async function confirmReset(){
   if(document.getElementById('resetPw').value!==RESET_PASSWORD){showToast('❌ รหัสผ่านไม่ถูกต้อง','err');return;}
-  const {error}=await sb.from('schedules').delete().eq('week_key',getWeekKey());
-  if(error){showToast('❌ Reset ไม่สำเร็จ','err');return;}
-  closeResetModal(); routes=[]; showToast('🗑️ Reset สำเร็จ'); await refreshData();
+  // ลบทุกแถวในตาราง schedules (ทุกสัปดาห์) — ใช้เงื่อนไขที่จริงเสมอเพื่อผ่าน filter requirement ของ Supabase
+  const {error}=await sb.from('schedules').delete().not('id','is',null);
+  if(error){showToast('❌ Reset ไม่สำเร็จ: '+error.message,'err');return;}
+  closeResetModal(); routes=[]; schedules=[]; histData=[];
+  showToast('🗑️ Reset ข้อมูลทั้งหมดสำเร็จ');
+  currentWeekKey=getMondayKey(new Date());
+  mapWeekKey=getMondayKey(new Date());
+  await refreshData();
 }
 
 // ── รายชื่อคนขับ / เลขทะเบียนรถ (เก็บบน Supabase table "lists" ใช้ร่วมกันทุกเครื่อง) ──
