@@ -269,9 +269,9 @@ const CW=560, CH=480;
 const BRANCHES = {
   Lampoon:     { x:148, y:110, color:'#CA8A04', label:'Lampoon',     sub:'ลำพูน',     type:'office' },
   Phitsanulok: { x:290, y:148, color:'#16A34A', label:'Phitsanulok', sub:'พิษณุโลก', type:'office' },
-  CNS:         { x:175, y:278, color:'#2563EB', label:'CNS',         sub:'ปทุมธานี',  type:'warehouse' },
+  CNS:         { x:175, y:278, color:'#2563EB', label:'CNS',         sub:'ปทุมธานี',  type:'oiltank' },
   HQ:          { x:270, y:292, color:'#7C3AED', label:'HQ',          sub:'สำนักงานใหญ่', type:'hq' },
-  Sriracha:    { x:355, y:330, color:'#DC2626', label:'Sriracha',    sub:'ชลบุรี',    type:'office' },
+  Sriracha:    { x:355, y:330, color:'#DC2626', label:'Sriracha',    sub:'ชลบุรี',    type:'office_oil' },
 };
 
 // ── outline ไทย (ครอบทุกสาขา ทั้ง CNS ซ้าย และ Sriracha ขวา) ──
@@ -406,51 +406,82 @@ function drawBg(){
 }
 
 // ── icon วาดด้วย canvas ──
+function drawOilTank(cx, topY, w, h, capColor){
+  // ถังเก็บน้ำมันทรงกระบอก
+  ctx.fillStyle='#CBD5E1'; ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(cx-w/2, topY, w, h); ctx.fill(); ctx.stroke();
+  // ฝาบนโค้ง
+  ctx.beginPath(); ctx.ellipse(cx, topY, w/2, w*0.28, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // แถบสีบอกประเภทของเหลว
+  ctx.fillStyle=capColor;
+  ctx.fillRect(cx-w/2, topY+h*0.45, w, h*0.16);
+  // เส้นท่อเล็กด้านข้าง
+  ctx.strokeStyle='#64748B'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-w/2, topY+h*0.75); ctx.lineTo(cx-w/2-3, topY+h*0.75); ctx.lineTo(cx-w/2-3, topY+h); ctx.stroke();
+}
+
 function drawIcon(x, y, type, color){
   ctx.save();
   ctx.translate(x, y);
 
   if(type==='hq'){
-    // สำนักงานใหญ่ — ตึกใหญ่มีธง
+    // สำนักงานใหญ่ — ตึก 3 ชั้น มีธง
     ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
-    // ตึกหลัก
-    ctx.beginPath();ctx.roundRect(-11,-20,22,20,2);ctx.fill();ctx.stroke();
-    // หน้าต่าง
+    ctx.beginPath();ctx.roundRect(-11,-30,22,30,2);ctx.fill();ctx.stroke();
+    // เส้นแบ่งชั้น
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1;
+    [-20,-10].forEach(fy=>{ ctx.beginPath();ctx.moveTo(-11,fy);ctx.lineTo(11,fy);ctx.stroke(); });
+    // หน้าต่างแต่ละชั้น (3 ชั้น x 3 บาน)
     ctx.fillStyle='#BAE6FD';
-    [[-7,-17],[-1,-17],[5,-17],[-7,-11],[-1,-11],[5,-11],[-7,-5],[-1,-5],[5,-5]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.roundRect(wx,wy,4,4,1);ctx.fill();
+    [-27,-17,-7].forEach(fy=>{
+      [[-7,fy],[-1,fy],[5,fy]].forEach(([wx,wy])=>{
+        ctx.beginPath();ctx.roundRect(wx,wy,4,4,1);ctx.fill();
+      });
     });
+    // ประตูหลัก
+    ctx.fillStyle=darken(color,30);
+    ctx.beginPath();ctx.roundRect(-3,-2,6,2,1);ctx.fill();
     // เสาธง
     ctx.fillStyle='#fff';
-    ctx.fillRect(-1,-28,1.5,10);
+    ctx.fillRect(-1,-38,1.5,10);
     // ธง
     ctx.fillStyle='#EF4444';
-    ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(8,-25);ctx.lineTo(0,-22);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-38);ctx.lineTo(8,-35);ctx.lineTo(0,-32);ctx.closePath();ctx.fill();
     // ป้าย HQ
     ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=1;
     ctx.beginPath();ctx.roundRect(-8,0,16,6,2);ctx.fill();ctx.stroke();
     ctx.fillStyle='#fff';ctx.font='bold 5px Sarabun,sans-serif';ctx.textAlign='center';
     ctx.fillText('HQ',0,5);
 
-  }else if(type==='warehouse'){
-    // คลังสินค้า — โกดังหลังคาจั่ว
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
-    // ผนัง
-    ctx.beginPath();ctx.rect(-14,-12,28,14);ctx.fill();ctx.stroke();
-    // หลังคา
+  }else if(type==='oiltank'){
+    // คลังเก็บน้ำมัน — โกดัง + ถังน้ำมัน 2 ถัง
+    // โกดังหลัก (เล็กลง อยู่ด้านหลัง)
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.rect(-16,-8,14,10);ctx.fill();ctx.stroke();
     ctx.fillStyle=darken(color,20);
-    ctx.beginPath();ctx.moveTo(-16,-12);ctx.lineTo(0,-24);ctx.lineTo(16,-12);ctx.closePath();ctx.fill();ctx.stroke();
-    // ประตูโกดัง
-    ctx.fillStyle='#1E3A5F';
-    ctx.beginPath();ctx.roundRect(-5,-10,10,12,1);ctx.fill();
-    // แนวเส้นประตู
-    ctx.strokeStyle='#4B8EC8';ctx.lineWidth=.8;
-    ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,2);ctx.stroke();
-    // หน้าต่างข้าง
+    ctx.beginPath();ctx.moveTo(-17,-8);ctx.lineTo(-9,-16);ctx.lineTo(-1,-8);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.fillStyle='#BAE6FD';
-    [[-11,-10],[-11,-5],[7,-10],[7,-5]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.roundRect(wx,wy,3,3,1);ctx.fill();
+    ctx.beginPath();ctx.roundRect(-14,-5,4,4,1);ctx.fill();
+    // ถังน้ำมัน 2 ถัง (เด่นด้านหน้า)
+    drawOilTank(4, -18, 9, 16, '#DC2626');
+    drawOilTank(13, -14, 7, 12, '#F59E0B');
+    // ป้ายเตือนไฟ
+    ctx.fillStyle='#FBBF24'; ctx.strokeStyle='#78350F'; ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(-9,3);ctx.lineTo(-6,3);ctx.lineTo(-7.5,0);ctx.closePath();ctx.fill();ctx.stroke();
+
+  }else if(type==='office_oil'){
+    // ออฟฟิศ + คลังเก็บน้ำมันขนาดเล็ก
+    // ตึกออฟฟิศ
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(-15,-18,16,18,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD';
+    [[-12,-15],[-5,-15],[-12,-9],[-5,-9],[-12,-3],[-5,-3]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.roundRect(wx,wy,4,4,1);ctx.fill();
     });
+    ctx.fillStyle=darken(color,30);
+    ctx.beginPath();ctx.roundRect(-9,-2,3,2,1);ctx.fill();
+    // ถังน้ำมันเล็ก 1 ถังข้างตึก
+    drawOilTank(6, -16, 8, 14, '#F59E0B');
 
   }else{
     // office — อาคารทั่วไป
@@ -490,9 +521,11 @@ function drawBranches(){
     // วาด icon
     drawIcon(x, y-8, type, color);
 
-    // เส้นต่อ label
+    // เส้นต่อ label — ระยะสูงปรับตามประเภทอาคาร กันป้ายทับตัวอาคาร
+    const ICON_TOP_OFFSET={hq:46, oiltank:30, office_oil:28, office:26};
+    const topOff=(ICON_TOP_OFFSET[type]||26)+4;
     ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
-    ctx.beginPath();ctx.moveTo(x,y-30);ctx.lineTo(x,y-42);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y-topOff);ctx.lineTo(x,y-topOff-12);ctx.stroke();
     ctx.setLineDash([]);
 
     // label box
@@ -500,7 +533,7 @@ function drawBranches(){
     ctx.font=`bold ${fs}px Sarabun,sans-serif`;
     ctx.textAlign='center';
     const tw=Math.max(ctx.measureText(label).width, ctx.measureText(sub).width)+16;
-    const bh=fs*2+10, bx=x-tw/2, by=y-42-bh;
+    const bh=fs*2+10, bx=x-tw/2, by=y-topOff-12-bh;
 
     // shadow
     ctx.save(); ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8;
@@ -574,34 +607,91 @@ function drawRoutes(){
 function drawVehicle(px,py,angle,color,type){
   ctx.save(); ctx.translate(px,py); ctx.rotate(angle);
   ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=5;
+  const cab=darken(color,55); // สีเข้มกว่าตัวรถ ใช้แยกห้องคนขับ(หน้ารถ)ให้เห็นชัด
+
   if(type==='truck'){
+    // กระบะ/หลังรถ (ท้ายรถ อยู่ด้าน -x)
     ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.roundRect(-18,-6,28,12,3);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.roundRect(8,-8,14,16,3);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(10,-6,9,6,2);ctx.fill();
-    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(20,-2,3,4,1);ctx.fill();
-    ctx.fillStyle='#1E293B';
-    [[-11,7],[-2,7],[10,7],[17,7]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3.8,3.8,0,0,Math.PI*2);ctx.fill();
-    });
-    ctx.save();ctx.globalAlpha=.3;ctx.fillStyle='#E5E7EB';
-    ctx.beginPath();ctx.ellipse(22,-9,3,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
-  }else if(type==='car'){
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-11,-4,20,8,3);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.roundRect(-7,-8,13,6,3);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(-5,-7,10,4,2);ctx.fill();
-    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(8,-1,2,3,1);ctx.fill();
-    ctx.fillStyle='#1E293B';
-    [[-6,5],[6,5]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();});
-  }else{
-    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-14,-5,25,11,3);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(-20,-7,26,14,2);ctx.fill();ctx.stroke();
+    // ห้องคนขับ (หัวรถ อยู่ด้าน +x) — สีเข้มกว่าเพื่อแยกหน้า-หลังชัดเจน ปลายมนแบบหัวรถ
+    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(6,-9); ctx.lineTo(18,-9);
+    ctx.quadraticCurveTo(24,-9, 25,0);
+    ctx.quadraticCurveTo(24,9, 18,9);
+    ctx.lineTo(6,9); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // กระจกหน้า (เอียงไปทางหัวรถ)
     ctx.fillStyle='#BAE6FD';
-    [[-9,-3],[-4,-3],[1,-3]].forEach(([wx,wy])=>{ctx.beginPath();ctx.roundRect(wx,wy,4,5,1);ctx.fill();});
-    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(10,-1,2,3,1);ctx.fill();
+    ctx.beginPath();ctx.moveTo(8,-6);ctx.lineTo(17,-6);ctx.lineTo(15,6);ctx.lineTo(8,6);ctx.closePath();ctx.fill();
+    // ไฟหน้า (จุดสว่างสุดที่ปลายหัวรถ = ทิศทางที่วิ่งไป)
+    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(23,0,2.4,3.2,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(23,0,1,1.4,0,0,Math.PI*2);ctx.fill();
+    // กันชนหน้า (เส้นเข้มบอกจมูกรถ)
+    ctx.strokeStyle='#1E293B'; ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(24.5,-3);ctx.lineTo(24.5,3);ctx.stroke();
+    // ล้อ
     ctx.fillStyle='#1E293B';
-    [[-8,6],[8,6]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();});
+    [[-13,8],[-3,8],[10,8],[17,8]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3.8,3.8,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.4,1.4,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#1E293B';
+    });
+    // ควันไอเสียท้ายรถ (ยืนยันทิศตรงข้ามหัวรถ)
+    ctx.save();ctx.globalAlpha=.28;ctx.fillStyle='#E5E7EB';
+    ctx.beginPath();ctx.ellipse(-23,-3,3,4,0,0,Math.PI*2);ctx.fill();ctx.restore();
+
+  }else if(type==='car'){
+    // ตัวถังท้ายรถ
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-12,-5,17,10,3);ctx.fill();ctx.stroke();
+    // ฝากระโปรงหน้า/ห้องโดยสารด้านหน้า สีเข้มกว่า ปลายมน
+    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(3,-6); ctx.lineTo(10,-6);
+    ctx.quadraticCurveTo(15,-6, 15,0);
+    ctx.quadraticCurveTo(15,6, 10,6);
+    ctx.lineTo(3,6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // กระจกหน้า
+    ctx.fillStyle='#BAE6FD';
+    ctx.beginPath();ctx.moveTo(4,-4);ctx.lineTo(10,-4);ctx.lineTo(9,4);ctx.lineTo(4,4);ctx.closePath();ctx.fill();
+    // ไฟหน้า
+    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(13.5,0,2,2.6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(13.5,0,.8,1.1,0,0,Math.PI*2);ctx.fill();
+    // ล้อ
+    ctx.fillStyle='#1E293B';
+    [[-7,6],[7,6]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.1,1.1,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#1E293B';
+    });
+
+  }else{
+    // van — ตัวรถ (ท้ายรถ)
+    ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-16,-6,25,12,2);ctx.fill();ctx.stroke();
+    // ห้องคนขับ/จมูกรถด้านหน้า สีเข้มกว่า
+    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(3,-6); ctx.lineTo(9,-6);
+    ctx.quadraticCurveTo(14,-6, 14.5,0);
+    ctx.quadraticCurveTo(14,6, 9,6);
+    ctx.lineTo(3,6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // กระจกหน้า
+    ctx.fillStyle='#BAE6FD';
+    ctx.beginPath();ctx.moveTo(4,-4);ctx.lineTo(9,-4);ctx.lineTo(8,4);ctx.lineTo(4,4);ctx.closePath();ctx.fill();
+    // ไฟหน้า
+    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(13.2,0,2,2.8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(13.2,0,.9,1.2,0,0,Math.PI*2);ctx.fill();
+    // ล้อ
+    ctx.fillStyle='#1E293B';
+    [[-9,7],[8,7]].forEach(([wx,wy])=>{
+      ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.3,1.3,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#1E293B';
+    });
   }
   ctx.restore();
 }
