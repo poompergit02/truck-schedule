@@ -45,6 +45,18 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:12px}
 .form-row-driver{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
 @media(max-width:520px){.form-row-driver{grid-template-columns:1fr}}
+.route-group{margin-bottom:14px}
+.route-group label{display:block;margin-bottom:6px}
+#stopsList{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.stop-row{display:flex;align-items:center;gap:8px}
+.stop-arrow{color:var(--p4);font-weight:700;font-size:1.1rem;width:18px;text-align:center;flex-shrink:0}
+.stop-row select{flex:1;padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none}
+.stop-row select:focus{border-color:var(--p4);background:#fff}
+.stop-remove{background:none;border:1.5px solid #FCA5A5;color:var(--red);border-radius:var(--rs);width:32px;height:32px;flex-shrink:0;cursor:pointer;font-size:.85rem}
+.stop-remove:hover{background:#FEE2E2}
+.btn-addstop{padding:7px 14px;background:var(--p1);color:var(--p7);border:1.5px dashed var(--p4);border-radius:var(--rs);font-size:.85rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600}
+.btn-addstop:hover{background:var(--p4);color:#fff}
+.route-preview{margin-top:8px;font-size:.85rem;color:var(--p7);font-weight:600;min-height:18px}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
 .form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
@@ -154,13 +166,15 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
         <select id="fType"><option value="truck">🚛 รถบรรทุก</option><option value="car">🚗 รถยนต์</option><option value="van">🚐 อื่นๆ</option></select>
       </div>
       <div class="form-group"><label>🏭 ต้นทาง</label>
-        <select id="fOrigin"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
-      </div>
-      <div class="arrow-lbl">→</div>
-      <div class="form-group"><label>📍 ปลายทาง</label>
-        <select id="fDest"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
+        <select id="fOrigin" onchange="updateRoutePreview()"><option>HQ</option><option>CNS</option><option>Sriracha</option><option>Lampoon</option><option>Phitsanulok</option></select>
       </div>
       <div class="form-group"><label>🕐 คาดถึง (ETA)</label><input type="time" id="fEta"/></div>
+    </div>
+    <div class="form-group route-group">
+      <label>📍 เส้นทาง — ปลายทาง (แวะได้หลายจุด)</label>
+      <div id="stopsList"></div>
+      <button type="button" class="btn-addstop" onclick="addStopField()">➕ เพิ่มจุดแวะ</button>
+      <div class="route-preview" id="routePreview"></div>
     </div>
     <div class="form-row-driver">
       <div class="form-group"><label>👤 คนขับรถ</label>
@@ -558,10 +572,26 @@ function offsetLine(fx,fy,tx,ty,off){
   return [fx+nx,fy+ny,tx+nx,ty+ny];
 }
 
+function computeLegs(stops){
+  // แปลง stops (รายชื่อสาขาตามลำดับ) เป็นรายการเส้นทางย่อยแต่ละช่วง พร้อม offset แยกเส้นไป-กลับ
+  const legs=[];
+  const keys=Object.keys(BRANCHES);
+  for(let i=0;i<stops.length-1;i++){
+    const from=BRANCHES[stops[i]], to=BRANCHES[stops[i+1]];
+    if(!from||!to) continue;
+    const off=keys.indexOf(stops[i])<keys.indexOf(stops[i+1])?9:-9;
+    const [fx,fy,tx,ty]=offsetLine(from.x,from.y-8,to.x,to.y-8,off);
+    const dist=Math.hypot(tx-fx,ty-fy);
+    legs.push({fx,fy,tx,ty,dist});
+  }
+  return legs;
+}
+
 function drawRoutes(){
   const now=Date.now();
   routes=routes.filter(r=>{
-    const from=BRANCHES[r.from], to=BRANCHES[r.to]; if(!from||!to) return false;
+    const legs=computeLegs(r.stops);
+    if(!legs.length) return false;
     const elapsed=now-r.startTime;
     if(r.eta){
       // มี ETA: รถวิ่งครั้งเดียวจนถึงเวลา ETA จริง แล้วหายไป
@@ -576,30 +606,41 @@ function drawRoutes(){
       r.progress = t < 5000 ? Math.min(1, t/5000) : 1; // วิ่ง 5 วิ แล้วจอดพัก 2 วิ ก่อนเริ่มรอบใหม่
     }
 
-    const keys=Object.keys(BRANCHES);
-    const off=keys.indexOf(r.from)<keys.indexOf(r.to)?9:-9;
-    const [fx,fy,tx,ty]=offsetLine(from.x,from.y-8,to.x,to.y-8,off);
-    const angle=Math.atan2(ty-fy,tx-fx);
+    // วาดเส้นทางทุกช่วง (เส้นประ + ลูกศร)
+    legs.forEach(leg=>{
+      const {fx,fy,tx,ty}=leg;
+      const angle=Math.atan2(ty-fy,tx-fx);
+      ctx.save();
+      ctx.setLineDash([8,5]); ctx.lineDashOffset=-(now/38)%26;
+      ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=5;
+      ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.strokeStyle=r.color; ctx.lineWidth=3; ctx.globalAlpha=.92;
+      ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
 
-    ctx.save();
-    ctx.setLineDash([8,5]); ctx.lineDashOffset=-(now/38)%26;
-    ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=5;
-    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
-    ctx.strokeStyle=r.color; ctx.lineWidth=3; ctx.globalAlpha=.92;
-    ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+      const ax=fx+(tx-fx)*.82, ay=fy+(ty-fy)*.82;
+      ctx.globalAlpha=1; ctx.fillStyle=r.color; ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(ax+Math.cos(angle)*11,ay+Math.sin(angle)*11);
+      ctx.lineTo(ax+Math.cos(angle+2.5)*7,ay+Math.sin(angle+2.5)*7);
+      ctx.lineTo(ax+Math.cos(angle-2.5)*7,ay+Math.sin(angle-2.5)*7);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
 
-    // ลูกศร
-    const ax=fx+(tx-fx)*.82, ay=fy+(ty-fy)*.82;
-    ctx.globalAlpha=1; ctx.fillStyle=r.color; ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(ax+Math.cos(angle)*11,ay+Math.sin(angle)*11);
-    ctx.lineTo(ax+Math.cos(angle+2.5)*7,ay+Math.sin(angle+2.5)*7);
-    ctx.lineTo(ax+Math.cos(angle-2.5)*7,ay+Math.sin(angle-2.5)*7);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-
-    // รถ
-    drawVehicle(fx+(tx-fx)*r.progress, fy+(ty-fy)*r.progress, angle, r.color, r.vtype);
+    // หาตำแหน่งรถบนเส้นทางรวมทุกช่วง ตาม progress รวม (0..1 ของระยะทางทั้งหมด)
+    const totalDist=legs.reduce((s,l)=>s+l.dist,0)||1;
+    let target=r.progress*totalDist;
+    let seg=legs[legs.length-1], segT=1;
+    for(const leg of legs){
+      if(target<=leg.dist || leg===legs[legs.length-1]){
+        segT = leg.dist>0 ? Math.min(1,target/leg.dist) : 1;
+        seg=leg; break;
+      }
+      target-=leg.dist;
+    }
+    const angle=Math.atan2(seg.ty-seg.fy, seg.tx-seg.fx);
+    const px=seg.fx+(seg.tx-seg.fx)*segT, py=seg.fy+(seg.ty-seg.fy)*segT;
+    drawVehicle(px,py,angle,r.color,r.vtype);
     return true;
   });
 }
@@ -607,98 +648,42 @@ function drawRoutes(){
 function drawVehicle(px,py,angle,color,type){
   ctx.save(); ctx.translate(px,py); ctx.rotate(angle);
   ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=5;
-  const cab=darken(color,55); // สีเข้มกว่าตัวรถ ใช้แยกห้องคนขับ(หน้ารถ)ให้เห็นชัด
 
   if(type==='truck'){
-    // กระบะ/หลังรถ (ท้ายรถ อยู่ด้าน -x)
     ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.roundRect(-20,-7,26,14,2);ctx.fill();ctx.stroke();
-    // ห้องคนขับ (หัวรถ อยู่ด้าน +x) — สีเข้มกว่าเพื่อแยกหน้า-หลังชัดเจน ปลายมนแบบหัวรถ
-    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
-    ctx.beginPath();
-    ctx.moveTo(6,-9); ctx.lineTo(18,-9);
-    ctx.quadraticCurveTo(24,-9, 25,0);
-    ctx.quadraticCurveTo(24,9, 18,9);
-    ctx.lineTo(6,9); ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    // กระจกหน้า (เอียงไปทางหัวรถ)
-    ctx.fillStyle='#BAE6FD';
-    ctx.beginPath();ctx.moveTo(8,-6);ctx.lineTo(17,-6);ctx.lineTo(15,6);ctx.lineTo(8,6);ctx.closePath();ctx.fill();
-    // ไฟหน้า (จุดสว่างสุดที่ปลายหัวรถ = ทิศทางที่วิ่งไป)
-    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(23,0,2.4,3.2,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(23,0,1,1.4,0,0,Math.PI*2);ctx.fill();
-    // กันชนหน้า (เส้นเข้มบอกจมูกรถ)
-    ctx.strokeStyle='#1E293B'; ctx.lineWidth=1.4;
-    ctx.beginPath();ctx.moveTo(24.5,-3);ctx.lineTo(24.5,3);ctx.stroke();
-    // ล้อ
+    ctx.beginPath();ctx.roundRect(-18,-6,28,12,3);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(8,-8,14,16,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(10,-6,9,6,2);ctx.fill();
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(20,-2,3,4,1);ctx.fill();
     ctx.fillStyle='#1E293B';
-    [[-13,8],[-3,8],[10,8],[17,8]].forEach(([wx,wy])=>{
+    [[-11,7],[-2,7],[10,7],[17,7]].forEach(([wx,wy])=>{
       ctx.beginPath();ctx.ellipse(wx,wy,3.8,3.8,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.4,1.4,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1E293B';
     });
-    // ควันไอเสียท้ายรถ (ยืนยันทิศตรงข้ามหัวรถ)
-    ctx.save();ctx.globalAlpha=.28;ctx.fillStyle='#E5E7EB';
-    ctx.beginPath();ctx.ellipse(-23,-3,3,4,0,0,Math.PI*2);ctx.fill();ctx.restore();
-
+    ctx.save();ctx.globalAlpha=.3;ctx.fillStyle='#E5E7EB';
+    ctx.beginPath();ctx.ellipse(22,-9,3,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
   }else if(type==='car'){
-    // ตัวถังท้ายรถ
     ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-12,-5,17,10,3);ctx.fill();ctx.stroke();
-    // ฝากระโปรงหน้า/ห้องโดยสารด้านหน้า สีเข้มกว่า ปลายมน
-    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(3,-6); ctx.lineTo(10,-6);
-    ctx.quadraticCurveTo(15,-6, 15,0);
-    ctx.quadraticCurveTo(15,6, 10,6);
-    ctx.lineTo(3,6); ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    // กระจกหน้า
-    ctx.fillStyle='#BAE6FD';
-    ctx.beginPath();ctx.moveTo(4,-4);ctx.lineTo(10,-4);ctx.lineTo(9,4);ctx.lineTo(4,4);ctx.closePath();ctx.fill();
-    // ไฟหน้า
-    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(13.5,0,2,2.6,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(13.5,0,.8,1.1,0,0,Math.PI*2);ctx.fill();
-    // ล้อ
+    ctx.beginPath();ctx.roundRect(-11,-4,20,8,3);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.roundRect(-7,-8,13,6,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#BAE6FD'; ctx.beginPath();ctx.roundRect(-5,-7,10,4,2);ctx.fill();
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(8,-1,2,3,1);ctx.fill();
     ctx.fillStyle='#1E293B';
-    [[-7,6],[7,6]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.1,1.1,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1E293B';
-    });
-
+    [[-6,5],[6,5]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3,3,0,0,Math.PI*2);ctx.fill();});
   }else{
-    // van — ตัวรถ (ท้ายรถ)
     ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.roundRect(-16,-6,25,12,2);ctx.fill();ctx.stroke();
-    // ห้องคนขับ/จมูกรถด้านหน้า สีเข้มกว่า
-    ctx.fillStyle=cab; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(3,-6); ctx.lineTo(9,-6);
-    ctx.quadraticCurveTo(14,-6, 14.5,0);
-    ctx.quadraticCurveTo(14,6, 9,6);
-    ctx.lineTo(3,6); ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    // กระจกหน้า
+    ctx.beginPath();ctx.roundRect(-14,-5,25,11,3);ctx.fill();ctx.stroke();
     ctx.fillStyle='#BAE6FD';
-    ctx.beginPath();ctx.moveTo(4,-4);ctx.lineTo(9,-4);ctx.lineTo(8,4);ctx.lineTo(4,4);ctx.closePath();ctx.fill();
-    // ไฟหน้า
-    ctx.fillStyle='#FDE68A'; ctx.beginPath();ctx.ellipse(13.2,0,2,2.8,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#F59E0B'; ctx.beginPath();ctx.ellipse(13.2,0,.9,1.2,0,0,Math.PI*2);ctx.fill();
-    // ล้อ
+    [[-9,-3],[-4,-3],[1,-3]].forEach(([wx,wy])=>{ctx.beginPath();ctx.roundRect(wx,wy,4,5,1);ctx.fill();});
+    ctx.fillStyle='#FFE87C'; ctx.beginPath();ctx.roundRect(10,-1,2,3,1);ctx.fill();
     ctx.fillStyle='#1E293B';
-    [[-9,7],[8,7]].forEach(([wx,wy])=>{
-      ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#64748B';ctx.beginPath();ctx.ellipse(wx,wy,1.3,1.3,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1E293B';
-    });
+    [[-8,6],[8,6]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3.5,3.5,0,0,Math.PI*2);ctx.fill();});
   }
   ctx.restore();
 }
 
-function addRoute(from,to,eta,vtype,dayIdx){
+function addRoute(stops,eta,vtype,dayIdx){
   const color = DAY_COLORS[dayIdx] || '#7C3AED';
-  routes.push({from,to,color,
+  routes.push({stops,color,
     vtype:vtype||'van',startTime:Date.now(),progress:0,eta:eta||null,dayIdx});
 }
 function changeMapWeek(wk){
@@ -750,10 +735,11 @@ async function rebuildRoutes(){
     }
     // โหมด 'all': แสดงทุกรอบไม่ว่าจะผ่านไปแล้วหรือยัง
 
+    const stops=getStopsOf(s);
     if(isTodayRow && s.eta && !etaPassed){
-      addRoute(s.origin,s.destination,s.eta,s.vehicle_type||'van',s.day_index);
+      addRoute(stops,s.eta,s.vehicle_type||'van',s.day_index);
     } else {
-      addRoute(s.origin,s.destination,null,s.vehicle_type||'van',s.day_index);
+      addRoute(stops,null,s.vehicle_type||'van',s.day_index);
     }
   });
 }
@@ -767,6 +753,42 @@ async function refreshData(){
   updateWeekTitle();
   await loadHistoryWeeks(); checkNotifications();
 }
+// ── จัดการช่องจุดแวะ (multi-stop) ──
+function stopRowHtml(defaultVal){
+  const branchList=Object.keys(BRANCHES);
+  const opts=branchList.map(b=>`<option${b===defaultVal?' selected':''}>${b}</option>`).join('');
+  return `<div class="stop-row"><span class="stop-arrow">→</span><select class="stop-select" onchange="updateRoutePreview()">${opts}</select><button type="button" class="stop-remove" onclick="removeStopRow(this)" title="ลบจุดแวะนี้">✕</button></div>`;
+}
+function addStopField(defaultVal){
+  const list=document.getElementById('stopsList');
+  const wrap=document.createElement('div');
+  wrap.innerHTML=stopRowHtml(defaultVal||'CNS');
+  list.appendChild(wrap.firstElementChild);
+  updateStopRemoveVisibility();
+  updateRoutePreview();
+}
+function removeStopRow(btn){
+  const list=document.getElementById('stopsList');
+  if(list.children.length<=1) return; // ต้องมีปลายทางอย่างน้อย 1 จุด
+  btn.closest('.stop-row').remove();
+  updateStopRemoveVisibility();
+  updateRoutePreview();
+}
+function updateStopRemoveVisibility(){
+  const rows=document.querySelectorAll('#stopsList .stop-row');
+  rows.forEach(r=>{ r.querySelector('.stop-remove').style.visibility = rows.length>1?'visible':'hidden'; });
+}
+function getStopsFromForm(){
+  const origin=document.getElementById('fOrigin').value;
+  const extra=[...document.querySelectorAll('.stop-select')].map(s=>s.value);
+  return [origin, ...extra];
+}
+function updateRoutePreview(){
+  const stops=getStopsFromForm();
+  const el=document.getElementById('routePreview');
+  if(el) el.textContent='🛣️ '+stops.join(' → ');
+}
+
 async function submitSchedule(){
   const dateStr=document.getElementById('fDate').value;
   if(!dateStr){showToast('⚠️ กรุณาเลือกวันที่','err');return;}
@@ -774,20 +796,26 @@ async function submitSchedule(){
   const day = picked.getDay()===0 ? 6 : picked.getDay()-1; // 0=จันทร์...6=อาทิตย์
   const scheduleWeekKey = getMondayKey(picked);
   const time=document.getElementById('fTime').value, type=document.getElementById('fType').value;
-  const origin=document.getElementById('fOrigin').value, dest=document.getElementById('fDest').value;
+  const stops=getStopsFromForm();
   const eta=document.getElementById('fEta').value, note=document.getElementById('fNote').value.trim();
   const driver=document.getElementById('fDriver').value;
   const plate=document.getElementById('fPlate').value;
-  if(origin===dest){showToast('⚠️ ต้นทางและปลายทางต้องไม่เหมือนกัน','err');return;}
+
+  // ตรวจสอบว่าจุดที่ติดกันไม่ซ้ำกัน (เช่น HQ→HQ ไม่ได้)
+  for(let i=0;i<stops.length-1;i++){
+    if(stops[i]===stops[i+1]){ showToast(`⚠️ จุดที่ติดกันต้องไม่ซ้ำกัน (${stops[i]} → ${stops[i+1]})`,'err'); return; }
+  }
   if(!driver){showToast('⚠️ กรุณาเลือกคนขับรถ ก่อนส่งรอบรถ','err');return;}
-  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,eta:eta||null,note:note||null,driver:driver||null,plate:plate||null,cancelled:false,created_at:new Date().toISOString()});
+
+  const origin=stops[0], dest=stops[stops.length-1];
+  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,stops:JSON.stringify(stops),eta:eta||null,note:note||null,driver:driver||null,plate:plate||null,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
-  showToast(`✅ เพิ่มรอบรถ ${origin} → ${dest} วันที่ ${picked.getDate()}/${picked.getMonth()+1}`);
+  showToast(`✅ เพิ่มรอบรถ ${stops.join(' → ')} วันที่ ${picked.getDate()}/${picked.getMonth()+1}`);
   document.getElementById('fNote').value='';
 
   // ถ้าสัปดาห์ที่เพิ่มตรงกับสัปดาห์ที่แผนที่แสดงอยู่ ให้รีเฟรชทันที
   if(scheduleWeekKey===mapWeekKey){
-    addRoute(origin,dest,eta||null,type,day);
+    addRoute(stops,eta||null,type,day);
   }
   // อัปเดต mapWeekSel ถ้าสัปดาห์ใหม่ที่ยังไม่มีใน dropdown
   await refreshData();
@@ -939,6 +967,13 @@ async function deleteManageItem(idx){
 }
 
 function typeLabel(t){return t==='truck'?'🚛 รถบรรทุก':t==='car'?'🚗 รถยนต์':'🚐 อื่นๆ';}
+function getStopsOf(s){
+  if(s.stops){
+    try{ const arr=JSON.parse(s.stops); if(Array.isArray(arr)&&arr.length>=2) return arr; }catch(e){}
+  }
+  return [s.origin, s.destination];
+}
+function routeLabel(s){ return getStopsOf(s).join(' → '); }
 function renderWeek(data){
   const grid=document.getElementById('weekGrid');
   const byDay={};for(let i=0;i<7;i++) byDay[i]=[];
@@ -951,7 +986,7 @@ function renderWeek(data){
     grid.appendChild(row);
     items.forEach(s=>{
       const c=document.createElement('div');c.className='tc';c.draggable=true;
-      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${routeLabel(s)}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
       c.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);document.getElementById('crusherZone').classList.add('hover');});
       c.addEventListener('dragend',()=>document.getElementById('crusherZone').classList.remove('hover'));
       document.getElementById('cw-'+d).appendChild(c);
@@ -996,14 +1031,14 @@ async function loadHistory(){
   for(let d=0;d<7;d++){
     const items=byDay[d];if(!items.length)continue;
     const row=document.createElement('div');row.className='day-row';
-    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}"><div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div><div class="tc-route">${s.origin} → ${s.destination}</div>${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}</div>`).join('');
+    const html=items.map(s=>`<div class="tc ${s.cancelled?'cancelled':''}"><div class="tc-time">${s.time}${s.cancelled?' <span style="color:var(--red);font-size:.7rem">ยกเลิก</span>':''}</div><div class="tc-route">${routeLabel(s)}</div>${s.eta?`<div class="tc-eta">🕐 ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}</div>`).join('');
     row.innerHTML=`<div class="day-lbl" style="background:${DAY_COLORS[d]}">${DAY_NAMES[d]}<span class="cnt">${items.length}</span></div><div class="cards-wrap">${html}</div>`;
     container.appendChild(row);
   }
 }
 function exportToExcel(data,filename){
   if(!data||!data.length){showToast('⚠️ ไม่มีข้อมูล','err');return;}
-  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','คนขับ':s.driver||'','เลขทะเบียน':s.plate||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
+  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','เส้นทาง':routeLabel(s),'คนขับ':s.driver||'','เลขทะเบียน':s.plate||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
   const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'รอบรถ');
   XLSX.writeFile(wb,filename+'.xlsx');showToast('📊 Export สำเร็จ!');
 }
@@ -1095,7 +1130,7 @@ window.onload=async()=>{
   // ตั้งค่าเริ่มต้นของฟอร์ม: วันนี้
   const todayStr = new Date().toISOString().slice(0,10);
   document.getElementById('fDate').value = todayStr;
-  document.getElementById('fDest').value='CNS';
+  addStopField('CNS'); // เริ่มต้นด้วยปลายทาง 1 จุด
   updateDateHint();
   document.getElementById('fDate').addEventListener('change', updateDateHint);
 
