@@ -57,6 +57,10 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .btn-addstop{padding:7px 14px;background:var(--p1);color:var(--p7);border:1.5px dashed var(--p4);border-radius:var(--rs);font-size:.85rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600}
 .btn-addstop:hover{background:var(--p4);color:#fff}
 .route-preview{margin-top:8px;font-size:.85rem;color:var(--p7);font-weight:600;min-height:18px}
+.email-group{margin-bottom:14px}
+.email-group input{width:100%;padding:9px 12px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.9rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;box-sizing:border-box}
+.email-group input:focus{border-color:var(--p4);background:#fff}
+.email-hint{display:block;font-size:.76rem;color:var(--g4);margin-top:4px}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
 .form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
@@ -189,6 +193,11 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
           <button type="button" class="btn-manage" onclick="openManageModal('plate')" title="จัดการเลขทะเบียน">⚙️</button>
         </div>
       </div>
+    </div>
+    <div class="form-group email-group">
+      <label>📧 อีเมลแจ้งเตือน (ไม่บังคับ)</label>
+      <input type="email" id="fEmail" placeholder="เช่น testtsi@gmail.com"/>
+      <span class="email-hint">ระบบจะส่งอีเมลแจ้งเตือนก่อนถึง 15 นาที ถ้าใส่อีเมลไว้</span>
     </div>
     <div class="form-group" style="margin-bottom:4px"><span id="fDateHint" style="font-size:.78rem;color:var(--p7);font-weight:600"></span></div>
     <div class="form-group" style="margin-bottom:12px"><label>📝 หมายเหตุ</label>
@@ -800,18 +809,21 @@ async function submitSchedule(){
   const eta=document.getElementById('fEta').value, note=document.getElementById('fNote').value.trim();
   const driver=document.getElementById('fDriver').value;
   const plate=document.getElementById('fPlate').value;
+  const email=document.getElementById('fEmail').value.trim();
 
   // ตรวจสอบว่าจุดที่ติดกันไม่ซ้ำกัน (เช่น HQ→HQ ไม่ได้)
   for(let i=0;i<stops.length-1;i++){
     if(stops[i]===stops[i+1]){ showToast(`⚠️ จุดที่ติดกันต้องไม่ซ้ำกัน (${stops[i]} → ${stops[i+1]})`,'err'); return; }
   }
   if(!driver){showToast('⚠️ กรุณาเลือกคนขับรถ ก่อนส่งรอบรถ','err');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showToast('⚠️ รูปแบบอีเมลไม่ถูกต้อง','err'); return; }
 
   const origin=stops[0], dest=stops[stops.length-1];
-  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,stops:JSON.stringify(stops),eta:eta||null,note:note||null,driver:driver||null,plate:plate||null,cancelled:false,created_at:new Date().toISOString()});
+  const {error}=await sb.from('schedules').insert({week_key:scheduleWeekKey,day_index:day,day_name:DAY_NAMES[day],time,vehicle_type:type,origin,destination:dest,stops:JSON.stringify(stops),eta:eta||null,note:note||null,driver:driver||null,plate:plate||null,notify_email:email||null,email_sent:false,cancelled:false,created_at:new Date().toISOString()});
   if(error){showToast('❌ บันทึกไม่สำเร็จ: '+error.message,'err');return;}
   showToast(`✅ เพิ่มรอบรถ ${stops.join(' → ')} วันที่ ${picked.getDate()}/${picked.getMonth()+1}`);
   document.getElementById('fNote').value='';
+  document.getElementById('fEmail').value='';
 
   // ถ้าสัปดาห์ที่เพิ่มตรงกับสัปดาห์ที่แผนที่แสดงอยู่ ให้รีเฟรชทันที
   if(scheduleWeekKey===mapWeekKey){
@@ -986,7 +998,7 @@ function renderWeek(data){
     grid.appendChild(row);
     items.forEach(s=>{
       const c=document.createElement('div');c.className='tc';c.draggable=true;
-      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${routeLabel(s)}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
+      c.innerHTML=`<button class="tc-cancel" onclick="cancelSchedule('${s.id}')">✕</button><div class="tc-time">${s.time}</div><div class="tc-route">${routeLabel(s)}</div>${s.eta?`<div class="tc-eta">🕐 คาดถึง ${s.eta}</div>`:''}${s.vehicle_type?`<div class="tc-type">${typeLabel(s.vehicle_type)}</div>`:''}${s.driver?`<div class="tc-note">👤 ${escHtml(s.driver)}${s.plate?' · 🚙 '+escHtml(s.plate):''}</div>`:''}${s.notify_email?`<div class="tc-note">📧 ${escHtml(s.notify_email)}</div>`:''}${s.note?`<div class="tc-note">📝 ${s.note}</div>`:''}`;
       c.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);document.getElementById('crusherZone').classList.add('hover');});
       c.addEventListener('dragend',()=>document.getElementById('crusherZone').classList.remove('hover'));
       document.getElementById('cw-'+d).appendChild(c);
@@ -1038,7 +1050,7 @@ async function loadHistory(){
 }
 function exportToExcel(data,filename){
   if(!data||!data.length){showToast('⚠️ ไม่มีข้อมูล','err');return;}
-  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','เส้นทาง':routeLabel(s),'คนขับ':s.driver||'','เลขทะเบียน':s.plate||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
+  const rows=data.map(s=>({'วัน':s.day_name||'','เวลาออก':s.time||'','คาดถึง':s.eta||'','ประเภทรถ':typeLabel(s.vehicle_type||'van'),'ต้นทาง':s.origin||'','ปลายทาง':s.destination||'','เส้นทาง':routeLabel(s),'คนขับ':s.driver||'','เลขทะเบียน':s.plate||'','อีเมลแจ้งเตือน':s.notify_email||'','หมายเหตุ':s.note||'','สถานะ':s.cancelled?'ยกเลิก':'ใช้งาน','วันที่':s.created_at?new Date(s.created_at).toLocaleString('th-TH'):''}));
   const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'รอบรถ');
   XLSX.writeFile(wb,filename+'.xlsx');showToast('📊 Export สำเร็จ!');
 }
