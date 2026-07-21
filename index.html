@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>🚚 TSI - ระบบรอบรถ</title>
+<title>Truck Schedule Information</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -64,6 +64,16 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:.78rem;font-weight:600;color:var(--p7)}
 .form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--p1);border-radius:var(--rs);font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7);background:var(--p0);outline:none;transition:.2s}
+.date-field-wrap{position:relative}
+.date-field-wrap .date-native{width:100%;box-sizing:border-box;color:transparent;background:var(--p0);cursor:pointer}
+.date-field-wrap .date-native:focus{color:transparent}
+.date-field-wrap .date-native::-webkit-datetime-edit,
+.date-field-wrap .date-native::-webkit-datetime-edit-fields-wrapper,
+.date-field-wrap .date-native::-webkit-datetime-edit-text,
+.date-field-wrap .date-native::-webkit-datetime-edit-month-field,
+.date-field-wrap .date-native::-webkit-datetime-edit-day-field,
+.date-field-wrap .date-native::-webkit-datetime-edit-year-field{color:transparent}
+.date-field-wrap .date-display{position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:.88rem;font-family:'Sarabun',sans-serif;color:var(--g7)}
 .form-group select:focus,.form-group input:focus{border-color:var(--p4);background:#fff}
 .arrow-lbl{display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font-size:1.3rem;color:var(--p4);font-weight:700}
 .btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--p5),var(--p7));color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;margin-top:4px}
@@ -163,7 +173,10 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
     <h2>➕ เพิ่มรอบรถ</h2>
     <div class="form-grid">
       <div class="form-group"><label>📅 วันที่</label>
-        <input type="date" id="fDate"/>
+        <div class="date-field-wrap">
+          <input type="date" id="fDate" class="date-native" oninput="updateDateDisplay()"/>
+          <div class="date-display" id="fDateDisplay">วว/ดด/ปปปป</div>
+        </div>
       </div>
       <div class="form-group"><label>⏰ เวลาออก</label><input type="time" id="fTime" value="08:00"/></div>
       <div class="form-group"><label>🚗 ประเภทรถ</label>
@@ -276,8 +289,8 @@ nav{background:var(--p9);padding:0 20px;display:flex;align-items:center;justify-
 </div>
 
 <script>
-const SUPABASE_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
+const SUPABASE_URL='YOUR_SUPABASE_URL';
+const SUPABASE_KEY='YOUR_SUPABASE_ANON_KEY';
 const RESET_PASSWORD='itpoom';
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -1144,7 +1157,8 @@ window.onload=async()=>{
   document.getElementById('fDate').value = todayStr;
   addStopField('CNS'); // เริ่มต้นด้วยปลายทาง 1 จุด
   updateDateHint();
-  document.getElementById('fDate').addEventListener('change', updateDateHint);
+  updateDateDisplay();
+  document.getElementById('fDate').addEventListener('change', ()=>{ updateDateHint(); updateDateDisplay(); });
 
   document.getElementById('weekJump').value = todayStr;
 
@@ -1162,6 +1176,20 @@ function updateDateHint(){
   const wk=getMondayKey(d);
   const isCurrentWk = wk===getMondayKey(new Date());
   hint.textContent = `📌 ${DAY_NAMES[dayIdx]} ที่ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543} — ${isCurrentWk?'อยู่ในสัปดาห์นี้':'สัปดาห์ของวันที่ '+fmtWeek(wk)}`;
+}
+
+// แสดงวันที่แบบ วัน/เดือน/ปี (ค.ศ.) ทับช่อง date picker ของเบราว์เซอร์
+// เพราะ input[type=date] แสดงผลตาม locale เครื่อง (บางเครื่องเป็น เดือน/วัน/ปี) แต่ค่าจริง (.value) ยังเป็น ISO เดิมเสมอ ไม่กระทบ logic อื่น
+function updateDateDisplay(){
+  const v=document.getElementById('fDate').value;
+  const disp=document.getElementById('fDateDisplay');
+  if(!disp) return;
+  if(!v){ disp.textContent='วว/ดด/ปปปป'; return; }
+  const d=parseLocalDate(v);
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+  disp.textContent=`${dd}/${mm}/${yyyy}`;
 }
 </script>
 </body>
