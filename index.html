@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IIDA SMART Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg-deep:#0B1220;
+  --bg-panel:#131B2E;
+  --bg-panel-hover:#182240;
+  --line:#232D42;
+  --line-soft:#1A2338;
+  --text-primary:#E8ECF4;
+  --text-dim:#8B95AB;
+  --text-faint:#5B6478;
+  --accent-cyan:#35C9C1;
+  --accent-amber:#F5A524;
+  --accent-rose:#F2555A;
+  --accent-gray:#3A4358;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(53,201,193,.08), transparent),
+    radial-gradient(ellipse 700px 500px at 90% 10%, rgba(245,165,36,.06), transparent),
+    var(--bg-deep);
+  color:var(--text-primary);
+  font-family:'IBM Plex Sans Thai',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── HEADER ── */
+header{
+  border-bottom:1px solid var(--line);
+  padding:20px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{
+  width:38px;height:38px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent-cyan),#1e8f89);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#04211f;
+  flex-shrink:0;
+}
+.brand-text h1{
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.15rem;
+  letter-spacing:.02em;color:var(--text-primary);line-height:1.2;
+}
+.brand-text p{font-size:.74rem;color:var(--text-faint);margin-top:1px;letter-spacing:.03em}
+
+.clock{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.82rem;color:var(--text-dim);
+  display:flex;align-items:center;gap:8px;
+  padding:7px 14px;border:1px solid var(--line);border-radius:20px;background:var(--bg-panel);
+}
+.clock .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 6px var(--accent-cyan);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── MAIN ── */
+main{max-width:1000px;margin:0 auto;padding:48px 28px 80px}
+.intro{margin-bottom:40px}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.12em;
+  color:var(--accent-cyan);text-transform:uppercase;margin-bottom:10px;
+}
+.intro h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.7rem;color:var(--text-primary);margin-bottom:8px}
+.intro p{color:var(--text-dim);font-size:.92rem;max-width:520px;line-height:1.6}
+
+/* ── GRID ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+
+.card{
+  background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px;cursor:pointer;transition:.18s ease;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:14px;
+}
+.card:hover{background:var(--bg-panel-hover);border-color:var(--line-soft);transform:translateY(-2px)}
+.card:focus-visible{outline:2px solid var(--accent-cyan);outline-offset:2px}
+.card.disabled{opacity:.55;cursor:not-allowed}
+.card.disabled:hover{transform:none;background:var(--bg-panel)}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between}
+.card-icon{font-size:1.7rem;line-height:1}
+.status{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.05em;color:var(--text-faint);text-transform:uppercase}
+.status .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status.open .dot{background:var(--accent-cyan);box-shadow:0 0 6px var(--accent-cyan)}
+.status.username .dot{background:var(--accent-amber);box-shadow:0 0 6px var(--accent-amber)}
+.status.userpass .dot{background:var(--accent-rose);box-shadow:0 0 6px var(--accent-rose)}
+.status.soon .dot{background:var(--accent-gray)}
+
+.card-body h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.08rem;color:var(--text-primary);margin-bottom:5px}
+.card-body p{font-size:.82rem;color:var(--text-dim);line-height:1.5}
+
+.card-foot{
+  margin-top:auto;padding-top:12px;border-top:1px solid var(--line-soft);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.82rem;font-weight:500;color:var(--text-primary);
+}
+.card-foot .arrow{font-family:'IBM Plex Mono',monospace;transition:.15s}
+.card:hover:not(.disabled) .arrow{transform:translateX(3px)}
+.card.disabled .card-foot{color:var(--text-faint)}
+
+footer{text-align:center;padding:24px;color:var(--text-faint);font-size:.72rem;font-family:'IBM Plex Mono',monospace}
+
+/* ── MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(6,10,20,.72);backdrop-filter:blur(3px);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:28px;width:360px;max-width:100%;
+  box-shadow:0 24px 64px rgba(0,0,0,.5);
+}
+.modal-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.modal-head .icon{font-size:1.4rem}
+.modal h4{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.05rem;color:var(--text-primary)}
+.modal p.hint{font-size:.8rem;color:var(--text-dim);margin-bottom:18px;line-height:1.5}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.74rem;color:var(--text-dim);margin-bottom:5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em}
+.field input{
+  width:100%;padding:10px 12px;background:var(--bg-deep);border:1px solid var(--line);border-radius:9px;
+  color:var(--text-primary);font-family:'IBM Plex Sans Thai',sans-serif;font-size:.9rem;outline:none;transition:.15s;
+}
+.field input:focus{border-color:var(--accent-cyan)}
+.modal-err{font-size:.78rem;color:var(--accent-rose);margin:-4px 0 12px;min-height:16px}
+.modal-actions{display:flex;gap:8px;margin-top:6px}
+.btn{
+  flex:1;padding:10px;border-radius:9px;border:none;cursor:pointer;
+  font-family:'IBM Plex Sans Thai',sans-serif;font-size:.88rem;font-weight:600;transition:.15s;
+}
+.btn-primary{background:var(--accent-cyan);color:#04211f}
+.btn-primary:hover{opacity:.88}
+.btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--bg-deep)}
+
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--bg-panel);border:1px solid var(--line);border-left:3px solid var(--accent-amber);
+  border-radius:10px;padding:12px 16px;font-size:.84rem;color:var(--text-primary);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideIn .25s ease;max-width:300px;
+}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+@media(max-width:520px){
+  header{padding:16px 18px}
+  main{padding:32px 18px 60px}
+  .intro h2{font-size:1.4rem}
+}
+@media (prefers-reduced-motion: reduce){
+  .clock .dot{animation:none}
+  .card{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">IS</div>
+    <div class="brand-text">
+      <h1>IIDA SMART Center</h1>
+      <p>ศูนย์รวมระบบภายในองค์กร</p>
+    </div>
+  </div>
+  <div class="clock"><span class="dot"></span><span id="clockText">--:--:--</span></div>
+</header>
+
+<main>
+  <div class="intro">
+    <div class="eyebrow">// SELECT SYSTEM</div>
+    <h2>เลือกระบบที่ต้องการใช้งาน</h2>
+    <p>คลิกที่ระบบด้านล่างเพื่อเข้าใช้งาน บางระบบต้องยืนยันตัวตนก่อนเข้าใช้</p>
+  </div>
+
+  <div class="grid" id="projectGrid"></div>
+</main>
+
+<footer>IIDA SMART Center — สำหรับพนักงานภายในเท่านั้น</footer>
+
+<!-- MODAL: LOGIN -->
+<div class="modal-bg" id="loginModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="icon" id="modalIcon">🔒</span>
+      <h4 id="modalTitle">เข้าสู่ระบบ</h4>
+    </div>
+    <p class="hint" id="modalHint">กรุณายืนยันตัวตนก่อนเข้าใช้งาน</p>
+
+    <div class="field" id="usernameField">
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" id="loginUsername" autocomplete="off" onkeydown="if(event.key==='Enter')attemptLogin()"/>
+    </div>
+    <div class="field" id="passwordField" style="display:none">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="loginPassword" autocomplete="off" onkeydown="if(event.key==='Enter')attemptLogin()"/>
+    </div>
+    <div class="modal-err" id="loginErr"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeLoginModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="attemptLogin()">เข้าใช้งาน</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  ตั้งค่าระบบทั้งหมดที่แสดงในหน้านี้
+//  authType: 'none' | 'username' | 'userpass'
+//  credentials ใช้ได้เฉพาะกันคนนอกทั่วไป ไม่ใช่ระบบความปลอดภัยจริงจัง
+//  (ใครก็ตามที่เปิดดู source code ของหน้านี้จะเห็นรหัสได้)
+// ════════════════════════════════════════════
+const PROJECTS = [
+  {
+    id: 'tsi',
+    name: 'TSI',
+    subtitle: 'ระบบแจ้งเตือนรอบรถ',
+    desc: 'ติดตามรอบรถ ดูตารางสัปดาห์ และแจ้งเตือนล่วงหน้าก่อนรถถึง',
+    icon: '🚚',
+    url: '/tsi/',
+    authType: 'none',
+  },
+  {
+    id: 'project2',
+    name: 'Project 2',
+    subtitle: 'อยู่ระหว่างพัฒนา',
+    desc: 'ระบบนี้ยังไม่เปิดใช้งาน จะอัปเดตให้ทราบเมื่อพร้อมใช้งาน',
+    icon: '📦',
+    url: '#',
+    authType: 'userpass',
+    username: 'staff',
+    password: 'iida2026',
+    comingSoon: true,
+  },
+];
+
+const STATUS_LABEL = { none:'เปิดใช้งาน', username:'ต้องใส่ชื่อผู้ใช้', userpass:'ต้องล็อกอิน', soon:'เร็วๆ นี้' };
+const STATUS_CLASS = { none:'open', username:'username', userpass:'userpass', soon:'soon' };
+
+let pendingProject = null;
+
+function renderGrid(){
+  const grid = document.getElementById('projectGrid');
+  grid.innerHTML = PROJECTS.map(p => {
+    const statusKey = p.comingSoon ? 'soon' : p.authType;
+    const statusCls = STATUS_CLASS[statusKey];
+    const label = p.comingSoon ? STATUS_LABEL.soon : STATUS_LABEL[p.authType];
+    const disabledCls = p.comingSoon ? ' disabled' : '';
+    const footText = p.comingSoon ? 'เร็วๆ นี้' : 'เข้าใช้งาน';
+    return `
+      <div class="card${disabledCls}" tabindex="0" role="button"
+           onclick="handleCardClick('${p.id}')"
+           onkeydown="if(event.key==='Enter')handleCardClick('${p.id}')">
+        <div class="card-top">
+          <span class="card-icon">${p.icon}</span>
+          <span class="status ${statusCls}"><span class="dot"></span>${label}</span>
+        </div>
+        <div class="card-body">
+          <h3>${p.name} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">— ${p.subtitle}</span></h3>
+          <p>${p.desc}</p>
+        </div>
+        <div class="card-foot">
+          <span>${footText}</span>
+          <span class="arrow">→</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function handleCardClick(id){
+  const project = PROJECTS.find(p => p.id === id);
+  if(!project) return;
+
+  if(project.comingSoon){
+    showToast(`📦 ${project.name} อยู่ระหว่างพัฒนา ยังไม่เปิดใช้งานในตอนนี้`);
+    return;
+  }
+
+  if(project.authType === 'none'){
+    goToProject(project);
+    return;
+  }
+
+  // เช็คว่าเคยผ่านการยืนยันตัวตนไว้แล้วในเครื่องนี้ไหม
+  if(localStorage.getItem('unlocked_' + project.id) === 'true'){
+    goToProject(project);
+    return;
+  }
+
+  openLoginModal(project);
+}
+
+function goToProject(project){
+  window.location.href = project.url;
+}
+
+function openLoginModal(project){
+  pendingProject = project;
+  document.getElementById('modalIcon').textContent = project.icon;
+  document.getElementById('modalTitle').textContent = `เข้าสู่ระบบ ${project.name}`;
+  document.getElementById('modalHint').textContent =
+    project.authType === 'username'
+      ? 'กรุณากรอกชื่อผู้ใช้เพื่อเข้าใช้งาน'
+      : 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน';
+  document.getElementById('passwordField').style.display =
+    project.authType === 'userpass' ? 'block' : 'none';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('loginModal').classList.add('open');
+  setTimeout(() => document.getElementById('loginUsername').focus(), 100);
+}
+
+function closeLoginModal(){
+  document.getElementById('loginModal').classList.remove('open');
+  pendingProject = null;
+}
+
+function attemptLogin(){
+  if(!pendingProject) return;
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+
+  if(!username){
+    errEl.textContent = 'กรุณากรอกชื่อผู้ใช้';
+    return;
+  }
+
+  if(pendingProject.authType === 'userpass'){
+    if(username !== pendingProject.username || password !== pendingProject.password){
+      errEl.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      return;
+    }
+  }
+
+  localStorage.setItem('unlocked_' + pendingProject.id, 'true');
+  localStorage.setItem('username_' + pendingProject.id, username);
+  const project = pendingProject;
+  closeLoginModal();
+  goToProject(project);
+}
+
+function showToast(msg){
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+function updateClock(){
+  const now = new Date();
+  const t = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  document.getElementById('clockText').textContent = t + ' น.';
+}
+
+renderGrid();
+updateClock();
+setInterval(updateClock, 1000);
+
+document.getElementById('loginModal').addEventListener('click', (e) => {
+  if(e.target.id === 'loginModal') closeLoginModal();
+});
+</script>
+</body>
+</html>
