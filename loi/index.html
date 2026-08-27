@@ -1,1 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LOI — Leave Request Online IIDA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#221935; --plum-900:#3B1F63; --plum-700:#552E8C; --plum-600:#6B3FA0;
+  --gold:#B08D57; --gold-light:#E7D9BE;
+  --cream:#FBF9F6; --white:#FFFFFF; --line:#E5DFF0; --line-soft:#F1ECF9;
+  --text-dim:#7A7189; --text-faint:#A79DBB;
+  --success:#3F7D58; --success-bg:#EAF3EC;
+  --danger:#A23B3B; --danger-bg:#FBEEEE;
+  --warn:#B08D57; --warn-bg:#F7F1E6;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--cream); color:var(--ink);
+  font-family:'Inter','Noto Sans Thai',sans-serif;
+  min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ══════════ LOGIN SCREEN ══════════ */
+#loginScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:
+    radial-gradient(ellipse 700px 500px at 20% 0%, rgba(176,141,87,.14), transparent),
+    radial-gradient(ellipse 800px 600px at 100% 100%, rgba(107,63,160,.25), transparent),
+    linear-gradient(160deg,var(--plum-900),#251140 65%,#1a0d2e);
+}
+.login-card{
+  width:380px; max-width:100%; background:rgba(255,255,255,.04);
+  border:1px solid rgba(231,217,190,.28); border-radius:18px;
+  padding:40px 34px; backdrop-filter:blur(6px);
+  box-shadow:0 30px 80px rgba(0,0,0,.4);
+}
+.login-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.22em;color:var(--gold-light);text-transform:uppercase;text-align:center;margin-bottom:10px}
+.login-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:2rem;color:#fff;text-align:center;line-height:1.15}
+.login-sub{text-align:center;color:rgba(255,255,255,.55);font-size:.82rem;margin-top:6px;margin-bottom:30px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:.72rem;letter-spacing:.06em;color:var(--gold-light);margin-bottom:6px;font-family:'IBM Plex Mono',monospace}
+.login-field input{
+  width:100%;padding:12px 14px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(231,217,190,.25);border-radius:9px;color:#fff;
+  font-family:'Inter',sans-serif;font-size:.92rem;outline:none;transition:.15s;
+}
+.login-field input::placeholder{color:rgba(255,255,255,.28)}
+.login-field input:focus{border-color:var(--gold);background:rgba(255,255,255,.1)}
+.login-err{font-size:.8rem;color:#F2A0A0;margin:-6px 0 14px;min-height:16px}
+.btn-login{
+  width:100%;padding:13px;border:none;border-radius:9px;cursor:pointer;
+  background:linear-gradient(135deg,var(--gold),#8f6f3f);color:#241a0c;
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;letter-spacing:.02em;
+  transition:.15s;
+}
+.btn-login:hover{opacity:.9;transform:translateY(-1px)}
+.login-foot{text-align:center;margin-top:22px;font-size:.72rem;color:rgba(255,255,255,.35)}
+
+/* ══════════ APP SHELL ══════════ */
+#app{display:none}
+header{
+  background:var(--white);border-bottom:1px solid var(--line);
+  padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{
+  width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--plum-700),var(--plum-900));
+  display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;
+  font-size:1.2rem;color:var(--gold-light);flex-shrink:0;
+}
+.brand-text h1{font-size:1.15rem;font-weight:600;color:var(--ink)}
+.brand-text p{font-size:.7rem;color:var(--text-dim);letter-spacing:.04em;font-family:'IBM Plex Mono',monospace}
+.header-right{display:flex;align-items:center;gap:14px}
+.user-chip{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border:1px solid var(--line);border-radius:30px;background:var(--line-soft)}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--plum-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600}
+.user-chip .u-name{font-size:.83rem;font-weight:600;color:var(--ink)}
+.user-chip .u-role{font-size:.66rem;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;font-family:'IBM Plex Mono',monospace}
+.btn-logout{background:none;border:1px solid var(--line);color:var(--text-dim);padding:7px 14px;border-radius:20px;font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-logout:hover{background:var(--line-soft)}
+
+nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 28px;display:flex;gap:4px;overflow-x:auto}
+.tab-btn{padding:14px 18px;font-size:.86rem;font-weight:600;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;background:none;border-top:none;border-left:none;border-right:none}
+.tab-btn.active{color:var(--plum-700);border-bottom-color:var(--gold)}
+.tab-btn:hover:not(.active){color:var(--ink)}
+
+main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+.page{display:none}
+.page.active{display:block}
+.section-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.5rem;color:var(--ink);margin-bottom:4px}
+.section-sub{color:var(--text-dim);font-size:.86rem;margin-bottom:22px}
+
+/* ══════════ TICKET STUB (leave balance) ══════════ */
+.balance-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:32px}
+.ticket{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  box-shadow:0 2px 10px rgba(59,31,99,.06); display:flex;
+}
+.ticket-main{flex:1;padding:18px 16px}
+.ticket-type{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:6px}
+.ticket-name{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.3rem;color:var(--ink)}
+.ticket-bar{height:5px;background:var(--line-soft);border-radius:3px;margin:12px 0 8px;overflow:hidden}
+.ticket-bar-fill{height:100%;background:linear-gradient(90deg,var(--plum-600),var(--plum-900));border-radius:3px}
+.ticket-nums{display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-dim)}
+.ticket-stub{
+  width:80px;border-left:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--line-soft);position:relative;
+}
+.ticket-stub::before,.ticket-stub::after{
+  content:'';position:absolute;width:14px;height:14px;background:var(--cream);border-radius:50%;left:-8px;
+}
+.ticket-stub::before{top:-7px}
+.ticket-stub::after{bottom:-7px}
+.ticket-stub .num{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.7rem;color:var(--plum-900)}
+.ticket-stub .lbl{font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
+
+/* ══════════ CARDS / FORMS ══════════ */
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:0 2px 10px rgba(59,31,99,.05)}
+.card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;color:var(--ink);margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:14px}
+.field label{display:block;font-size:.74rem;font-weight:600;color:var(--plum-700);margin-bottom:5px}
+.field select,.field input,.field textarea{
+  width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem;
+  font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:.15s;
+}
+.field select:focus,.field input:focus,.field textarea:focus{border-color:var(--plum-600);background:var(--white)}
+.field textarea{resize:vertical;min-height:70px}
+.btn{padding:11px 20px;border:none;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:.88rem;transition:.15s}
+.btn-primary{background:linear-gradient(135deg,var(--plum-600),var(--plum-900));color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#8f6f3f);color:#241a0c}
+.btn-gold:hover{opacity:.9}
+.btn-outline{background:none;border:1.5px solid var(--line);color:var(--text-dim)}
+.btn-outline:hover{background:var(--line-soft)}
+.btn-sm{padding:6px 14px;font-size:.78rem;border-radius:7px}
+.btn-danger{background:var(--danger);color:#fff}
+
+/* ══════════ TABLE ══════════ */
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{text-align:left;padding:10px 12px;background:var(--line-soft);color:var(--plum-700);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line)}
+td{padding:11px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink)}
+tr:hover td{background:var(--cream)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.table-wrap table{border:none}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;white-space:nowrap}
+.badge-pending{background:var(--warn-bg);color:var(--warn)}
+.badge-approved{background:var(--success-bg);color:var(--success)}
+.badge-rejected{background:var(--danger-bg);color:var(--danger)}
+
+.empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:.86rem}
+
+/* ══════════ MODAL ══════════ */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(34,25,53,.55);backdrop-filter:blur(2px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:16px;padding:28px;width:440px;max-width:100%;box-shadow:0 30px 70px rgba(0,0,0,.3);max-height:88vh;overflow-y:auto}
+.modal.wide{width:720px}
+.modal h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.3rem;color:var(--ink);margin-bottom:4px}
+.modal p.hint{font-size:.82rem;color:var(--text-dim);margin-bottom:18px}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.err-text{font-size:.8rem;color:var(--danger);margin-top:-6px;margin-bottom:10px;min-height:16px}
+
+/* ══════════ TOAST ══════════ */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--ink);color:#fff;border-left:3px solid var(--gold);border-radius:10px;padding:12px 16px;font-size:.84rem;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:slideIn .25s ease}
+.toast.err{border-left-color:var(--danger)}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ══════════ IMPORT PREVIEW ══════════ */
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:.15s;background:var(--cream)}
+.upload-zone:hover{border-color:var(--gold);background:var(--line-soft)}
+.import-summary{display:flex;gap:16px;margin:14px 0;font-size:.84rem}
+.import-summary span{color:var(--text-dim)}
+.import-summary b{color:var(--ink)}
+
+@media(max-width:640px){
+  header{padding:14px 18px}
+  nav.tabs{padding:0 12px}
+  main{padding:24px 14px 60px}
+  .ticket{flex-direction:row}
+  .modal.wide{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-eyebrow">IIDA · Internal Systems</div>
+    <div class="login-title">LOI</div>
+    <div class="login-sub">Leave Request Online IIDA</div>
+
+    <div class="login-field">
+      <label>Employee Code</label>
+      <input type="text" id="loginCode" placeholder="e.g. 2410" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-foot">Contact HR / Admin if you don't have login details</div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">LOI</div>
+      <div class="brand-text">
+        <h1>Leave Request Online IIDA</h1>
+        <p>IIDA SMART CENTER</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div>
+          <div class="u-name" id="userName">—</div>
+          <div class="u-role" id="userRole">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabBar"></nav>
+
+  <main>
+    <!-- MY LEAVE -->
+    <div class="page active" id="page-myleave">
+      <div class="section-title">My Leave</div>
+      <div class="section-sub">View your leave balance and submit new requests</div>
+
+      <div class="balance-row" id="balanceRow"></div>
+
+      <div class="card">
+        <h3>➕ New Leave Request</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Leave Type</label>
+            <select id="reqType">
+              <option value="annual">Annual / Vacation</option>
+              <option value="sick">Sick Leave</option>
+              <option value="personal">Personal Leave</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label>Start Date</label><input type="date" id="reqStart"/></div>
+          <div class="field"><label>End Date</label><input type="date" id="reqEnd"/></div>
+        </div>
+        <div class="field" style="margin-bottom:14px">
+          <label>Reason</label>
+          <textarea id="reqReason" placeholder="Briefly explain the reason for leave..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="submitLeaveRequest()">Submit Request</button>
+      </div>
+
+      <div class="card">
+        <h3>📋 My Request History</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+          <tbody id="myRequestsBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- APPROVALS -->
+    <div class="page" id="page-approvals">
+      <div class="section-title">Pending Approvals</div>
+      <div class="section-sub" id="approvalsSub">Requests waiting for your review</div>
+      <div class="card" style="padding:0" id="approvalsCard">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Action</th></tr></thead>
+          <tbody id="approvalsBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ADMIN: EMPLOYEES -->
+    <div class="page" id="page-employees">
+      <div class="section-title">Employee Management</div>
+      <div class="section-sub">Add employees individually or import from Excel</div>
+
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Add Employee</button>
+          <button class="btn btn-gold" onclick="openImportModal()">📊 Import from Excel</button>
+          <button class="btn btn-outline" onclick="downloadExcelTemplate()">⬇ Download Template</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Manager</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="employeesBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ADMIN: REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="section-title">All Leave Requests</div>
+      <div class="section-sub">Complete history across the organization</div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Submitted</th></tr></thead>
+          <tbody id="reportsBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: CHANGE PASSWORD (forced on first login) -->
+<div class="modal-bg" id="pwModal">
+  <div class="modal">
+    <h3>🔐 Set New Password</h3>
+    <p class="hint">For your security, please set a new password before continuing.</p>
+    <div class="field" style="margin-bottom:12px"><label>Current / Temporary Password</label><input type="password" id="pwOld"/></div>
+    <div class="field" style="margin-bottom:12px"><label>New Password</label><input type="password" id="pwNew"/></div>
+    <div class="field"><label>Confirm New Password</label><input type="password" id="pwConfirm"/></div>
+    <div class="err-text" id="pwErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitChangePassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: APPROVE/REJECT -->
+<div class="modal-bg" id="decisionModal">
+  <div class="modal">
+    <h3 id="decisionTitle">Review Request</h3>
+    <p class="hint" id="decisionSub"></p>
+    <div class="field"><label>Comment (optional)</label><textarea id="decisionComment"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('decisionModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitDecision('reject')">Reject</button>
+      <button class="btn btn-primary" onclick="submitDecision('approve')">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD EMPLOYEE -->
+<div class="modal-bg" id="addEmpModal">
+  <div class="modal">
+    <h3>➕ Add Employee</h3>
+    <div class="form-grid">
+      <div class="field"><label>Employee Code *</label><input type="text" id="neCode"/></div>
+      <div class="field"><label>Name *</label><input type="text" id="neName"/></div>
+      <div class="field"><label>Email</label><input type="email" id="neEmail"/></div>
+      <div class="field"><label>Department</label><input type="text" id="neDept"/></div>
+      <div class="field"><label>Position</label><input type="text" id="nePosition"/></div>
+      <div class="field"><label>Role</label>
+        <select id="neRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
+      </div>
+      <div class="field"><label>Manager Code</label><input type="text" id="neManagerCode" placeholder="optional"/></div>
+      <div class="field"><label>Password *</label><input type="text" id="nePassword" placeholder="Temporary password"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Annual Days</label><input type="number" id="neAnnual" value="10"/></div>
+      <div class="field"><label>Sick Days</label><input type="number" id="neSick" value="30"/></div>
+      <div class="field"><label>Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
+    </div>
+    <div class="err-text" id="addEmpErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddEmployee()">Add Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPORT EXCEL -->
+<div class="modal-bg" id="importModal">
+  <div class="modal wide">
+    <h3>📊 Import Employees from Excel</h3>
+    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days</p>
+    <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
+      <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
+      <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
+      <div style="font-weight:600;color:var(--ink)">Click to select Excel file</div>
+      <div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">.xlsx or .xls</div>
+    </div>
+    <div class="import-summary" id="importSummary" style="display:none">
+      <span>Rows found: <b id="importCount">0</b></span>
+    </div>
+    <div class="table-wrap" id="importPreviewWrap" style="display:none;margin-top:12px;max-height:280px;overflow-y:auto">
+      <table id="importPreviewTable"></table>
+    </div>
+    <div class="err-text" id="importErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('importModal')">Cancel</button>
+      <button class="btn btn-gold" id="importSubmitBtn" onclick="submitImport()" style="display:none">Import Employees</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  ตั้งค่า Edge Function URL และ Supabase anon/publishable key
+// ════════════════════════════════════════════
+const SUPABASE_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
+
+const LEAVE_TYPE_LABEL = { annual:'Annual / Vacation', sick:'Sick Leave', personal:'Personal Leave', other:'Other' };
+const STATUS_LABEL = {
+  pending_manager:{label:'Pending Manager', cls:'badge-pending'},
+  pending_admin:{label:'Pending Admin', cls:'badge-pending'},
+  approved:{label:'Approved', cls:'badge-approved'},
+  rejected_manager:{label:'Rejected (Manager)', cls:'badge-rejected'},
+  rejected_admin:{label:'Rejected (Admin)', cls:'badge-rejected'},
+};
+
+let currentUser = null;
+let importRows = [];
+let pendingDecision = null; // { requestId }
+
+// ── API helper ──
+async function callApi(action, params={}){
+  const token = localStorage.getItem('loi_token') || '';
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY },
+    body: JSON.stringify({ action, token, ...params }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
+}
+
+function showToast(msg, type='ok'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast'+(type==='err'?' err':'');
+  t.textContent=msg;
+  wrap.appendChild(t);
+  setTimeout(()=>t.remove(),4500);
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+
+// ── LOGIN ──
+async function doLogin(){
+  const code=document.getElementById('loginCode').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('loginErr');
+  errEl.textContent='';
+  if(!code||!password){ errEl.textContent='Please enter employee code and password'; return; }
+
+  try{
+    const data = await callApi_noToken('login', { employee_code: code, password });
+    localStorage.setItem('loi_token', data.token);
+    currentUser = data.employee;
+    if(currentUser.must_change_password){
+      openModal('pwModal');
+    } else {
+      enterApp();
+    }
+  }catch(e){ errEl.textContent = e.message; }
+}
+async function callApi_noToken(action, params){
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || 'Login failed');
+  return data;
+}
+
+function doLogout(){
+  localStorage.removeItem('loi_token');
+  currentUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginCode').value='';
+  document.getElementById('loginPassword').value='';
+}
+
+async function submitChangePassword(){
+  const oldP=document.getElementById('pwOld').value;
+  const newP=document.getElementById('pwNew').value;
+  const confP=document.getElementById('pwConfirm').value;
+  const errEl=document.getElementById('pwErr');
+  errEl.textContent='';
+  if(newP.length<4){ errEl.textContent='New password must be at least 4 characters'; return; }
+  if(newP!==confP){ errEl.textContent='Passwords do not match'; return; }
+  try{
+    await callApi('change_password', { old_password: oldP, new_password: newP });
+    closeModal('pwModal');
+    showToast('✅ Password updated');
+    enterApp();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+// ── APP ENTRY ──
+function enterApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('userName').textContent = currentUser.name;
+  document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+  document.getElementById('userAvatar').textContent = currentUser.name.slice(0,2).toUpperCase();
+  buildTabs();
+  loadMyLeave();
+}
+
+function buildTabs(){
+  const tabs = [{id:'myleave', label:'My Leave'}];
+  if(currentUser.role==='manager' || currentUser.role==='admin') tabs.push({id:'approvals', label:'Approvals'});
+  if(currentUser.role==='admin'){
+    tabs.push({id:'employees', label:'Employees'});
+    tabs.push({id:'reports', label:'Reports'});
+  }
+  const bar=document.getElementById('tabBar');
+  bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${t.id}',this)">${t.label}</button>`).join('');
+}
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='approvals') loadApprovals();
+  if(id==='employees') loadEmployees();
+  if(id==='reports') loadReports();
+}
+
+// ── MY LEAVE ──
+async function loadMyLeave(){
+  try{
+    const data = await callApi('get_my_data');
+    renderBalances(data.balances);
+    renderMyRequests(data.requests);
+  }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
+}
+
+function renderBalances(balances){
+  const order=['annual','sick','personal','other'];
+  const sorted=[...balances].sort((a,b)=>order.indexOf(a.leave_type)-order.indexOf(b.leave_type));
+  const row=document.getElementById('balanceRow');
+  if(!sorted.length){ row.innerHTML='<div class="empty-msg">No leave balance set up yet. Contact Admin.</div>'; return; }
+  row.innerHTML = sorted.map(b=>{
+    const remaining = Number(b.total_days) - Number(b.used_days);
+    const pct = b.total_days>0 ? Math.min(100,(b.used_days/b.total_days)*100) : 0;
+    return `
+      <div class="ticket">
+        <div class="ticket-main">
+          <div class="ticket-type">${LEAVE_TYPE_LABEL[b.leave_type]||b.leave_type}</div>
+          <div class="ticket-name">${remaining} days left</div>
+          <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
+          <div class="ticket-nums"><span>${b.used_days} used</span><span>${b.total_days} total</span></div>
+        </div>
+        <div class="ticket-stub">
+          <div class="num">${remaining}</div>
+          <div class="lbl">left</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderMyRequests(requests){
+  const body=document.getElementById('myRequestsBody');
+  if(!requests.length){ body.innerHTML='<tr><td colspan="5" class="empty-msg">No requests yet</td></tr>'; return; }
+  body.innerHTML = requests.map(r=>{
+    const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
+    return `<tr>
+      <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+      <td class="mono">${r.start_date} → ${r.end_date}</td>
+      <td>${r.days_count}</td>
+      <td>${r.reason?escHtml(r.reason):'—'}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function submitLeaveRequest(){
+  const leave_type=document.getElementById('reqType').value;
+  const start_date=document.getElementById('reqStart').value;
+  const end_date=document.getElementById('reqEnd').value;
+  const reason=document.getElementById('reqReason').value.trim();
+  if(!start_date||!end_date){ showToast('⚠️ Please select start and end dates','err'); return; }
+  if(end_date<start_date){ showToast('⚠️ End date must be after start date','err'); return; }
+  try{
+    await callApi('submit_leave_request', { leave_type, start_date, end_date, reason });
+    showToast('✅ Leave request submitted');
+    document.getElementById('reqStart').value='';
+    document.getElementById('reqEnd').value='';
+    document.getElementById('reqReason').value='';
+    loadMyLeave();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── APPROVALS ──
+async function loadApprovals(){
+  document.getElementById('approvalsSub').textContent =
+    currentUser.role==='manager' ? "Requests from your team awaiting your review" : "Requests approved by managers, awaiting final approval";
+  try{
+    const data = await callApi('get_pending_approvals');
+    const body=document.getElementById('approvalsBody');
+    if(!data.requests.length){ body.innerHTML='<tr><td colspan="6" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
+    body.innerHTML = data.requests.map(r=>`
+      <tr>
+        <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></td>
+        <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+        <td class="mono">${r.start_date} → ${r.end_date}</td>
+        <td>${r.days_count}</td>
+        <td>${r.reason?escHtml(r.reason):'—'}</td>
+        <td><button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button></td>
+      </tr>`).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function openDecisionModal(requestId, empName, start, end){
+  pendingDecision = requestId;
+  document.getElementById('decisionTitle').textContent = `Review — ${empName}`;
+  document.getElementById('decisionSub').textContent = `${start} → ${end}`;
+  document.getElementById('decisionComment').value='';
+  openModal('decisionModal');
+}
+
+async function submitDecision(decision){
+  if(!pendingDecision) return;
+  try{
+    await callApi('approve_reject_request', {
+      request_id: pendingDecision, decision, comment: document.getElementById('decisionComment').value.trim()
+    });
+    closeModal('decisionModal');
+    showToast(decision==='approve' ? '✅ Request approved' : '❌ Request rejected');
+    pendingDecision=null;
+    loadApprovals();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: EMPLOYEES ──
+async function loadEmployees(){
+  try{
+    const data = await callApi('list_employees');
+    const body=document.getElementById('employeesBody');
+    const byId={}; data.employees.forEach(e=>byId[e.id]=e);
+    body.innerHTML = data.employees.map(e=>`
+      <tr>
+        <td class="mono">${e.employee_code}</td>
+        <td>${escHtml(e.name)}</td>
+        <td>${e.email?escHtml(e.email):'—'}</td>
+        <td>${e.department?escHtml(e.department):'—'}</td>
+        <td>${e.role}</td>
+        <td>${e.manager_id&&byId[e.manager_id]?escHtml(byId[e.manager_id].name):'—'}</td>
+        <td>${e.active?'<span class="badge badge-approved">Active</span>':'<span class="badge badge-rejected">Inactive</span>'}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button></td>
+      </tr>`).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function resetEmployeePassword(id, name){
+  const newPw = prompt(`New temporary password for ${name}:`);
+  if(!newPw) return;
+  try{
+    await callApi('reset_password', { employee_id:id, new_password:newPw });
+    showToast('✅ Password reset');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function openAddEmployeeModal(){
+  ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('neRole').value='employee';
+  document.getElementById('neAnnual').value=10;
+  document.getElementById('neSick').value=30;
+  document.getElementById('nePersonal').value=3;
+  document.getElementById('addEmpErr').textContent='';
+  openModal('addEmpModal');
+}
+
+async function submitAddEmployee(){
+  const errEl=document.getElementById('addEmpErr');
+  const payload={
+    employee_code: document.getElementById('neCode').value.trim(),
+    name: document.getElementById('neName').value.trim(),
+    email: document.getElementById('neEmail').value.trim(),
+    department: document.getElementById('neDept').value.trim(),
+    position: document.getElementById('nePosition').value.trim(),
+    role: document.getElementById('neRole').value,
+    manager_code: document.getElementById('neManagerCode').value.trim(),
+    password: document.getElementById('nePassword').value,
+    annual_days: Number(document.getElementById('neAnnual').value)||0,
+    sick_days: Number(document.getElementById('neSick').value)||0,
+    personal_days: Number(document.getElementById('nePersonal').value)||0,
+  };
+  if(!payload.employee_code||!payload.name||!payload.password){ errEl.textContent='Employee code, name, and password are required'; return; }
+  try{
+    await callApi('add_employee', payload);
+    closeModal('addEmpModal');
+    showToast('✅ Employee added');
+    loadEmployees();
+  }catch(e){ errEl.textContent=e.message; }
+}
+
+// ── EXCEL IMPORT ──
+function openImportModal(){
+  importRows=[];
+  document.getElementById('excelFile').value='';
+  document.getElementById('importSummary').style.display='none';
+  document.getElementById('importPreviewWrap').style.display='none';
+  document.getElementById('importSubmitBtn').style.display='none';
+  document.getElementById('importErr').textContent='';
+  openModal('importModal');
+}
+
+function downloadExcelTemplate(){
+  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days'];
+  const sample=[{
+    employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
+    position:'Staff', role:'employee', manager_code:'2400', password:'welcome123',
+    annual_days:10, sick_days:30, personal_days:3,
+  }];
+  const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+  XLSX.writeFile(wb, 'LOI_Employee_Import_Template.xlsx');
+}
+
+function handleExcelFile(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const wb=XLSX.read(e.target.result, {type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws, {defval:''});
+      importRows = rows.map(r=>({
+        employee_code:String(r.employee_code||'').trim(),
+        name:String(r.name||'').trim(),
+        email:String(r.email||'').trim(),
+        department:String(r.department||'').trim(),
+        position:String(r.position||'').trim(),
+        role:String(r.role||'employee').trim() || 'employee',
+        manager_code:String(r.manager_code||'').trim(),
+        password:String(r.password||'').trim(),
+        annual_days:Number(r.annual_days)||0,
+        sick_days:Number(r.sick_days)||0,
+        personal_days:Number(r.personal_days)||0,
+      })).filter(r=>r.employee_code);
+
+      document.getElementById('importCount').textContent = importRows.length;
+      document.getElementById('importSummary').style.display='flex';
+      renderImportPreview();
+      document.getElementById('importSubmitBtn').style.display = importRows.length ? 'inline-block' : 'none';
+    }catch(err){
+      document.getElementById('importErr').textContent = 'Could not read file: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderImportPreview(){
+  const wrap=document.getElementById('importPreviewWrap');
+  const table=document.getElementById('importPreviewTable');
+  if(!importRows.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days'];
+  table.innerHTML = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+    '<tbody>'+importRows.map(r=>'<tr>'+cols.map(c=>`<td>${escHtml(String(r[c]))}</td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+
+async function submitImport(){
+  if(!importRows.length) return;
+  const errEl=document.getElementById('importErr');
+  try{
+    const data = await callApi('import_employees', { employees: importRows });
+    const failed = data.results.filter(r=>!r.ok);
+    closeModal('importModal');
+    if(failed.length){
+      showToast(`⚠️ Imported with ${failed.length} error(s). Check console for details.`,'err');
+      console.warn('Import errors:', failed);
+    } else {
+      showToast(`✅ Imported ${data.results.length} employees successfully`);
+    }
+    loadEmployees();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+// ── ADMIN: REPORTS ──
+async function loadReports(){
+  try{
+    const data = await callApi('list_all_requests');
+    const body=document.getElementById('reportsBody');
+    if(!data.requests.length){ body.innerHTML='<tr><td colspan="6" class="empty-msg">No requests yet</td></tr>'; return; }
+    body.innerHTML = data.requests.map(r=>{
+      const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
+      return `<tr>
+        <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''}</span></td>
+        <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+        <td class="mono">${r.start_date} → ${r.end_date}</td>
+        <td>${r.days_count}</td>
+        <td><span class="badge ${st.cls}">${st.label}</span></td>
+        <td class="mono" style="font-size:.76rem">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── UTIL ──
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return escHtml(s).replace(/'/g,'&#39;'); }
+
+// ── AUTO LOGIN ON LOAD (ถ้ามี token เดิมค้างอยู่) ──
+window.addEventListener('load', async ()=>{
+  const token = localStorage.getItem('loi_token');
+  if(!token) return;
+  try{
+    const data = await callApi('get_my_data');
+    currentUser = data.employee;
+    enterApp();
+  }catch(e){
+    localStorage.removeItem('loi_token');
+  }
+});
+</script>
+</body>
+</html>
 
