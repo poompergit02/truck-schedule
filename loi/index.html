@@ -302,7 +302,7 @@ tr:hover td{background:var(--cream)}
 
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Manager</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Managers (in order)</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
@@ -364,7 +364,7 @@ tr:hover td{background:var(--cream)}
       <div class="field"><label>Role</label>
         <select id="neRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
       </div>
-      <div class="field"><label>Manager Code</label><input type="text" id="neManagerCode" placeholder="optional"/></div>
+      <div class="field"><label>Manager Code(s)</label><input type="text" id="neManagerCode" placeholder="เช่น 2400,2401 (เรียงลำดับอนุมัติ)"/></div>
       <div class="field"><label>Password *</label><input type="text" id="nePassword" placeholder="Temporary password"/></div>
     </div>
     <div class="form-grid">
@@ -384,7 +384,7 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="importModal">
   <div class="modal wide">
     <h3>📊 Import Employees from Excel</h3>
-    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days</p>
+    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)</p>
     <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
       <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
       <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
@@ -650,17 +650,22 @@ async function loadEmployees(){
     const data = await callApi('list_employees');
     const body=document.getElementById('employeesBody');
     const byId={}; data.employees.forEach(e=>byId[e.id]=e);
-    body.innerHTML = data.employees.map(e=>`
+    const chains = data.manager_chains || {};
+    body.innerHTML = data.employees.map(e=>{
+      const chain = chains[e.id] || [];
+      const managerNames = chain.map((mid,i)=>`${i+1}. ${byId[mid]?escHtml(byId[mid].name):'?'}`).join('<br/>');
+      return `
       <tr>
         <td class="mono">${e.employee_code}</td>
         <td>${escHtml(e.name)}</td>
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
         <td>${e.role}</td>
-        <td>${e.manager_id&&byId[e.manager_id]?escHtml(byId[e.manager_id].name):'—'}</td>
+        <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td>${e.active?'<span class="badge badge-approved">Active</span>':'<span class="badge badge-rejected">Inactive</span>'}</td>
         <td><button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -722,7 +727,7 @@ function downloadExcelTemplate(){
   const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days'];
   const sample=[{
     employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
-    position:'Staff', role:'employee', manager_code:'2400', password:'welcome123',
+    position:'Staff', role:'employee', manager_code:'2400,2401', password:'welcome123',
     annual_days:10, sick_days:30, personal_days:3,
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
