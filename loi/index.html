@@ -169,6 +169,24 @@ tr:hover td{background:var(--cream)}
   white-space:pre-line;z-index:20;box-shadow:0 6px 16px rgba(0,0,0,.25);min-width:140px;
 }
 
+/* ══════════ TOGGLE SWITCH (Settings) ══════════ */
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--line-soft)}
+.setting-row:last-child{border-bottom:none}
+.setting-text h4{font-size:.94rem;font-weight:600;color:var(--ink);margin-bottom:3px}
+.setting-text p{font-size:.8rem;color:var(--text-dim)}
+.toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0;cursor:pointer}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--line);border-radius:20px;transition:.2s}
+.toggle-track::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-switch input:checked + .toggle-track{background:var(--success)}
+.toggle-switch input:checked + .toggle-track::before{transform:translateX(22px)}
+
+/* ══════════ DANGER ZONE ══════════ */
+.danger-card{background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:var(--radius);padding:24px;margin-top:28px}
+.danger-card h3{color:var(--danger);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:6px}
+.danger-card p.hint{font-size:.82rem;color:#7a3a3a;margin-bottom:16px}
+.danger-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+
 .empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:.86rem}
 
 /* ══════════ MODAL ══════════ */
@@ -270,8 +288,22 @@ tr:hover td{background:var(--cream)}
               <option value="other">Other</option>
             </select>
           </div>
+          <div class="field">
+            <label>Duration</label>
+            <select id="reqUnit" onchange="toggleLeaveUnit()">
+              <option value="day">Full day(s)</option>
+              <option value="hour">Hourly</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" id="dayFields">
           <div class="field"><label>Start Date</label><input type="date" id="reqStart"/></div>
           <div class="field"><label>End Date</label><input type="date" id="reqEnd"/></div>
+        </div>
+        <div class="form-grid" id="hourFields" style="display:none">
+          <div class="field"><label>Date</label><input type="date" id="reqHourDate"/></div>
+          <div class="field"><label>Start Time</label><input type="time" id="reqStartTime"/></div>
+          <div class="field"><label>End Time</label><input type="time" id="reqEndTime"/></div>
         </div>
         <div class="field" style="margin-bottom:14px">
           <label>Reason</label>
@@ -315,6 +347,7 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Add Employee</button>
           <button class="btn btn-gold" onclick="openImportModal()">📊 Import from Excel</button>
           <button class="btn btn-outline" onclick="downloadExcelTemplate()">⬇ Download Template</button>
+          <button class="btn btn-outline" onclick="exportAllRequestsExcel()">📥 Export All Leave Requests (Excel)</button>
         </div>
       </div>
 
@@ -324,6 +357,29 @@ tr:hover td{background:var(--cream)}
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
+
+      <div class="danger-card">
+        <h3>⚠️ Danger Zone — Testing Only</h3>
+        <p class="hint">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
+        <div class="danger-row">
+          <input type="password" id="dangerPassword" placeholder="Your admin password" style="max-width:220px;padding:9px 12px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
+        </div>
+        <div class="danger-row">
+          <button class="btn btn-sm btn-danger" onclick="resetAllData()">🗑 Delete ALL Data (keep admins)</button>
+        </div>
+        <div class="danger-row">
+          <select id="dangerMonth" style="padding:8px 10px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
+          <select id="dangerYear" style="padding:8px 10px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
+          <button class="btn btn-sm btn-danger" onclick="resetMonthData()">🗑 Delete This Month's Requests Only</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN: SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="section-title">Settings</div>
+      <div class="section-sub">Toggle conditions that apply org-wide</div>
+      <div class="card" id="settingsCard"></div>
     </div>
 
     <!-- REPORTS: my own resolved requests -->
@@ -404,6 +460,10 @@ tr:hover td{background:var(--cream)}
       <div class="field"><label>Sick Days</label><input type="number" id="neSick" value="30"/></div>
       <div class="field"><label>Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
     </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <input type="checkbox" id="neAutoApprove" style="width:auto"/>
+      <label style="margin:0" for="neAutoApprove">⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)</label>
+    </div>
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
@@ -416,7 +476,7 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="importModal">
   <div class="modal wide">
     <h3>📊 Import Employees from Excel</h3>
-    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)</p>
+    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days, auto_approve<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)<br/>auto_approve ใส่ "yes"/"true"/"1" สำหรับผู้บริหารที่ลาแล้วอนุมัติทันที ไม่ต้องผ่านใคร</p>
     <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
       <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
       <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
@@ -573,6 +633,7 @@ function buildTabs(){
       {id:'employees', label:'Employees'},
       {id:'reports', label:'Reports'},
       {id:'reports2', label:'Reports 2'},
+      {id:'settings', label:'Settings'},
     ];
   }
   const bar=document.getElementById('tabBar');
@@ -587,9 +648,10 @@ function showPage(id, el){
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2') loadApprovals();
-  if(id==='employees') loadEmployees();
+  if(id==='employees'){ loadEmployees(); populateDangerSelectors(); }
   if(id==='reports') loadMyResolvedRequests();
   if(id==='reports2') loadLeaveCalendar();
+  if(id==='settings') loadSettings();
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -645,6 +707,17 @@ async function loadMyResolvedRequests(){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// ── แสดงช่วงวัน/เวลาของคำขอลา ให้อ่านง่ายทั้งแบบวันเต็มและแบบรายชั่วโมง ──
+function formatDuration(r){
+  if(r.leave_unit==='hour'){
+    return `${r.start_date} ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}`;
+  }
+  return `${r.start_date} → ${r.end_date}`;
+}
+function formatAmount(r){
+  return r.leave_unit==='hour' ? `${r.hours_count} ชม.` : `${r.days_count} วัน`;
+}
+
 function renderOwnRequestsTable(bodyId, requests){
   const body=document.getElementById(bodyId);
   if(!requests.length){ body.innerHTML='<tr><td colspan="5" class="empty-msg">No requests</td></tr>'; return; }
@@ -652,26 +725,50 @@ function renderOwnRequestsTable(bodyId, requests){
     const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
     return `<tr>
       <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
-      <td class="mono">${r.start_date} → ${r.end_date}</td>
-      <td>${r.days_count}</td>
+      <td class="mono">${formatDuration(r)}</td>
+      <td>${formatAmount(r)}</td>
       <td>${r.reason?escHtml(r.reason):'—'}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
     </tr>`;
   }).join('');
 }
 
+function toggleLeaveUnit(){
+  const unit = document.getElementById('reqUnit').value;
+  document.getElementById('dayFields').style.display = unit==='hour' ? 'none' : 'grid';
+  document.getElementById('hourFields').style.display = unit==='hour' ? 'grid' : 'none';
+}
+
 async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
-  const start_date=document.getElementById('reqStart').value;
-  const end_date=document.getElementById('reqEnd').value;
+  const unit=document.getElementById('reqUnit').value;
   const reason=document.getElementById('reqReason').value.trim();
-  if(!start_date||!end_date){ showToast('⚠️ Please select start and end dates','err'); return; }
-  if(end_date<start_date){ showToast('⚠️ End date must be after start date','err'); return; }
+
+  let payload = { leave_type, reason, leave_unit: unit };
+
+  if(unit==='hour'){
+    const date=document.getElementById('reqHourDate').value;
+    const start_time=document.getElementById('reqStartTime').value;
+    const end_time=document.getElementById('reqEndTime').value;
+    if(!date||!start_time||!end_time){ showToast('⚠️ Please fill in date, start time, and end time','err'); return; }
+    if(end_time<=start_time){ showToast('⚠️ End time must be after start time','err'); return; }
+    payload.start_date = date; payload.end_date = date; payload.start_time = start_time; payload.end_time = end_time;
+  } else {
+    const start_date=document.getElementById('reqStart').value;
+    const end_date=document.getElementById('reqEnd').value;
+    if(!start_date||!end_date){ showToast('⚠️ Please select start and end dates','err'); return; }
+    if(end_date<start_date){ showToast('⚠️ End date must be after start date','err'); return; }
+    payload.start_date = start_date; payload.end_date = end_date;
+  }
+
   try{
-    await callApi('submit_leave_request', { leave_type, start_date, end_date, reason });
+    await callApi('submit_leave_request', payload);
     showToast('✅ Leave request submitted');
     document.getElementById('reqStart').value='';
     document.getElementById('reqEnd').value='';
+    document.getElementById('reqHourDate').value='';
+    document.getElementById('reqStartTime').value='';
+    document.getElementById('reqEndTime').value='';
     document.getElementById('reqReason').value='';
     loadMyLeave();
   }catch(e){ showToast(e.message,'err'); }
@@ -689,8 +786,8 @@ async function loadApprovals(){
       <tr>
         <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></td>
         <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
-        <td class="mono">${r.start_date} → ${r.end_date}</td>
-        <td>${r.days_count}</td>
+        <td class="mono">${formatDuration(r)}</td>
+        <td>${formatAmount(r)}</td>
         <td>${r.reason?escHtml(r.reason):'—'}</td>
         <td><button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button></td>
       </tr>`).join('');
@@ -734,7 +831,7 @@ async function loadEmployees(){
         <td>${escHtml(e.name)}</td>
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
-        <td>${e.role}</td>
+        <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td>${e.active?'<span class="badge badge-approved">Active</span>':'<span class="badge badge-rejected">Inactive</span>'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
@@ -765,12 +862,120 @@ async function deleteEmployee(id, name){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// ── ADMIN: EXPORT ALL LEAVE REQUESTS TO EXCEL ──
+async function exportAllRequestsExcel(){
+  try{
+    const data = await callApi('list_all_requests');
+    if(!data.requests.length){ showToast('No requests to export','err'); return; }
+    const rows = data.requests.map(r=>({
+      employee_code: r.employee?.employee_code||'',
+      name: r.employee?.name||'',
+      department: r.employee?.department||'',
+      leave_type: LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type,
+      unit: r.leave_unit||'day',
+      start_date: r.start_date,
+      end_date: r.end_date,
+      start_time: r.start_time||'',
+      end_time: r.end_time||'',
+      days_count: r.days_count,
+      hours_count: r.hours_count||'',
+      status: (STATUS_LABEL[r.status]||{label:r.status}).label,
+      reason: r.reason||'',
+      submitted_at: r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Leave Requests');
+    XLSX.writeFile(wb, `LOI_All_Leave_Requests_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: SETTINGS (toggle switches) ──
+const SETTING_DEFS = [
+  {
+    key: 'no_same_day_leave_except_sick',
+    title: 'Block same-day leave requests',
+    desc: "Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
+  },
+];
+
+async function loadSettings(){
+  try{
+    const data = await callApi('get_settings');
+    const card = document.getElementById('settingsCard');
+    card.innerHTML = SETTING_DEFS.map(def=>{
+      const on = data.settings[def.key] === 'true';
+      return `
+      <div class="setting-row">
+        <div class="setting-text">
+          <h4>${escHtml(def.title)}</h4>
+          <p>${escHtml(def.desc)}</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${on?'checked':''} onchange="toggleSetting('${def.key}', this.checked)"/>
+          <span class="toggle-track"></span>
+        </label>
+      </div>`;
+    }).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function toggleSetting(key, checked){
+  try{
+    await callApi('update_setting', { key, value: checked ? 'true' : 'false' });
+    showToast(checked ? '✅ Enabled' : '✅ Disabled');
+  }catch(e){ showToast(e.message,'err'); loadSettings(); }
+}
+
+// ── ADMIN: DANGER ZONE (testing resets) ──
+function populateDangerSelectors(){
+  const monthSel = document.getElementById('dangerMonth');
+  const yearSel = document.getElementById('dangerYear');
+  if(!monthSel || monthSel.options.length) return; // already populated
+  const now = new Date();
+  monthSel.innerHTML = MONTH_NAMES_EN.map((m,i)=>`<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('');
+  let yearHtml='';
+  for(let y=now.getFullYear()-2; y<=now.getFullYear()+1; y++){
+    yearHtml += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+  }
+  yearSel.innerHTML = yearHtml;
+}
+
+async function resetAllData(){
+  const pw = document.getElementById('dangerPassword').value;
+  if(!pw){ showToast('⚠️ Enter your admin password first','err'); return; }
+  const ok = confirm('This deletes ALL leave requests, balances, manager chains, and every non-admin employee. This cannot be undone. Continue?');
+  if(!ok) return;
+  try{
+    await callApi('reset_all_data', { confirm_password: pw });
+    showToast('✅ All data deleted');
+    document.getElementById('dangerPassword').value='';
+    loadEmployees();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function resetMonthData(){
+  populateDangerSelectors();
+  const pw = document.getElementById('dangerPassword').value;
+  if(!pw){ showToast('⚠️ Enter your admin password first','err'); return; }
+  const month = Number(document.getElementById('dangerMonth').value);
+  const year = Number(document.getElementById('dangerYear').value);
+  const ok = confirm(`Delete all leave requests starting in ${MONTH_NAMES_EN[month-1]} ${year}? This cannot be undone.`);
+  if(!ok) return;
+  try{
+    const res = await callApi('reset_month_data', { confirm_password: pw, year, month });
+    showToast(`✅ Deleted ${res.deleted_count} request(s)`);
+    document.getElementById('dangerPassword').value='';
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 function openAddEmployeeModal(){
   ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('neRole').value='employee';
   document.getElementById('neAnnual').value=10;
   document.getElementById('neSick').value=30;
   document.getElementById('nePersonal').value=3;
+  document.getElementById('neAutoApprove').checked=false;
   document.getElementById('addEmpErr').textContent='';
   openModal('addEmpModal');
 }
@@ -789,6 +994,7 @@ async function submitAddEmployee(){
     annual_days: Number(document.getElementById('neAnnual').value)||0,
     sick_days: Number(document.getElementById('neSick').value)||0,
     personal_days: Number(document.getElementById('nePersonal').value)||0,
+    auto_approve: document.getElementById('neAutoApprove').checked,
   };
   if(!payload.employee_code||!payload.name||!payload.password){ errEl.textContent='Employee code, name, and password are required'; return; }
   try{
@@ -811,11 +1017,11 @@ function openImportModal(){
 }
 
 function downloadExcelTemplate(){
-  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days'];
+  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days','auto_approve'];
   const sample=[{
     employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
     position:'Staff', role:'employee', manager_code:'2400,2401', password:'welcome123',
-    annual_days:10, sick_days:30, personal_days:3,
+    annual_days:10, sick_days:30, personal_days:3, auto_approve:'no',
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
   const wb = XLSX.utils.book_new();
@@ -844,6 +1050,7 @@ function handleExcelFile(event){
         annual_days:Number(r.annual_days)||0,
         sick_days:Number(r.sick_days)||0,
         personal_days:Number(r.personal_days)||0,
+        auto_approve:String(r.auto_approve||'').trim(),
       })).filter(r=>r.employee_code);
 
       document.getElementById('importCount').textContent = importRows.length;
@@ -862,7 +1069,7 @@ function renderImportPreview(){
   const table=document.getElementById('importPreviewTable');
   if(!importRows.length){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days'];
+  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days','auto_approve'];
   table.innerHTML = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+importRows.map(r=>'<tr>'+cols.map(c=>`<td>${escHtml(String(r[c]))}</td>`).join('')+'</tr>').join('')+'</tbody>';
 }
@@ -920,9 +1127,10 @@ function renderCalendar(requests){
     const end = r.end_date > `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` ? `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` : r.end_date;
     let cur = new Date(start+'T00:00:00Z');
     const endD = new Date(end+'T00:00:00Z');
+    const timeSuffix = r.leave_unit==='hour' ? ` (${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''})` : '';
     while(cur <= endD){
       const day = cur.getUTCDate();
-      if(dayMap[day]) dayMap[day].push({ name: r.employee?.name||'?', code: r.employee?.employee_code||'' });
+      if(dayMap[day]) dayMap[day].push({ name: r.employee?.name||'?', code: r.employee?.employee_code||'', suffix: timeSuffix });
       cur.setUTCDate(cur.getUTCDate()+1);
     }
   });
@@ -931,7 +1139,7 @@ function renderCalendar(requests){
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const people = dayMap[d];
-    const names = people.map(p=>`${p.name} (${p.code})`).join('\n');
+    const names = people.map(p=>`${p.name} (${p.code})${p.suffix||''}`).join('\n');
     const dots = people.slice(0,8).map(()=>`<span class="cal-dot"></span>`).join('');
     html += `<div class="cal-cell"${people.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>
