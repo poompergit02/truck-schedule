@@ -155,6 +155,20 @@ tr:hover td{background:var(--cream)}
 .badge-approved{background:var(--success-bg);color:var(--success)}
 .badge-rejected{background:var(--danger-bg);color:var(--danger)}
 
+/* ══════════ CALENDAR (Reports 2) ══════════ */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{font-size:.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;text-align:center;padding-bottom:4px}
+.cal-cell{min-height:64px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--cream);position:relative}
+.cal-cell.empty{background:transparent;border:none}
+.cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
+.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
+.cal-cell[data-names]:hover::after{
+  content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
+  background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
+  white-space:pre-line;z-index:20;box-shadow:0 6px 16px rgba(0,0,0,.25);min-width:140px;
+}
+
 .empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:.86rem}
 
 /* ══════════ MODAL ══════════ */
@@ -265,19 +279,23 @@ tr:hover td{background:var(--cream)}
         </div>
         <button class="btn btn-primary" onclick="submitLeaveRequest()">Submit Request</button>
       </div>
+    </div>
 
-      <div class="card">
-        <h3>📋 My Request History</h3>
-        <div class="table-wrap"><table>
+    <!-- APPROVALS: my own requests still pending -->
+    <div class="page" id="page-approvals">
+      <div class="section-title">My Pending Requests</div>
+      <div class="section-sub">Your own leave requests currently awaiting approval</div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
           <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
-          <tbody id="myRequestsBody"></tbody>
+          <tbody id="myApprovalsBody"></tbody>
         </table></div>
       </div>
     </div>
 
-    <!-- APPROVALS -->
-    <div class="page" id="page-approvals">
-      <div class="section-title">Pending Approvals</div>
+    <!-- APPROVALS 2: requests from my team awaiting MY decision (manager/admin) -->
+    <div class="page" id="page-approvals2">
+      <div class="section-title">Team Approvals</div>
       <div class="section-sub" id="approvalsSub">Requests waiting for your review</div>
       <div class="card" style="padding:0" id="approvalsCard">
         <div class="table-wrap" style="border:none"><table>
@@ -308,15 +326,29 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ADMIN: REPORTS -->
+    <!-- REPORTS: my own resolved requests -->
     <div class="page" id="page-reports">
-      <div class="section-title">All Leave Requests</div>
-      <div class="section-sub">Complete history across the organization</div>
+      <div class="section-title">My Leave Results</div>
+      <div class="section-sub">Outcome of your own past leave requests</div>
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Submitted</th></tr></thead>
-          <tbody id="reportsBody"></tbody>
+          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+          <tbody id="myReportsBody"></tbody>
         </table></div>
+      </div>
+    </div>
+
+    <!-- REPORTS 2: team leave calendar (manager sees own team, admin sees everyone) -->
+    <div class="page" id="page-reports2">
+      <div class="section-title">Team Leave Calendar</div>
+      <div class="section-sub" id="calendarSub">Who's on approved leave this month</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(-1)">← Prev</button>
+          <div class="mono" id="calendarMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)">Next →</button>
+        </div>
+        <div id="calendarGrid" class="cal-grid"></div>
       </div>
     </div>
   </main>
@@ -518,11 +550,30 @@ function enterApp(){
 }
 
 function buildTabs(){
-  const tabs = [{id:'myleave', label:'My Leave'}];
-  if(currentUser.role==='manager' || currentUser.role==='admin') tabs.push({id:'approvals', label:'Approvals'});
-  if(currentUser.role==='admin'){
-    tabs.push({id:'employees', label:'Employees'});
-    tabs.push({id:'reports', label:'Reports'});
+  let tabs;
+  if(currentUser.role==='employee'){
+    tabs = [
+      {id:'myleave', label:'My Leave'},
+      {id:'approvals', label:'Approvals'},
+      {id:'reports', label:'Reports'},
+    ];
+  } else if(currentUser.role==='manager'){
+    tabs = [
+      {id:'myleave', label:'My Leave'},
+      {id:'approvals', label:'Approvals'},
+      {id:'approvals2', label:'Approvals 2'},
+      {id:'reports', label:'Reports'},
+      {id:'reports2', label:'Reports 2'},
+    ];
+  } else { // admin — sees everything
+    tabs = [
+      {id:'myleave', label:'My Leave'},
+      {id:'approvals', label:'Approvals'},
+      {id:'approvals2', label:'Approvals 2'},
+      {id:'employees', label:'Employees'},
+      {id:'reports', label:'Reports'},
+      {id:'reports2', label:'Reports 2'},
+    ];
   }
   const bar=document.getElementById('tabBar');
   bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${t.id}',this)">${t.label}</button>`).join('');
@@ -533,17 +584,19 @@ function showPage(id, el){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
-  if(id==='approvals') loadApprovals();
+  if(id==='myleave') loadMyLeave();
+  if(id==='approvals') loadMyPendingRequests();
+  if(id==='approvals2') loadApprovals();
   if(id==='employees') loadEmployees();
-  if(id==='reports') loadReports();
+  if(id==='reports') loadMyResolvedRequests();
+  if(id==='reports2') loadLeaveCalendar();
 }
 
-// ── MY LEAVE ──
+// ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
 async function loadMyLeave(){
   try{
     const data = await callApi('get_my_data');
     renderBalances(data.balances);
-    renderMyRequests(data.requests);
   }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
 }
 
@@ -571,9 +624,30 @@ function renderBalances(balances){
   }).join('');
 }
 
-function renderMyRequests(requests){
-  const body=document.getElementById('myRequestsBody');
-  if(!requests.length){ body.innerHTML='<tr><td colspan="5" class="empty-msg">No requests yet</td></tr>'; return; }
+// ── APPROVALS: my own requests still pending ──
+const PENDING_STATUSES = ['pending_manager','pending_admin'];
+const RESOLVED_STATUSES = ['approved','rejected_manager','rejected_admin'];
+
+async function loadMyPendingRequests(){
+  try{
+    const data = await callApi('get_my_data');
+    const pending = data.requests.filter(r=>PENDING_STATUSES.includes(r.status));
+    renderOwnRequestsTable('myApprovalsBody', pending);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── REPORTS: my own resolved requests (approved / rejected) ──
+async function loadMyResolvedRequests(){
+  try{
+    const data = await callApi('get_my_data');
+    const resolved = data.requests.filter(r=>RESOLVED_STATUSES.includes(r.status));
+    renderOwnRequestsTable('myReportsBody', resolved);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderOwnRequestsTable(bodyId, requests){
+  const body=document.getElementById(bodyId);
+  if(!requests.length){ body.innerHTML='<tr><td colspan="5" class="empty-msg">No requests</td></tr>'; return; }
   body.innerHTML = requests.map(r=>{
     const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
     return `<tr>
@@ -663,7 +737,10 @@ async function loadEmployees(){
         <td>${e.role}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td>${e.active?'<span class="badge badge-approved">Active</span>':'<span class="badge badge-rejected">Inactive</span>'}</td>
-        <td><button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button></td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">Delete</button>
+        </td>
       </tr>`;
     }).join('');
   }catch(e){ showToast(e.message,'err'); }
@@ -675,6 +752,16 @@ async function resetEmployeePassword(id, name){
   try{
     await callApi('reset_password', { employee_id:id, new_password:newPw });
     showToast('✅ Password reset');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function deleteEmployee(id, name){
+  const ok = confirm(`Delete ${name}? This deactivates their account, signs them out, and removes them from any manager chains. Their existing leave history is kept for records.`);
+  if(!ok) return;
+  try{
+    await callApi('delete_employee', { employee_id:id });
+    showToast('✅ Employee deleted');
+    loadEmployees();
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -797,24 +884,61 @@ async function submitImport(){
   }catch(e){ errEl.textContent = e.message; }
 }
 
-// ── ADMIN: REPORTS ──
-async function loadReports(){
+// ── REPORTS 2: team leave calendar (manager: own team, admin: everyone) ──
+const MONTH_NAMES_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth()+1; // 1-12
+
+function shiftCalendarMonth(delta){
+  calMonth += delta;
+  if(calMonth<1){ calMonth=12; calYear--; }
+  if(calMonth>12){ calMonth=1; calYear++; }
+  loadLeaveCalendar();
+}
+
+async function loadLeaveCalendar(){
+  document.getElementById('calendarSub').textContent =
+    currentUser.role==='admin' ? "Approved leave across the whole organization" : "Approved leave for employees who report to you (at any approval step)";
+  document.getElementById('calendarMonthLabel').textContent = `${MONTH_NAMES_EN[calMonth-1]} ${calYear}`;
   try{
-    const data = await callApi('list_all_requests');
-    const body=document.getElementById('reportsBody');
-    if(!data.requests.length){ body.innerHTML='<tr><td colspan="6" class="empty-msg">No requests yet</td></tr>'; return; }
-    body.innerHTML = data.requests.map(r=>{
-      const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
-      return `<tr>
-        <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''}</span></td>
-        <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
-        <td class="mono">${r.start_date} → ${r.end_date}</td>
-        <td>${r.days_count}</td>
-        <td><span class="badge ${st.cls}">${st.label}</span></td>
-        <td class="mono" style="font-size:.76rem">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
-      </tr>`;
-    }).join('');
+    const data = await callApi('get_leave_calendar', { year: calYear, month: calMonth });
+    renderCalendar(data.requests || []);
   }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderCalendar(requests){
+  const grid = document.getElementById('calendarGrid');
+  const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+  const firstDow = new Date(calYear, calMonth-1, 1).getDay(); // 0=Sun
+
+  // สร้าง map: day -> [{name, code}]
+  const dayMap = {};
+  for(let d=1; d<=daysInMonth; d++) dayMap[d] = [];
+  const pad = n => String(n).padStart(2,'0');
+  requests.forEach(r=>{
+    const start = r.start_date < `${calYear}-${pad(calMonth)}-01` ? `${calYear}-${pad(calMonth)}-01` : r.start_date;
+    const end = r.end_date > `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` ? `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` : r.end_date;
+    let cur = new Date(start+'T00:00:00Z');
+    const endD = new Date(end+'T00:00:00Z');
+    while(cur <= endD){
+      const day = cur.getUTCDate();
+      if(dayMap[day]) dayMap[day].push({ name: r.employee?.name||'?', code: r.employee?.employee_code||'' });
+      cur.setUTCDate(cur.getUTCDate()+1);
+    }
+  });
+
+  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const people = dayMap[d];
+    const names = people.map(p=>`${p.name} (${p.code})`).join('\n');
+    const dots = people.slice(0,8).map(()=>`<span class="cal-dot"></span>`).join('');
+    html += `<div class="cal-cell"${people.length?` data-names="${escAttr(names)}"`:''}>
+      <div class="cal-daynum">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
 }
 
 // ── UTIL ──
