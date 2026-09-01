@@ -163,6 +163,10 @@ tr:hover td{background:var(--cream)}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
+.cal-dot-annual{background:var(--plum-600)}
+.cal-dot-sick{background:var(--success)}
+.cal-dot-personal{background:var(--gold)}
+.cal-dot-other{background:var(--text-faint)}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
   background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
@@ -310,6 +314,17 @@ tr:hover td{background:var(--cream)}
           <textarea id="reqReason" placeholder="Briefly explain the reason for leave..."></textarea>
         </div>
         <button class="btn btn-primary" onclick="submitLeaveRequest()">Submit Request</button>
+      </div>
+
+      <div class="card">
+        <h3>🗓️ My Leave Calendar</h3>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(-1)">← Prev</button>
+          <div class="mono" id="myCalMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
+          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(1)">Next →</button>
+        </div>
+        <div id="myCalGrid" class="cal-grid"></div>
+        <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
 
@@ -580,6 +595,18 @@ function doLogout(){
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
   document.getElementById('loginPassword').value='';
+
+  // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
+  ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
+   'calendarGrid','settingsCard','myCalGrid','tabBar'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML='';
+  });
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-myleave').classList.add('active');
+  myCalYear = new Date().getFullYear();
+  myCalMonth = new Date().getMonth()+1;
+  myLeaveRequestsCache = [];
 }
 
 async function submitChangePassword(){
@@ -611,11 +638,15 @@ function enterApp(){
 
 function buildTabs(){
   let tabs;
-  if(currentUser.role==='employee'){
+  if(currentUser.role==='admin'){
     tabs = [
       {id:'myleave', label:'My Leave'},
       {id:'approvals', label:'Approvals'},
+      {id:'approvals2', label:'Approvals 2'},
+      {id:'employees', label:'Employees'},
       {id:'reports', label:'Reports'},
+      {id:'reports2', label:'Reports 2'},
+      {id:'settings', label:'Settings'},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
@@ -625,15 +656,11 @@ function buildTabs(){
       {id:'reports', label:'Reports'},
       {id:'reports2', label:'Reports 2'},
     ];
-  } else { // admin — sees everything
+  } else { // employee — safe default, never falls through to elevated tabs
     tabs = [
       {id:'myleave', label:'My Leave'},
       {id:'approvals', label:'Approvals'},
-      {id:'approvals2', label:'Approvals 2'},
-      {id:'employees', label:'Employees'},
       {id:'reports', label:'Reports'},
-      {id:'reports2', label:'Reports 2'},
-      {id:'settings', label:'Settings'},
     ];
   }
   const bar=document.getElementById('tabBar');
@@ -659,7 +686,67 @@ async function loadMyLeave(){
   try{
     const data = await callApi('get_my_data');
     renderBalances(data.balances);
+    myLeaveRequestsCache = data.requests || [];
+    renderMyCalendar();
   }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
+}
+
+// ── MY LEAVE CALENDAR (personal, colored by leave type) ──
+let myCalYear = new Date().getFullYear();
+let myCalMonth = new Date().getMonth()+1; // 1-12
+let myLeaveRequestsCache = [];
+
+function shiftMyCalendarMonth(delta){
+  myCalMonth += delta;
+  if(myCalMonth<1){ myCalMonth=12; myCalYear--; }
+  if(myCalMonth>12){ myCalMonth=1; myCalYear++; }
+  renderMyCalendar();
+}
+
+function renderMyCalendar(){
+  const labelEl = document.getElementById('myCalMonthLabel');
+  if(!labelEl) return; // page not in DOM yet
+  labelEl.textContent = `${MONTH_NAMES_EN[myCalMonth-1]} ${myCalYear}`;
+
+  const daysInMonth = new Date(myCalYear, myCalMonth, 0).getDate();
+  const firstDow = new Date(myCalYear, myCalMonth-1, 1).getDay();
+  const pad = n => String(n).padStart(2,'0');
+  const monthStart = `${myCalYear}-${pad(myCalMonth)}-01`;
+  const monthEnd = `${myCalYear}-${pad(myCalMonth)}-${pad(daysInMonth)}`;
+
+  const dayMap = {};
+  for(let d=1; d<=daysInMonth; d++) dayMap[d] = [];
+
+  myLeaveRequestsCache
+    .filter(r => !['rejected_manager','rejected_admin'].includes(r.status))
+    .forEach(r=>{
+      if(r.end_date < monthStart || r.start_date > monthEnd) return;
+      const start = r.start_date < monthStart ? monthStart : r.start_date;
+      const end = r.end_date > monthEnd ? monthEnd : r.end_date;
+      let cur = new Date(start+'T00:00:00Z');
+      const endD = new Date(end+'T00:00:00Z');
+      while(cur <= endD){
+        const day = cur.getUTCDate();
+        if(dayMap[day]) dayMap[day].push(r.leave_type);
+        cur.setUTCDate(cur.getUTCDate()+1);
+      }
+    });
+
+  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const types = dayMap[d];
+    const dots = types.map(t=>`<span class="cal-dot cal-dot-${t}" title="${LEAVE_TYPE_LABEL[t]||t}"></span>`).join('');
+    html += `<div class="cal-cell">
+      <div class="cal-daynum">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  document.getElementById('myCalGrid').innerHTML = html;
+
+  document.getElementById('myCalLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
+  ).join('');
 }
 
 function renderBalances(balances){
@@ -998,9 +1085,12 @@ async function submitAddEmployee(){
   };
   if(!payload.employee_code||!payload.name||!payload.password){ errEl.textContent='Employee code, name, and password are required'; return; }
   try{
-    await callApi('add_employee', payload);
+    const res = await callApi('add_employee', payload);
     closeModal('addEmpModal');
     showToast('✅ Employee added');
+    if(res.manager_codes_not_found && res.manager_codes_not_found.length){
+      showToast(`⚠️ Manager code(s) not found, skipped: ${res.manager_codes_not_found.join(', ')}`,'err');
+    }
     loadEmployees();
   }catch(e){ errEl.textContent=e.message; }
 }
@@ -1080,12 +1170,17 @@ async function submitImport(){
   try{
     const data = await callApi('import_employees', { employees: importRows });
     const failed = data.results.filter(r=>!r.ok);
+    const mgrWarnings = data.results.filter(r=>r.manager_codes_not_found && r.manager_codes_not_found.length);
     closeModal('importModal');
     if(failed.length){
       showToast(`⚠️ Imported with ${failed.length} error(s). Check console for details.`,'err');
       console.warn('Import errors:', failed);
     } else {
       showToast(`✅ Imported ${data.results.length} employees successfully`);
+    }
+    if(mgrWarnings.length){
+      showToast(`⚠️ Manager code(s) not found for: ${mgrWarnings.map(r=>`${r.employee_code} (${r.manager_codes_not_found.join(',')})`).join('; ')}`,'err');
+      console.warn('Manager code warnings:', mgrWarnings);
     }
     loadEmployees();
   }catch(e){ errEl.textContent = e.message; }
