@@ -132,6 +132,7 @@ main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
 }
 .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--plum-600);background:var(--white)}
 .field textarea{resize:vertical;min-height:70px}
+.date-confirm{font-size:.74rem;color:var(--plum-700);margin-top:4px;font-family:'IBM Plex Mono',monospace;min-height:14px}
 .btn{padding:11px 20px;border:none;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:.88rem;transition:.15s}
 .btn-primary{background:linear-gradient(135deg,var(--plum-600),var(--plum-900));color:#fff}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
@@ -167,6 +168,9 @@ tr:hover td{background:var(--cream)}
 .cal-dot-sick{background:var(--success)}
 .cal-dot-personal{background:var(--gold)}
 .cal-dot-other{background:var(--text-faint)}
+.cal-dot-maternity{background:#E0679A}
+.cal-dot-paternity{background:#3B82C4}
+.cal-dot-priesthood{background:#C9A227}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
   background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
@@ -290,6 +294,9 @@ tr:hover td{background:var(--cream)}
               <option value="sick">Sick Leave</option>
               <option value="personal">Personal Leave</option>
               <option value="other">Other</option>
+              <option value="maternity">🤱 Maternity Leave</option>
+              <option value="paternity">🤝 Paternity Leave</option>
+              <option value="priesthood">🙏 Priesthood Ordination Leave</option>
             </select>
           </div>
           <div class="field">
@@ -301,11 +308,11 @@ tr:hover td{background:var(--cream)}
           </div>
         </div>
         <div class="form-grid" id="dayFields">
-          <div class="field"><label>Start Date</label><input type="date" id="reqStart"/></div>
-          <div class="field"><label>End Date</label><input type="date" id="reqEnd"/></div>
+          <div class="field"><label>Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm')"/><div class="date-confirm" id="reqStartConfirm"></div></div>
+          <div class="field"><label>End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
-          <div class="field"><label>Date</label><input type="date" id="reqHourDate"/></div>
+          <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm')"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
           <div class="field"><label>Start Time</label><input type="time" id="reqStartTime"/></div>
           <div class="field"><label>End Time</label><input type="time" id="reqEndTime"/></div>
         </div>
@@ -362,13 +369,23 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Add Employee</button>
           <button class="btn btn-gold" onclick="openImportModal()">📊 Import from Excel</button>
           <button class="btn btn-outline" onclick="downloadExcelTemplate()">⬇ Download Template</button>
-          <button class="btn btn-outline" onclick="exportAllRequestsExcel()">📥 Export All Leave Requests (Excel)</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)">
+          <label style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin:0">📥 Export:</label>
+          <select id="exportScope" onchange="onExportScopeChange()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem">
+            <option value="all">All requests</option>
+            <option value="month">By month</option>
+            <option value="year">By year</option>
+          </select>
+          <select id="exportMonth" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
+          <select id="exportYear" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
+          <button class="btn btn-outline" onclick="exportAllRequestsExcel()">Export to Excel</button>
         </div>
       </div>
 
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Managers (in order)</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Managers (in order)</th><th>Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
@@ -395,6 +412,13 @@ tr:hover td{background:var(--cream)}
       <div class="section-title">Settings</div>
       <div class="section-sub">Toggle conditions that apply org-wide</div>
       <div class="card" id="settingsCard"></div>
+    </div>
+
+    <!-- ADMIN: LOI LOGS (access/login history) -->
+    <div class="page" id="page-logs">
+      <div class="section-title">LOI Logs</div>
+      <div class="section-sub">Recent login activity, most recent first</div>
+      <div class="card" id="logsCard" style="font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.9"></div>
     </div>
 
     <!-- REPORTS: my own resolved requests -->
@@ -457,7 +481,7 @@ tr:hover td{background:var(--cream)}
 <!-- MODAL: ADD EMPLOYEE -->
 <div class="modal-bg" id="addEmpModal">
   <div class="modal">
-    <h3>➕ Add Employee</h3>
+    <h3 id="addEmpModalTitle">➕ Add Employee</h3>
     <div class="form-grid">
       <div class="field"><label>Employee Code *</label><input type="text" id="neCode"/></div>
       <div class="field"><label>Name *</label><input type="text" id="neName"/></div>
@@ -468,9 +492,9 @@ tr:hover td{background:var(--cream)}
         <select id="neRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
       </div>
       <div class="field"><label>Manager Code(s)</label><input type="text" id="neManagerCode" placeholder="เช่น 2400,2401 (เรียงลำดับอนุมัติ)"/></div>
-      <div class="field"><label>Password *</label><input type="text" id="nePassword" placeholder="Temporary password"/></div>
+      <div class="field" id="nePasswordWrap"><label>Password *</label><input type="text" id="nePassword" placeholder="Temporary password"/></div>
     </div>
-    <div class="form-grid">
+    <div class="form-grid" id="neQuotaFields">
       <div class="field"><label>Annual Days</label><input type="number" id="neAnnual" value="10"/></div>
       <div class="field"><label>Sick Days</label><input type="number" id="neSick" value="30"/></div>
       <div class="field"><label>Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
@@ -482,7 +506,7 @@ tr:hover td{background:var(--cream)}
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAddEmployee()">Add Employee</button>
+      <button class="btn btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
     </div>
   </div>
 </div>
@@ -521,7 +545,10 @@ tr:hover td{background:var(--cream)}
 const API_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co/functions/v1/bright-endpoint';
 const SUPABASE_ANON_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
 
-const LEAVE_TYPE_LABEL = { annual:'Annual / Vacation', sick:'Sick Leave', personal:'Personal Leave', other:'Other' };
+const LEAVE_TYPE_LABEL = {
+  annual:'Annual / Vacation', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
+  maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
+};
 const STATUS_LABEL = {
   pending_manager:{label:'Pending Manager', cls:'badge-pending'},
   pending_admin:{label:'Pending Admin', cls:'badge-pending'},
@@ -598,7 +625,7 @@ function doLogout(){
 
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
-   'calendarGrid','settingsCard','myCalGrid','tabBar'].forEach(id=>{
+   'calendarGrid','settingsCard','logsCard','myCalGrid','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -647,6 +674,7 @@ function buildTabs(){
       {id:'reports', label:'Reports'},
       {id:'reports2', label:'Reports 2'},
       {id:'settings', label:'Settings'},
+      {id:'logs', label:'LOI Logs'},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
@@ -679,6 +707,7 @@ function showPage(id, el){
   if(id==='reports') loadMyResolvedRequests();
   if(id==='reports2') loadLeaveCalendar();
   if(id==='settings') loadSettings();
+  if(id==='logs') loadLogs();
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -795,11 +824,26 @@ async function loadMyResolvedRequests(){
 }
 
 // ── แสดงช่วงวัน/เวลาของคำขอลา ให้อ่านง่ายทั้งแบบวันเต็มและแบบรายชั่วโมง ──
+// ── แปลง YYYY-MM-DD → DD/MM/YYYY (แบบไทย ไม่ใช่ MM/DD/YYYY แบบอเมริกัน) ──
+function formatDMY(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ตัวเลือกวันที่ของเบราว์เซอร์บางเครื่องโชว์เป็น mm/dd/yyyy ตาม locale ของเครื่อง
+// เพิ่มข้อความยืนยันแบบ dd/mm/yyyy ที่ชัดเจนไม่กำกวมไว้ใต้ช่องกรอก
+function updateDateConfirm(inputId, confirmId){
+  const val = document.getElementById(inputId).value;
+  const el = document.getElementById(confirmId);
+  el.textContent = val ? `📅 ${formatDMY(val)}` : '';
+}
+
 function formatDuration(r){
   if(r.leave_unit==='hour'){
-    return `${r.start_date} ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}`;
+    return `${formatDMY(r.start_date)} ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}`;
   }
-  return `${r.start_date} → ${r.end_date}`;
+  return `${formatDMY(r.start_date)} → ${formatDMY(r.end_date)}`;
 }
 function formatAmount(r){
   return r.leave_unit==='hour' ? `${r.hours_count} ชม.` : `${r.days_count} วัน`;
@@ -857,6 +901,7 @@ async function submitLeaveRequest(){
     document.getElementById('reqStartTime').value='';
     document.getElementById('reqEndTime').value='';
     document.getElementById('reqReason').value='';
+    ['reqStartConfirm','reqEndConfirm','reqHourDateConfirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=''; });
     loadMyLeave();
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -903,12 +948,17 @@ async function submitDecision(decision){
 }
 
 // ── ADMIN: EMPLOYEES ──
+let employeesCache = [];
+let managerChainsCache = {};
+
 async function loadEmployees(){
   try{
     const data = await callApi('list_employees');
     const body=document.getElementById('employeesBody');
     const byId={}; data.employees.forEach(e=>byId[e.id]=e);
     const chains = data.manager_chains || {};
+    employeesCache = data.employees;
+    managerChainsCache = chains;
     body.innerHTML = data.employees.map(e=>{
       const chain = chains[e.id] || [];
       const managerNames = chain.map((mid,i)=>`${i+1}. ${byId[mid]?escHtml(byId[mid].name):'?'}`).join('<br/>');
@@ -920,8 +970,8 @@ async function loadEmployees(){
         <td>${e.department?escHtml(e.department):'—'}</td>
         <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
-        <td>${e.active?'<span class="badge badge-approved">Active</span>':'<span class="badge badge-rejected">Inactive</span>'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">Edit</button>
           <button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button>
           <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">Delete</button>
         </td>
@@ -940,7 +990,7 @@ async function resetEmployeePassword(id, name){
 }
 
 async function deleteEmployee(id, name){
-  const ok = confirm(`Delete ${name}? This deactivates their account, signs them out, and removes them from any manager chains. Their existing leave history is kept for records.`);
+  const ok = confirm(`Permanently delete ${name}? This removes their account and leave history entirely, signs them out, and removes them from any manager chains. This cannot be undone.`);
   if(!ok) return;
   try{
     await callApi('delete_employee', { employee_id:id });
@@ -950,30 +1000,69 @@ async function deleteEmployee(id, name){
 }
 
 // ── ADMIN: EXPORT ALL LEAVE REQUESTS TO EXCEL ──
+function onExportScopeChange(){
+  const scope = document.getElementById('exportScope').value;
+  populateMonthYearSelectors('exportMonth','exportYear');
+  document.getElementById('exportMonth').style.display = scope==='month' ? 'inline-block' : 'none';
+  document.getElementById('exportYear').style.display = (scope==='month'||scope==='year') ? 'inline-block' : 'none';
+}
+
+function populateMonthYearSelectors(monthId, yearId){
+  const monthSel = document.getElementById(monthId);
+  const yearSel = document.getElementById(yearId);
+  if(!monthSel || monthSel.options.length) return; // already populated
+  const now = new Date();
+  monthSel.innerHTML = MONTH_NAMES_EN.map((m,i)=>`<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('');
+  let yearHtml='';
+  for(let y=now.getFullYear()-2; y<=now.getFullYear()+1; y++){
+    yearHtml += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+  }
+  yearSel.innerHTML = yearHtml;
+}
+
 async function exportAllRequestsExcel(){
+  const scope = document.getElementById('exportScope').value;
   try{
     const data = await callApi('list_all_requests');
-    if(!data.requests.length){ showToast('No requests to export','err'); return; }
-    const rows = data.requests.map(r=>({
+    let filtered = data.requests;
+    let filenameSuffix = 'All';
+
+    if(scope==='month'){
+      const month = Number(document.getElementById('exportMonth').value);
+      const year = Number(document.getElementById('exportYear').value);
+      const pad = n => String(n).padStart(2,'0');
+      const mStart = `${year}-${pad(month)}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const mEnd = `${year}-${pad(month)}-${pad(lastDay)}`;
+      filtered = filtered.filter(r => r.start_date<=mEnd && r.end_date>=mStart);
+      filenameSuffix = `${MONTH_NAMES_EN[month-1]}_${year}`;
+    } else if(scope==='year'){
+      const year = Number(document.getElementById('exportYear').value);
+      filtered = filtered.filter(r => r.start_date.startsWith(String(year)) || r.end_date.startsWith(String(year)));
+      filenameSuffix = String(year);
+    }
+
+    if(!filtered.length){ showToast('No requests to export for this range','err'); return; }
+    const rows = filtered.map(r=>({
       employee_code: r.employee?.employee_code||'',
       name: r.employee?.name||'',
       department: r.employee?.department||'',
       leave_type: LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type,
       unit: r.leave_unit||'day',
-      start_date: r.start_date,
-      end_date: r.end_date,
+      start_date: formatDMY(r.start_date),
+      end_date: formatDMY(r.end_date),
       start_time: r.start_time||'',
       end_time: r.end_time||'',
       days_count: r.days_count,
       hours_count: r.hours_count||'',
       status: (STATUS_LABEL[r.status]||{label:r.status}).label,
       reason: r.reason||'',
-      submitted_at: r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '',
+      submitted_at: r.created_at ? formatDMY(r.created_at.slice(0,10)) + ' ' + new Date(r.created_at).toLocaleTimeString('en-GB') : '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Leave Requests');
-    XLSX.writeFile(wb, `LOI_All_Leave_Requests_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.writeFile(wb, `LOI_Leave_Requests_${filenameSuffix}.xlsx`);
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -1014,18 +1103,27 @@ async function toggleSetting(key, checked){
   }catch(e){ showToast(e.message,'err'); loadSettings(); }
 }
 
+// ── ADMIN: LOI LOGS ──
+function formatLogTimestamp(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+async function loadLogs(){
+  try{
+    const data = await callApi('get_access_logs');
+    const card = document.getElementById('logsCard');
+    if(!data.logs.length){ card.innerHTML = '<div class="empty-msg">No logs yet</div>'; return; }
+    card.innerHTML = data.logs.map(l=>
+      `<div>${formatLogTimestamp(l.created_at)} — ${escHtml(l.name||'?')} (${escHtml(l.employee_code||'?')}) — ${escHtml(l.event_type)}</div>`
+    ).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 // ── ADMIN: DANGER ZONE (testing resets) ──
 function populateDangerSelectors(){
-  const monthSel = document.getElementById('dangerMonth');
-  const yearSel = document.getElementById('dangerYear');
-  if(!monthSel || monthSel.options.length) return; // already populated
-  const now = new Date();
-  monthSel.innerHTML = MONTH_NAMES_EN.map((m,i)=>`<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('');
-  let yearHtml='';
-  for(let y=now.getFullYear()-2; y<=now.getFullYear()+1; y++){
-    yearHtml += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
-  }
-  yearSel.innerHTML = yearHtml;
+  populateMonthYearSelectors('dangerMonth','dangerYear');
 }
 
 async function resetAllData(){
@@ -1056,19 +1154,79 @@ async function resetMonthData(){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+let editingEmployeeId = null;
+
 function openAddEmployeeModal(){
+  editingEmployeeId = null;
   ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('neCode').disabled=false;
   document.getElementById('neRole').value='employee';
   document.getElementById('neAnnual').value=10;
   document.getElementById('neSick').value=30;
   document.getElementById('nePersonal').value=3;
   document.getElementById('neAutoApprove').checked=false;
   document.getElementById('addEmpErr').textContent='';
+  document.getElementById('addEmpModalTitle').textContent='➕ Add Employee';
+  document.getElementById('addEmpSubmitBtn').textContent='Add Employee';
+  document.getElementById('nePasswordWrap').style.display='block';
+  document.getElementById('neQuotaFields').style.display='grid';
   openModal('addEmpModal');
 }
 
-async function submitAddEmployee(){
+function openEditEmployeeModal(id){
+  const emp = employeesCache.find(e=>e.id===id);
+  if(!emp){ showToast('Employee not found','err'); return; }
+  editingEmployeeId = id;
+
+  document.getElementById('neCode').value = emp.employee_code;
+  document.getElementById('neCode').disabled = true; // employee_code แก้ไม่ได้
+  document.getElementById('neName').value = emp.name || '';
+  document.getElementById('neEmail').value = emp.email || '';
+  document.getElementById('neDept').value = emp.department || '';
+  document.getElementById('nePosition').value = emp.position || '';
+  document.getElementById('neRole').value = emp.role || 'employee';
+  document.getElementById('neAutoApprove').checked = !!emp.auto_approve;
+
+  // แปลง manager_id ในผังกลับเป็น employee_code เพื่อแสดงในช่องแก้ไข
+  const chain = managerChainsCache[id] || [];
+  const codes = chain.map(mid => employeesCache.find(e=>e.id===mid)?.employee_code).filter(Boolean);
+  document.getElementById('neManagerCode').value = codes.join(',');
+
+  document.getElementById('addEmpErr').textContent='';
+  document.getElementById('addEmpModalTitle').textContent=`✏️ Edit ${emp.name}`;
+  document.getElementById('addEmpSubmitBtn').textContent='Save Changes';
+  document.getElementById('nePasswordWrap').style.display='none'; // แก้รหัสผ่านใช้ปุ่ม Reset PW แทน
+  document.getElementById('neQuotaFields').style.display='none'; // ปรับโควตาแยกต่างหาก ยังไม่รองรับในหน้านี้
+  openModal('addEmpModal');
+}
+
+async function submitAddOrEditEmployee(){
   const errEl=document.getElementById('addEmpErr');
+
+  if(editingEmployeeId){
+    const payload={
+      employee_id: editingEmployeeId,
+      name: document.getElementById('neName').value.trim(),
+      email: document.getElementById('neEmail').value.trim(),
+      department: document.getElementById('neDept').value.trim(),
+      position: document.getElementById('nePosition').value.trim(),
+      role: document.getElementById('neRole').value,
+      manager_code: document.getElementById('neManagerCode').value.trim(),
+      auto_approve: document.getElementById('neAutoApprove').checked,
+    };
+    if(!payload.name){ errEl.textContent='Name is required'; return; }
+    try{
+      const res = await callApi('update_employee', payload);
+      closeModal('addEmpModal');
+      showToast('✅ Employee updated');
+      if(res.manager_codes_not_found && res.manager_codes_not_found.length){
+        showToast(`⚠️ Manager code(s) not found, skipped: ${res.manager_codes_not_found.join(', ')}`,'err');
+      }
+      loadEmployees();
+    }catch(e){ errEl.textContent=e.message; }
+    return;
+  }
+
   const payload={
     employee_code: document.getElementById('neCode').value.trim(),
     name: document.getElementById('neName').value.trim(),
