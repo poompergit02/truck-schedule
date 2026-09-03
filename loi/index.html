@@ -343,7 +343,7 @@ tr:hover td{background:var(--cream)}
 
     <!-- APPROVALS: my own requests still pending -->
     <div class="page" id="page-approvals">
-      <div class="section-title">My Pending Requests</div>
+      <div class="section-title">My Requests</div>
       <div class="section-sub">Your own leave requests currently awaiting approval</div>
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
@@ -355,11 +355,20 @@ tr:hover td{background:var(--cream)}
 
     <!-- APPROVALS 2: requests from my team awaiting MY decision (manager/admin) -->
     <div class="page" id="page-approvals2">
-      <div class="section-title">Team Approvals</div>
+      <div class="section-title">My Team Requests</div>
       <div class="section-sub" id="approvalsSub">Requests waiting for your review</div>
       <div class="card" style="padding:0" id="approvalsCard">
+        <div style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line-soft)">
+          <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="selectAllApprovals" onchange="toggleSelectAllApprovals(this)"/> Select All</label>
+          <select id="bulkDecision" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.84rem">
+            <option value="approve">Approve</option>
+            <option value="reject">Reject</option>
+          </select>
+          <input type="text" id="bulkComment" placeholder="Comment (optional, applied to all selected)" style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.84rem"/>
+          <button class="btn btn-sm btn-primary" onclick="submitBulkDecision()">Apply to Selected</button>
+        </div>
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Action</th></tr></thead>
+          <thead><tr><th></th><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Action</th></tr></thead>
           <tbody id="approvalsBody"></tbody>
         </table></div>
       </div>
@@ -472,7 +481,7 @@ tr:hover td{background:var(--cream)}
 
     <!-- REPORTS 2: team leave calendar (manager sees own team, admin sees everyone) -->
     <div class="page" id="page-reports2">
-      <div class="section-title">Team Leave Calendar</div>
+      <div class="section-title">Leave Calendar</div>
       <div class="section-sub" id="calendarSub">Who's on approved leave this month</div>
       <div class="card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
@@ -544,6 +553,7 @@ tr:hover td{background:var(--cream)}
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
+      <button class="btn btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()">💰 Edit Balances</button>
       <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
       <button class="btn btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
     </div>
@@ -619,6 +629,20 @@ tr:hover td{background:var(--cream)}
   </div>
 </div>
 
+<!-- MODAL: EDIT ONE EMPLOYEE'S LEAVE BALANCES (admin) -->
+<div class="modal-bg" id="editBalancesModal">
+  <div class="modal">
+    <h3 id="editBalancesTitle">💰 Edit Leave Balances</h3>
+    <p class="hint">Adjusts the total day quota for this year. Days already used are not affected.</p>
+    <div id="editBalancesFields"></div>
+    <div class="err-text" id="editBalancesErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editBalancesModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditBalances()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: IMPORT EXCEL -->
 <div class="modal-bg" id="importModal">
   <div class="modal wide">
@@ -648,7 +672,7 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="holidayImportModal">
   <div class="modal wide">
     <h3>📊 Import Company Holidays from Excel</h3>
-    <p class="hint">Columns required: date (YYYY-MM-DD), label</p>
+    <p class="hint">Columns required: date, label. Date column accepts DD/MM/YYYY, YYYY-MM-DD, or an Excel date cell — all are auto-converted correctly.</p>
     <div class="upload-zone" onclick="document.getElementById('holidayExcelFile').click()">
       <input type="file" id="holidayExcelFile" accept=".xlsx,.xls" style="display:none" onchange="handleHolidayExcelFile(event)"/>
       <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
@@ -807,11 +831,11 @@ function buildTabs(){
   if(currentUser.role==='admin'){
     tabs = [
       {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'Approvals'},
-      {id:'approvals2', label:'Approvals 2'},
+      {id:'approvals', label:'My Requests'},
+      {id:'approvals2', label:'My Team Requests'},
       {id:'employees', label:'Employees'},
       {id:'reports', label:'Reports'},
-      {id:'reports2', label:'Reports 2'},
+      {id:'reports2', label:'Leave Calendar'},
       {id:'settings', label:'Settings'},
       {id:'logs', label:'LOI Logs'},
       {id:'holidays', label:'⭐ Company Holidays'},
@@ -819,15 +843,15 @@ function buildTabs(){
   } else if(currentUser.role==='manager'){
     tabs = [
       {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'Approvals'},
-      {id:'approvals2', label:'Approvals 2'},
+      {id:'approvals', label:'My Requests'},
+      {id:'approvals2', label:'My Team Requests'},
       {id:'reports', label:'Reports'},
-      {id:'reports2', label:'Reports 2'},
+      {id:'reports2', label:'Leave Calendar'},
     ];
   } else { // employee — safe default, never falls through to elevated tabs
     tabs = [
       {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'Approvals'},
+      {id:'approvals', label:'My Requests'},
       {id:'reports', label:'Reports'},
     ];
   }
@@ -1092,12 +1116,15 @@ async function submitLeaveRequest(){
 async function loadApprovals(){
   document.getElementById('approvalsSub').textContent =
     currentUser.role==='manager' ? "Requests from your team awaiting your review" : "Requests approved by managers, awaiting final approval";
+  document.getElementById('selectAllApprovals').checked = false;
+  document.getElementById('bulkComment').value='';
   try{
     const data = await callApi('get_pending_approvals');
     const body=document.getElementById('approvalsBody');
-    if(!data.requests.length){ body.innerHTML='<tr><td colspan="6" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
+    if(!data.requests.length){ body.innerHTML='<tr><td colspan="7" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
     body.innerHTML = data.requests.map(r=>`
       <tr>
+        <td><input type="checkbox" class="approvalCheckbox" value="${r.id}"/></td>
         <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></td>
         <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
         <td class="mono">${formatDuration(r)}</td>
@@ -1106,6 +1133,28 @@ async function loadApprovals(){
         <td><button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button></td>
       </tr>`).join('');
   }catch(e){ showToast(e.message,'err'); }
+}
+
+function toggleSelectAllApprovals(cb){
+  document.querySelectorAll('.approvalCheckbox').forEach(el=>el.checked=cb.checked);
+}
+
+async function submitBulkDecision(){
+  const checked = [...document.querySelectorAll('.approvalCheckbox:checked')].map(el=>el.value);
+  if(!checked.length){ showToast('⚠️ Select at least one request first','err'); return; }
+  const decision = document.getElementById('bulkDecision').value;
+  const comment = document.getElementById('bulkComment').value.trim();
+  const ok = confirm(`${decision==='approve'?'Approve':'Reject'} ${checked.length} selected request(s)?`);
+  if(!ok) return;
+  let okCount=0, failCount=0;
+  for(const id of checked){
+    try{
+      await callApi('approve_reject_request', { request_id:id, decision, comment });
+      okCount++;
+    }catch(e){ failCount++; }
+  }
+  showToast(`✅ ${decision==='approve'?'Approved':'Rejected'} ${okCount} request(s)${failCount?` — ${failCount} failed`:''}`, failCount?'err':'ok');
+  loadApprovals();
 }
 
 function openDecisionModal(requestId, empName, start, end){
@@ -1200,6 +1249,26 @@ function downloadHolidayTemplate(){
   XLSX.writeFile(wb, 'LOI_Holiday_Import_Template.xlsx');
 }
 
+// ── แปลงค่าวันที่จาก Excel ให้เป็น ISO YYYY-MM-DD เสมอ ──
+// Excel มักเก็บวันที่เป็น "serial number" (เช่น 46294) แทนที่จะเป็นข้อความ ต้องแปลงกลับก่อนใช้งาน
+// รองรับทั้ง serial number, "DD/MM/YYYY" (รูปแบบที่แอปนี้ใช้แสดงผล), และ ISO string อยู่แล้ว
+function excelDateToISO(val){
+  if(val===null || val===undefined || val==='') return '';
+  if(typeof val === 'number'){
+    const utcDays = Math.floor(val - 25569); // Excel epoch → Unix epoch
+    const utcMs = utcDays * 86400 * 1000;
+    const d = new Date(utcMs);
+    const pad = n=>String(n).padStart(2,'0');
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+  }
+  const s = String(val).trim();
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(dmy){
+    return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+  }
+  return s; // สมมติว่าเป็น ISO YYYY-MM-DD อยู่แล้ว
+}
+
 function handleHolidayExcelFile(event){
   const file=event.target.files[0];
   if(!file) return;
@@ -1210,7 +1279,7 @@ function handleHolidayExcelFile(event){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws, {defval:''});
       holidayImportRows = rows.map(r=>({
-        date: String(r.date||'').trim(),
+        date: excelDateToISO(r.date),
         label: String(r.label||'').trim(),
       })).filter(r=>r.date && r.label);
 
@@ -1316,7 +1385,10 @@ function renderEditLeaveList(){
       <td class="mono">${formatDuration(r)}</td>
       <td>${formatAmount(r)}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
-      <td><button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">Edit</button></td>
+      <td>
+        <button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="adminDeleteRequest('${r.id}')">Delete</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -1376,6 +1448,67 @@ async function submitEditOneRequest(){
     const data = await callApi('get_employee_requests', { employee_id: editingEmployeeId });
     editLeaveRequestsCache = data.requests || [];
     renderEditLeaveList();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+async function adminDeleteRequest(requestId){
+  const ok = confirm('Cancel this leave request? If it was already approved, the deducted balance will be restored. This cannot be undone.');
+  if(!ok) return;
+  try{
+    await callApi('admin_delete_request', { request_id: requestId });
+    showToast('✅ Leave request cancelled');
+    const data = await callApi('get_employee_requests', { employee_id: editingEmployeeId });
+    editLeaveRequestsCache = data.requests || [];
+    renderEditLeaveList();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: EDIT LEAVE BALANCES ──
+const BALANCE_TYPE_ORDER = ['annual','sick','personal','other','maternity','paternity','priesthood'];
+
+async function openEditBalancesModal(){
+  if(!editingEmployeeId) return;
+  const emp = employeesCache.find(e=>e.id===editingEmployeeId);
+  document.getElementById('editBalancesTitle').textContent = `💰 Leave Balances — ${emp?emp.name:''}`;
+  closeModal('addEmpModal');
+  openModal('editBalancesModal');
+  document.getElementById('editBalancesErr').textContent='';
+  try{
+    const data = await callApi('get_employee_balances', { employee_id: editingEmployeeId });
+    renderEditBalancesFields(data.balances || []);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderEditBalancesFields(balances){
+  const byType = {};
+  balances.forEach(b=>{ byType[b.leave_type] = b; });
+  const types = Array.from(new Set([...BALANCE_TYPE_ORDER, ...balances.map(b=>b.leave_type)]));
+  const wrap = document.getElementById('editBalancesFields');
+  wrap.innerHTML = types.filter(t=>byType[t] || ['annual','sick','personal'].includes(t)).map(t=>{
+    const b = byType[t];
+    const total = b ? b.total_days : (t==='annual'?10:t==='sick'?30:t==='personal'?3:0);
+    const used = b ? b.used_days : 0;
+    return `
+      <div class="field" style="margin-bottom:12px">
+        <label>${LEAVE_TYPE_LABEL[t]||t} — Total Days <span style="color:var(--text-dim);font-weight:400">(${used} used so far)</span></label>
+        <input type="number" step="0.5" class="editBalInput" data-type="${t}" value="${total}"/>
+      </div>`;
+  }).join('');
+}
+
+async function submitEditBalances(){
+  const errEl = document.getElementById('editBalancesErr');
+  const inputs = document.querySelectorAll('.editBalInput');
+  try{
+    for(const inp of inputs){
+      await callApi('update_balance', {
+        employee_id: editingEmployeeId,
+        leave_type: inp.dataset.type,
+        total_days: Number(inp.value)||0,
+      });
+    }
+    closeModal('editBalancesModal');
+    showToast('✅ Balances updated');
   }catch(e){ errEl.textContent = e.message; }
 }
 
@@ -1491,6 +1624,16 @@ const SETTING_DEFS = [
     title: 'Require certificate for Mon/Fri sick leave',
     desc: 'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
   },
+  {
+    key: 'notify_on_admin_cancel',
+    title: 'Notify employee when admin cancels their leave',
+    desc: 'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
+  },
+  {
+    key: 'notify_on_balance_edit',
+    title: 'Notify employee when admin adjusts their balance',
+    desc: 'Send an email when an admin manually changes one of their leave day quotas.',
+  },
 ];
 
 async function loadSettings(){
@@ -1589,6 +1732,7 @@ function openAddEmployeeModal(){
   document.getElementById('nePasswordWrap').style.display='block';
   document.getElementById('neQuotaFields').style.display='grid';
   document.getElementById('editLeaveTriggerBtn').style.display='none';
+  document.getElementById('editBalancesTriggerBtn').style.display='none';
   openModal('addEmpModal');
 }
 
@@ -1616,6 +1760,7 @@ function openEditEmployeeModal(id){
   document.getElementById('addEmpSubmitBtn').textContent='Save Changes';
   document.getElementById('nePasswordWrap').style.display='none'; // แก้รหัสผ่านใช้ปุ่ม Reset PW แทน
   document.getElementById('editLeaveTriggerBtn').style.display='inline-block';
+  document.getElementById('editBalancesTriggerBtn').style.display='inline-block';
   document.getElementById('neQuotaFields').style.display='none'; // ปรับโควตาแยกต่างหาก ยังไม่รองรับในหน้านี้
   openModal('addEmpModal');
 }
