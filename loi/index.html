@@ -161,6 +161,8 @@ tr:hover td{background:var(--cream)}
 .cal-dow{font-size:.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;text-align:center;padding-bottom:4px}
 .cal-cell{min-height:64px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--cream);position:relative}
 .cal-cell.empty{background:transparent;border:none}
+.cal-cell-holiday{background:var(--danger-bg);border-color:var(--danger)}
+.cal-cell-holiday .cal-daynum{color:var(--danger);font-weight:700}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
@@ -289,7 +291,7 @@ tr:hover td{background:var(--cream)}
         <div class="form-grid">
           <div class="field">
             <label>Leave Type</label>
-            <select id="reqType">
+            <select id="reqType" onchange="checkAttachmentRequirement()">
               <option value="annual">Annual / Vacation</option>
               <option value="sick">Sick Leave</option>
               <option value="personal">Personal Leave</option>
@@ -308,13 +310,17 @@ tr:hover td{background:var(--cream)}
           </div>
         </div>
         <div class="form-grid" id="dayFields">
-          <div class="field"><label>Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm')"/><div class="date-confirm" id="reqStartConfirm"></div></div>
+          <div class="field"><label>Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqStartConfirm"></div></div>
           <div class="field"><label>End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
-          <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm')"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
+          <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
           <div class="field"><label>Start Time</label><input type="time" id="reqStartTime"/></div>
           <div class="field"><label>End Time</label><input type="time" id="reqEndTime"/></div>
+        </div>
+        <div class="field" style="margin-bottom:14px;display:none" id="reqAttachmentWrap">
+          <label>🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
+          <input type="file" id="reqAttachment" accept="image/*,application/pdf"/>
         </div>
         <div class="field" style="margin-bottom:14px">
           <label>Reason</label>
@@ -379,6 +385,8 @@ tr:hover td{background:var(--cream)}
           </select>
           <select id="exportMonth" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
           <select id="exportYear" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
+          <select id="exportEmployee" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All employees</option></select>
+          <select id="exportDept" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All departments</option></select>
           <button class="btn btn-outline" onclick="exportAllRequestsExcel()">Export to Excel</button>
         </div>
       </div>
@@ -421,6 +429,35 @@ tr:hover td{background:var(--cream)}
       <div class="card" id="logsCard" style="font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.9"></div>
     </div>
 
+    <!-- ADMIN: COMPANY HOLIDAYS -->
+    <div class="page" id="page-holidays">
+      <div class="section-title">⭐ Company Holidays</div>
+      <div class="section-sub">Shown as red days on everyone's leave calendar</div>
+
+      <div class="card">
+        <h3>➕ Add a Holiday</h3>
+        <div class="form-grid">
+          <div class="field"><label>Date</label><input type="date" id="holDate"/></div>
+          <div class="field"><label>Label</label><input type="text" id="holLabel" placeholder="e.g. Company Party"/></div>
+        </div>
+        <button class="btn btn-primary" onclick="submitAddHoliday()">Add Holiday</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="openHolidayImportModal()">📊 Import from Excel</button>
+          <button class="btn btn-outline" onclick="downloadHolidayTemplate()">⬇ Download Template</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr><th>Date</th><th>Label</th><th>Action</th></tr></thead>
+          <tbody id="holidaysBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <!-- REPORTS: my own resolved requests -->
     <div class="page" id="page-reports">
       <div class="section-title">My Leave Results</div>
@@ -444,6 +481,7 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)">Next →</button>
         </div>
         <div id="calendarGrid" class="cal-grid"></div>
+        <div id="calendarLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
   </main>
@@ -505,8 +543,78 @@ tr:hover td{background:var(--cream)}
     </div>
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions">
+      <button class="btn btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
       <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
       <button class="btn btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LIST OF ONE EMPLOYEE'S LEAVE REQUESTS (admin) -->
+<div class="modal-bg" id="editLeaveListModal">
+  <div class="modal wide">
+    <h3 id="editLeaveListTitle">📝 Leave Requests</h3>
+    <p class="hint">Editing here does not automatically adjust the employee's leave balance — use Update Balance separately if needed. Every edit is logged.</p>
+    <div class="table-wrap" style="max-height:360px;overflow-y:auto">
+      <table>
+        <thead><tr><th>Type</th><th>Dates</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="editLeaveListBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editLeaveListModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT ONE LEAVE REQUEST (admin) -->
+<div class="modal-bg" id="editOneRequestModal">
+  <div class="modal">
+    <h3>✏️ Edit Leave Request</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Leave Type</label>
+        <select id="erType">
+          <option value="annual">Annual / Vacation</option>
+          <option value="sick">Sick Leave</option>
+          <option value="personal">Personal Leave</option>
+          <option value="other">Other</option>
+          <option value="maternity">🤱 Maternity Leave</option>
+          <option value="paternity">🤝 Paternity Leave</option>
+          <option value="priesthood">🙏 Priesthood Ordination Leave</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="erStatus">
+          <option value="pending_manager">Pending Manager</option>
+          <option value="pending_admin">Pending Admin</option>
+          <option value="approved">Approved</option>
+          <option value="rejected_manager">Rejected (Manager)</option>
+          <option value="rejected_admin">Rejected (Admin)</option>
+        </select>
+      </div>
+      <div class="field"><label>Unit</label>
+        <select id="erUnit" onchange="toggleEditRequestUnit()">
+          <option value="day">Full day(s)</option>
+          <option value="hour">Hourly</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid" id="erDayFields">
+      <div class="field"><label>Start Date</label><input type="date" id="erStart"/></div>
+      <div class="field"><label>End Date</label><input type="date" id="erEnd"/></div>
+    </div>
+    <div class="form-grid" id="erHourFields" style="display:none">
+      <div class="field"><label>Date</label><input type="date" id="erHourDate"/></div>
+      <div class="field"><label>Start Time</label><input type="time" id="erStartTime"/></div>
+      <div class="field"><label>End Time</label><input type="time" id="erEndTime"/></div>
+    </div>
+    <div class="field" style="margin-bottom:14px"><label>Reason</label><textarea id="erReason"></textarea></div>
+    <div class="err-text" id="erErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editOneRequestModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditOneRequest()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -532,6 +640,31 @@ tr:hover td{background:var(--cream)}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('importModal')">Cancel</button>
       <button class="btn btn-gold" id="importSubmitBtn" onclick="submitImport()" style="display:none">Import Employees</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPORT HOLIDAYS -->
+<div class="modal-bg" id="holidayImportModal">
+  <div class="modal wide">
+    <h3>📊 Import Company Holidays from Excel</h3>
+    <p class="hint">Columns required: date (YYYY-MM-DD), label</p>
+    <div class="upload-zone" onclick="document.getElementById('holidayExcelFile').click()">
+      <input type="file" id="holidayExcelFile" accept=".xlsx,.xls" style="display:none" onchange="handleHolidayExcelFile(event)"/>
+      <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
+      <div style="font-weight:600;color:var(--ink)">Click to select Excel file</div>
+      <div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">.xlsx or .xls</div>
+    </div>
+    <div class="import-summary" id="holidayImportSummary" style="display:none">
+      <span>Rows found: <b id="holidayImportCount">0</b></span>
+    </div>
+    <div class="table-wrap" id="holidayImportPreviewWrap" style="display:none;margin-top:12px;max-height:280px;overflow-y:auto">
+      <table id="holidayImportPreviewTable"></table>
+    </div>
+    <div class="err-text" id="holidayImportErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('holidayImportModal')">Cancel</button>
+      <button class="btn btn-gold" id="holidayImportSubmitBtn" onclick="submitHolidayImport()" style="display:none">Import Holidays</button>
     </div>
   </div>
 </div>
@@ -625,7 +758,7 @@ function doLogout(){
 
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
-   'calendarGrid','settingsCard','logsCard','myCalGrid','tabBar'].forEach(id=>{
+   'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -653,7 +786,9 @@ async function submitChangePassword(){
 }
 
 // ── APP ENTRY ──
-function enterApp(){
+let appSettingsCache = {};
+
+async function enterApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('userName').textContent = currentUser.name;
@@ -661,6 +796,10 @@ function enterApp(){
   document.getElementById('userAvatar').textContent = currentUser.name.slice(0,2).toUpperCase();
   buildTabs();
   loadMyLeave();
+  try{
+    const s = await callApi('get_settings');
+    appSettingsCache = s.settings || {};
+  }catch(e){ /* non-fatal, server still enforces regardless */ }
 }
 
 function buildTabs(){
@@ -675,6 +814,7 @@ function buildTabs(){
       {id:'reports2', label:'Reports 2'},
       {id:'settings', label:'Settings'},
       {id:'logs', label:'LOI Logs'},
+      {id:'holidays', label:'⭐ Company Holidays'},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
@@ -703,11 +843,12 @@ function showPage(id, el){
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2') loadApprovals();
-  if(id==='employees'){ loadEmployees(); populateDangerSelectors(); }
+  if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); }
   if(id==='reports') loadMyResolvedRequests();
   if(id==='reports2') loadLeaveCalendar();
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
+  if(id==='holidays') loadHolidays();
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -716,6 +857,7 @@ async function loadMyLeave(){
     const data = await callApi('get_my_data');
     renderBalances(data.balances);
     myLeaveRequestsCache = data.requests || [];
+    await fetchHolidaysCache();
     renderMyCalendar();
   }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
 }
@@ -766,7 +908,11 @@ function renderMyCalendar(){
   for(let d=1; d<=daysInMonth; d++){
     const types = dayMap[d];
     const dots = types.map(t=>`<span class="cal-dot cal-dot-${t}" title="${LEAVE_TYPE_LABEL[t]||t}"></span>`).join('');
-    html += `<div class="cal-cell">
+    const dateStr = `${myCalYear}-${pad(myCalMonth)}-${pad(d)}`;
+    const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const holidayCls = holiday ? ' cal-cell-holiday' : '';
+    const holidayAttr = holiday ? ` title="⭐ ${escAttr(holiday.label)}"` : '';
+    html += `<div class="cal-cell${holidayCls}"${holidayAttr}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -868,6 +1014,30 @@ function toggleLeaveUnit(){
   const unit = document.getElementById('reqUnit').value;
   document.getElementById('dayFields').style.display = unit==='hour' ? 'none' : 'grid';
   document.getElementById('hourFields').style.display = unit==='hour' ? 'grid' : 'none';
+  checkAttachmentRequirement();
+}
+
+// ── แสดงช่องแนบไฟล์ ถ้าเป็นลาป่วยวันจันทร์/ศุกร์ และ admin เปิดเงื่อนไขนี้ไว้ ──
+function checkAttachmentRequirement(){
+  const leaveType = document.getElementById('reqType').value;
+  const unit = document.getElementById('reqUnit').value;
+  const dateVal = unit==='hour' ? document.getElementById('reqHourDate').value : document.getElementById('reqStart').value;
+  const wrap = document.getElementById('reqAttachmentWrap');
+  if(!dateVal || leaveType!=='sick' || appSettingsCache['sick_leave_monfri_requires_attachment']!=='true'){
+    wrap.style.display='none';
+    return;
+  }
+  const dow = new Date(dateVal+'T00:00:00Z').getUTCDay(); // 0=Sun 1=Mon 5=Fri
+  wrap.style.display = (dow===1 || dow===5) ? 'block' : 'none';
+}
+
+function readFileAsDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 async function submitLeaveRequest(){
@@ -892,6 +1062,16 @@ async function submitLeaveRequest(){
     payload.start_date = start_date; payload.end_date = end_date;
   }
 
+  // แนบไฟล์ (ถ้าช่องแนบไฟล์กำลังแสดงอยู่ แปลว่าจำเป็นต้องแนบ)
+  const attachWrap = document.getElementById('reqAttachmentWrap');
+  const attachInput = document.getElementById('reqAttachment');
+  if(attachWrap.style.display!=='none'){
+    if(!attachInput.files.length){ showToast('⚠️ Please attach a photo of your medical certificate','err'); return; }
+    try{
+      payload.attachment_base64 = await readFileAsDataUrl(attachInput.files[0]);
+    }catch(e){ showToast('⚠️ Could not read the attached file','err'); return; }
+  }
+
   try{
     await callApi('submit_leave_request', payload);
     showToast('✅ Leave request submitted');
@@ -901,6 +1081,8 @@ async function submitLeaveRequest(){
     document.getElementById('reqStartTime').value='';
     document.getElementById('reqEndTime').value='';
     document.getElementById('reqReason').value='';
+    attachInput.value='';
+    attachWrap.style.display='none';
     ['reqStartConfirm','reqEndConfirm','reqHourDateConfirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=''; });
     loadMyLeave();
   }catch(e){ showToast(e.message,'err'); }
@@ -949,6 +1131,114 @@ async function submitDecision(decision){
 
 // ── ADMIN: EMPLOYEES ──
 let employeesCache = [];
+
+// ── ADMIN: COMPANY HOLIDAYS ──
+let holidaysCache = []; // ใช้ overlay สีแดงในทั้ง My Leave Calendar และ Team Leave Calendar
+let holidayImportRows = [];
+
+async function fetchHolidaysCache(){
+  try{
+    const data = await callApi('get_company_holidays');
+    holidaysCache = data.holidays || [];
+  }catch(e){ /* non-fatal */ }
+}
+
+async function loadHolidays(){
+  try{
+    const data = await callApi('get_company_holidays');
+    holidaysCache = data.holidays || [];
+    const body = document.getElementById('holidaysBody');
+    if(!holidaysCache.length){ body.innerHTML = '<tr><td colspan="3" class="empty-msg">No holidays added yet</td></tr>'; return; }
+    body.innerHTML = holidaysCache.map(h=>`
+      <tr>
+        <td class="mono">${formatDMY(h.holiday_date)}</td>
+        <td>${escHtml(h.label)}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteHoliday('${h.id}','${escAttr(h.label)}')">Delete</button></td>
+      </tr>`).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function submitAddHoliday(){
+  const date = document.getElementById('holDate').value;
+  const label = document.getElementById('holLabel').value.trim();
+  if(!date || !label){ showToast('⚠️ Please fill in both date and label','err'); return; }
+  try{
+    await callApi('add_company_holiday', { holiday_date: date, label });
+    showToast('✅ Holiday added');
+    document.getElementById('holDate').value='';
+    document.getElementById('holLabel').value='';
+    loadHolidays();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function deleteHoliday(id, label){
+  const ok = confirm(`Delete holiday "${label}"?`);
+  if(!ok) return;
+  try{
+    await callApi('delete_company_holiday', { id });
+    showToast('✅ Holiday deleted');
+    loadHolidays();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function openHolidayImportModal(){
+  holidayImportRows=[];
+  document.getElementById('holidayExcelFile').value='';
+  document.getElementById('holidayImportSummary').style.display='none';
+  document.getElementById('holidayImportPreviewWrap').style.display='none';
+  document.getElementById('holidayImportSubmitBtn').style.display='none';
+  document.getElementById('holidayImportErr').textContent='';
+  openModal('holidayImportModal');
+}
+
+function downloadHolidayTemplate(){
+  const headers=['date','label'];
+  const sample=[{ date:'2026-09-15', label:'Company Party' }];
+  const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Holidays');
+  XLSX.writeFile(wb, 'LOI_Holiday_Import_Template.xlsx');
+}
+
+function handleHolidayExcelFile(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const wb=XLSX.read(e.target.result, {type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws, {defval:''});
+      holidayImportRows = rows.map(r=>({
+        date: String(r.date||'').trim(),
+        label: String(r.label||'').trim(),
+      })).filter(r=>r.date && r.label);
+
+      document.getElementById('holidayImportCount').textContent = holidayImportRows.length;
+      document.getElementById('holidayImportSummary').style.display='flex';
+      const wrap=document.getElementById('holidayImportPreviewWrap');
+      const table=document.getElementById('holidayImportPreviewTable');
+      wrap.style.display='block';
+      table.innerHTML = '<thead><tr><th>date</th><th>label</th></tr></thead><tbody>'+
+        holidayImportRows.map(r=>`<tr><td>${escHtml(r.date)}</td><td>${escHtml(r.label)}</td></tr>`).join('')+'</tbody>';
+      document.getElementById('holidayImportSubmitBtn').style.display = holidayImportRows.length ? 'inline-block' : 'none';
+    }catch(err){
+      document.getElementById('holidayImportErr').textContent = 'Could not read file: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function submitHolidayImport(){
+  if(!holidayImportRows.length) return;
+  const errEl=document.getElementById('holidayImportErr');
+  try{
+    const data = await callApi('import_company_holidays', { holidays: holidayImportRows.map(r=>({holiday_date:r.date, label:r.label})) });
+    closeModal('holidayImportModal');
+    showToast(`✅ Imported ${data.imported} holiday(s)`);
+    loadHolidays();
+  }catch(e){ errEl.textContent = e.message; }
+}
 let managerChainsCache = {};
 
 async function loadEmployees(){
@@ -999,6 +1289,96 @@ async function deleteEmployee(id, name){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// ── ADMIN: EDIT ANOTHER EMPLOYEE'S LEAVE REQUESTS ──
+let editLeaveRequestsCache = [];
+let editingRequestId = null;
+
+async function openEditLeaveRequestsModal(){
+  if(!editingEmployeeId) return;
+  const emp = employeesCache.find(e=>e.id===editingEmployeeId);
+  document.getElementById('editLeaveListTitle').textContent = `📝 Leave Requests — ${emp?emp.name:''}`;
+  closeModal('addEmpModal');
+  openModal('editLeaveListModal');
+  try{
+    const data = await callApi('get_employee_requests', { employee_id: editingEmployeeId });
+    editLeaveRequestsCache = data.requests || [];
+    renderEditLeaveList();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderEditLeaveList(){
+  const body = document.getElementById('editLeaveListBody');
+  if(!editLeaveRequestsCache.length){ body.innerHTML = '<tr><td colspan="5" class="empty-msg">No requests</td></tr>'; return; }
+  body.innerHTML = editLeaveRequestsCache.map(r=>{
+    const st = STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
+    return `<tr>
+      <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+      <td class="mono">${formatDuration(r)}</td>
+      <td>${formatAmount(r)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleEditRequestUnit(){
+  const unit = document.getElementById('erUnit').value;
+  document.getElementById('erDayFields').style.display = unit==='hour' ? 'none' : 'grid';
+  document.getElementById('erHourFields').style.display = unit==='hour' ? 'grid' : 'none';
+}
+
+function openEditOneRequestModal(requestId){
+  const r = editLeaveRequestsCache.find(x=>x.id===requestId);
+  if(!r) return;
+  editingRequestId = requestId;
+  document.getElementById('erType').value = r.leave_type;
+  document.getElementById('erStatus').value = r.status;
+  document.getElementById('erUnit').value = r.leave_unit || 'day';
+  document.getElementById('erReason').value = r.reason || '';
+  if(r.leave_unit==='hour'){
+    document.getElementById('erHourDate').value = r.start_date;
+    document.getElementById('erStartTime').value = r.start_time ? r.start_time.slice(0,5) : '';
+    document.getElementById('erEndTime').value = r.end_time ? r.end_time.slice(0,5) : '';
+  } else {
+    document.getElementById('erStart').value = r.start_date;
+    document.getElementById('erEnd').value = r.end_date;
+  }
+  toggleEditRequestUnit();
+  document.getElementById('erErr').textContent='';
+  openModal('editOneRequestModal');
+}
+
+async function submitEditOneRequest(){
+  const errEl = document.getElementById('erErr');
+  const unit = document.getElementById('erUnit').value;
+  const payload = {
+    request_id: editingRequestId,
+    leave_type: document.getElementById('erType').value,
+    status: document.getElementById('erStatus').value,
+    reason: document.getElementById('erReason').value.trim(),
+    leave_unit: unit,
+  };
+  if(unit==='hour'){
+    const date = document.getElementById('erHourDate').value;
+    payload.start_date = date;
+    payload.start_time = document.getElementById('erStartTime').value;
+    payload.end_time = document.getElementById('erEndTime').value;
+    if(!date || !payload.start_time || !payload.end_time){ errEl.textContent='Please fill in date and both times'; return; }
+  } else {
+    payload.start_date = document.getElementById('erStart').value;
+    payload.end_date = document.getElementById('erEnd').value;
+    if(!payload.start_date || !payload.end_date){ errEl.textContent='Please fill in both dates'; return; }
+  }
+  try{
+    await callApi('admin_update_request', payload);
+    closeModal('editOneRequestModal');
+    showToast('✅ Leave request updated');
+    const data = await callApi('get_employee_requests', { employee_id: editingEmployeeId });
+    editLeaveRequestsCache = data.requests || [];
+    renderEditLeaveList();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
 // ── ADMIN: EXPORT ALL LEAVE REQUESTS TO EXCEL ──
 function onExportScopeChange(){
   const scope = document.getElementById('exportScope').value;
@@ -1020,8 +1400,26 @@ function populateMonthYearSelectors(monthId, yearId){
   yearSel.innerHTML = yearHtml;
 }
 
+function populateExportFilterSelectors(){
+  const empSel = document.getElementById('exportEmployee');
+  const deptSel = document.getElementById('exportDept');
+  const currentEmp = empSel.value, currentDept = deptSel.value;
+
+  empSel.innerHTML = '<option value="all">All employees</option>' +
+    employeesCache.map(e=>`<option value="${e.id}">${escHtml(e.employee_code)} — ${escHtml(e.name)}</option>`).join('');
+  const depts = Array.from(new Set(employeesCache.map(e=>e.department).filter(Boolean))).sort();
+  deptSel.innerHTML = '<option value="all">All departments</option>' +
+    depts.map(d=>`<option value="${escAttr(d)}">${escHtml(d)}</option>`).join('');
+
+  // เก็บค่าที่เลือกไว้เดิมถ้ายังมีอยู่ในลิสต์ใหม่
+  if([...empSel.options].some(o=>o.value===currentEmp)) empSel.value=currentEmp;
+  if([...deptSel.options].some(o=>o.value===currentDept)) deptSel.value=currentDept;
+}
+
 async function exportAllRequestsExcel(){
   const scope = document.getElementById('exportScope').value;
+  const empFilter = document.getElementById('exportEmployee').value;
+  const deptFilter = document.getElementById('exportDept').value;
   try{
     const data = await callApi('list_all_requests');
     let filtered = data.requests;
@@ -1040,6 +1438,16 @@ async function exportAllRequestsExcel(){
       const year = Number(document.getElementById('exportYear').value);
       filtered = filtered.filter(r => r.start_date.startsWith(String(year)) || r.end_date.startsWith(String(year)));
       filenameSuffix = String(year);
+    }
+
+    if(empFilter!=='all'){
+      const emp = employeesCache.find(e=>e.id===empFilter);
+      filtered = filtered.filter(r => r.employee_id===empFilter);
+      if(emp) filenameSuffix += `_${emp.employee_code}`;
+    }
+    if(deptFilter!=='all'){
+      filtered = filtered.filter(r => r.employee?.department===deptFilter);
+      filenameSuffix += `_${deptFilter}`;
     }
 
     if(!filtered.length){ showToast('No requests to export for this range','err'); return; }
@@ -1072,6 +1480,16 @@ const SETTING_DEFS = [
     key: 'no_same_day_leave_except_sick',
     title: 'Block same-day leave requests',
     desc: "Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
+  },
+  {
+    key: 'no_past_date_leave_except_sick',
+    title: 'Block backdated leave requests',
+    desc: "Employees can't submit a leave request for a date before today — except Sick Leave, which is always allowed.",
+  },
+  {
+    key: 'sick_leave_monfri_requires_attachment',
+    title: 'Require certificate for Mon/Fri sick leave',
+    desc: 'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
   },
 ];
 
@@ -1170,6 +1588,7 @@ function openAddEmployeeModal(){
   document.getElementById('addEmpSubmitBtn').textContent='Add Employee';
   document.getElementById('nePasswordWrap').style.display='block';
   document.getElementById('neQuotaFields').style.display='grid';
+  document.getElementById('editLeaveTriggerBtn').style.display='none';
   openModal('addEmpModal');
 }
 
@@ -1196,6 +1615,7 @@ function openEditEmployeeModal(id){
   document.getElementById('addEmpModalTitle').textContent=`✏️ Edit ${emp.name}`;
   document.getElementById('addEmpSubmitBtn').textContent='Save Changes';
   document.getElementById('nePasswordWrap').style.display='none'; // แก้รหัสผ่านใช้ปุ่ม Reset PW แทน
+  document.getElementById('editLeaveTriggerBtn').style.display='inline-block';
   document.getElementById('neQuotaFields').style.display='none'; // ปรับโควตาแยกต่างหาก ยังไม่รองรับในหน้านี้
   openModal('addEmpModal');
 }
@@ -1362,6 +1782,7 @@ async function loadLeaveCalendar(){
   document.getElementById('calendarMonthLabel').textContent = `${MONTH_NAMES_EN[calMonth-1]} ${calYear}`;
   try{
     const data = await callApi('get_leave_calendar', { year: calYear, month: calMonth });
+    await fetchHolidaysCache();
     renderCalendar(data.requests || []);
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -1371,7 +1792,7 @@ function renderCalendar(requests){
   const daysInMonth = new Date(calYear, calMonth, 0).getDate();
   const firstDow = new Date(calYear, calMonth-1, 1).getDay(); // 0=Sun
 
-  // สร้าง map: day -> [{name, code}]
+  // สร้าง map: day -> [{name, code, leaveType, reason, suffix}]
   const dayMap = {};
   for(let d=1; d<=daysInMonth; d++) dayMap[d] = [];
   const pad = n => String(n).padStart(2,'0');
@@ -1380,10 +1801,13 @@ function renderCalendar(requests){
     const end = r.end_date > `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` ? `${calYear}-${pad(calMonth)}-${pad(daysInMonth)}` : r.end_date;
     let cur = new Date(start+'T00:00:00Z');
     const endD = new Date(end+'T00:00:00Z');
-    const timeSuffix = r.leave_unit==='hour' ? ` (${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''})` : '';
+    const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
     while(cur <= endD){
       const day = cur.getUTCDate();
-      if(dayMap[day]) dayMap[day].push({ name: r.employee?.name||'?', code: r.employee?.employee_code||'', suffix: timeSuffix });
+      if(dayMap[day]) dayMap[day].push({
+        name: r.employee?.name||'?', code: r.employee?.employee_code||'',
+        leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix,
+      });
       cur.setUTCDate(cur.getUTCDate()+1);
     }
   });
@@ -1392,14 +1816,26 @@ function renderCalendar(requests){
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const people = dayMap[d];
-    const names = people.map(p=>`${p.name} (${p.code})${p.suffix||''}`).join('\n');
-    const dots = people.slice(0,8).map(()=>`<span class="cal-dot"></span>`).join('');
-    html += `<div class="cal-cell"${people.length?` data-names="${escAttr(names)}"`:''}>
+    const dateStr = `${calYear}-${pad(calMonth)}-${pad(d)}`;
+    const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const peopleNames = people.map(p=>{
+      const typeLabel = LEAVE_TYPE_LABEL[p.leaveType]||p.leaveType;
+      const reasonPart = p.reason ? ` — ${p.reason}` : '';
+      return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
+    });
+    const allNames = holiday ? [`⭐ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const names = allNames.join('\n');
+    const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
+    const holidayCls = holiday ? ' cal-cell-holiday' : '';
+    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
   }
   grid.innerHTML = html;
+  document.getElementById('calendarLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
+  ).join('');
 }
 
 // ── UTIL ──
