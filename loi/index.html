@@ -306,6 +306,7 @@ tr:hover td{background:var(--cream)}
             <select id="reqUnit" onchange="toggleLeaveUnit()">
               <option value="day">Full day(s)</option>
               <option value="hour">Hourly</option>
+              <option value="multi">Multiple specific dates</option>
             </select>
           </div>
         </div>
@@ -317,6 +318,11 @@ tr:hover td{background:var(--cream)}
           <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
           <div class="field"><label>Start Time</label><input type="time" id="reqStartTime"/></div>
           <div class="field"><label>End Time</label><input type="time" id="reqEndTime"/></div>
+        </div>
+        <div id="multiFields" style="display:none;margin-bottom:14px">
+          <label style="display:block;font-size:.74rem;font-weight:600;color:var(--plum-700);margin-bottom:8px">Specific Dates (same leave type applies to all)</label>
+          <div id="multiDateRows"></div>
+          <button type="button" class="btn btn-sm btn-outline" style="margin-top:6px" onclick="addMultiDateRow()">+ Add Date</button>
         </div>
         <div class="field" style="margin-bottom:14px;display:none" id="reqAttachmentWrap">
           <label>🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
@@ -407,6 +413,16 @@ tr:hover td{background:var(--cream)}
         </table></div>
       </div>
 
+      <div class="card">
+        <h3>⭐ Special Leave Calendar Access</h3>
+        <p class="hint" style="margin-bottom:14px">Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <input type="text" id="specialAccessCode" placeholder="Employee code, e.g. 2410" style="flex:1;min-width:160px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
+          <button class="btn btn-primary" onclick="submitGrantSpecialAccess()">Grant Access</button>
+        </div>
+        <div id="specialAccessList"></div>
+      </div>
+
       <div class="danger-card">
         <h3>⚠️ Danger Zone — Testing Only</h3>
         <p class="hint">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
@@ -467,6 +483,23 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
+    <!-- SPECIAL LEAVE CALENDAR (admin + hand-picked users, e.g. executives) -->
+    <div class="page" id="page-special_calendar">
+      <div class="section-title">⭐ Special Leave Calendar</div>
+      <div class="section-sub">Org-wide approved leave, filterable by department</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(-1)">← Prev</button>
+          <div class="mono" id="specialCalMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
+          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(1)">Next →</button>
+          <select id="specialCalDept" onchange="loadSpecialCalendar()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;margin-left:auto">
+            <option value="all">All departments</option>
+          </select>
+        </div>
+        <div id="specialCalGrid" class="cal-grid"></div>
+        <div id="specialCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
+    </div>
     <!-- REPORTS: my own resolved requests -->
     <div class="page" id="page-reports">
       <div class="section-title">My Leave Results</div>
@@ -782,7 +815,8 @@ function doLogout(){
 
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
-   'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody','tabBar'].forEach(id=>{
+   'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody',
+   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -791,6 +825,9 @@ function doLogout(){
   myCalYear = new Date().getFullYear();
   myCalMonth = new Date().getMonth()+1;
   myLeaveRequestsCache = [];
+  specialCalYear = new Date().getFullYear();
+  specialCalMonth = new Date().getMonth()+1;
+  specialCalDeptPopulated = false;
 }
 
 async function submitChangePassword(){
@@ -855,6 +892,10 @@ function buildTabs(){
       {id:'reports', label:'Reports'},
     ];
   }
+  // Special Leave Calendar: มอบสิทธิ์เฉพาะรายบุคคลได้ (มักใช้กับผู้บริหาร) — admin เห็นได้เสมอเช่นกัน
+  if(currentUser.role==='admin' || currentUser.special_calendar_access){
+    tabs.push({id:'special_calendar', label:'⭐ Special Leave Calendar'});
+  }
   const bar=document.getElementById('tabBar');
   bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${t.id}',this)">${t.label}</button>`).join('');
 }
@@ -867,12 +908,13 @@ function showPage(id, el){
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2') loadApprovals();
-  if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); }
+  if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); }
   if(id==='reports') loadMyResolvedRequests();
   if(id==='reports2') loadLeaveCalendar();
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
+  if(id==='special_calendar') loadSpecialCalendar();
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -1036,9 +1078,22 @@ function renderOwnRequestsTable(bodyId, requests){
 
 function toggleLeaveUnit(){
   const unit = document.getElementById('reqUnit').value;
-  document.getElementById('dayFields').style.display = unit==='hour' ? 'none' : 'grid';
+  document.getElementById('dayFields').style.display = unit==='day' ? 'grid' : 'none';
   document.getElementById('hourFields').style.display = unit==='hour' ? 'grid' : 'none';
+  document.getElementById('multiFields').style.display = unit==='multi' ? 'block' : 'none';
+  if(unit==='multi' && !document.getElementById('multiDateRows').children.length){
+    addMultiDateRow();
+  }
   checkAttachmentRequirement();
+}
+
+function addMultiDateRow(){
+  const wrap = document.getElementById('multiDateRows');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  row.innerHTML = `<input type="date" class="multiDateInput" style="flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem;background:var(--cream)"/>
+    <button type="button" class="btn btn-sm btn-outline" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(row);
 }
 
 // ── แสดงช่องแนบไฟล์ ถ้าเป็นลาป่วยวันจันทร์/ศุกร์ และ admin เปิดเงื่อนไขนี้ไว้ ──
@@ -1068,6 +1123,28 @@ async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
   const unit=document.getElementById('reqUnit').value;
   const reason=document.getElementById('reqReason').value.trim();
+
+  // ── โหมด "หลายวันที่ไม่ติดกัน" — ยื่นแยกทีละวันเป็นคำขอวันเดียวหลายใบ ──
+  if(unit==='multi'){
+    const dateInputs = [...document.querySelectorAll('.multiDateInput')].map(el=>el.value).filter(Boolean);
+    const uniqueDates = [...new Set(dateInputs)].sort();
+    if(!uniqueDates.length){ showToast('⚠️ Please pick at least one date','err'); return; }
+
+    let okCount=0, failCount=0, firstError='';
+    for(const d of uniqueDates){
+      try{
+        await callApi('submit_leave_request', { leave_type, reason, leave_unit:'day', start_date:d, end_date:d });
+        okCount++;
+      }catch(e){ failCount++; if(!firstError) firstError = e.message; }
+    }
+    if(okCount) showToast(`✅ Submitted ${okCount} of ${uniqueDates.length} date(s)`);
+    if(failCount) showToast(`⚠️ ${failCount} failed: ${firstError}`,'err');
+    document.getElementById('multiDateRows').innerHTML='';
+    addMultiDateRow();
+    document.getElementById('reqReason').value='';
+    loadMyLeave();
+    return;
+  }
 
   let payload = { leave_type, reason, leave_unit: unit };
 
@@ -1308,6 +1385,122 @@ async function submitHolidayImport(){
     loadHolidays();
   }catch(e){ errEl.textContent = e.message; }
 }
+
+// ── ADMIN: SPECIAL LEAVE CALENDAR ACCESS MANAGEMENT ──
+async function loadSpecialAccessList(){
+  try{
+    const data = await callApi('list_special_calendar_users');
+    const wrap = document.getElementById('specialAccessList');
+    if(!data.users.length){ wrap.innerHTML = '<div class="empty-msg">No one has been granted access yet</div>'; return; }
+    wrap.innerHTML = data.users.map(u=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft)">
+        <span class="mono" style="font-size:.86rem">${escHtml(u.employee_code)} — ${escHtml(u.name)}</span>
+        <button class="btn btn-sm btn-outline" onclick="revokeSpecialAccess('${u.id}')">Revoke</button>
+      </div>`).join('');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function submitGrantSpecialAccess(){
+  const code = document.getElementById('specialAccessCode').value.trim();
+  if(!code){ showToast('⚠️ Enter an employee code','err'); return; }
+  try{
+    await callApi('grant_special_calendar_access', { employee_code: code });
+    showToast('✅ Access granted');
+    document.getElementById('specialAccessCode').value='';
+    loadSpecialAccessList();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+async function revokeSpecialAccess(employeeId){
+  try{
+    await callApi('revoke_special_calendar_access', { employee_id: employeeId });
+    showToast('✅ Access revoked');
+    loadSpecialAccessList();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── SPECIAL LEAVE CALENDAR (org-wide, department-filterable) ──
+let specialCalYear = new Date().getFullYear();
+let specialCalMonth = new Date().getMonth()+1;
+let specialCalDeptPopulated = false;
+
+function shiftSpecialCalendarMonth(delta){
+  specialCalMonth += delta;
+  if(specialCalMonth<1){ specialCalMonth=12; specialCalYear--; }
+  if(specialCalMonth>12){ specialCalMonth=1; specialCalYear++; }
+  loadSpecialCalendar();
+}
+
+async function loadSpecialCalendar(){
+  document.getElementById('specialCalMonthLabel').textContent = `${MONTH_NAMES_EN[specialCalMonth-1]} ${specialCalYear}`;
+  if(!specialCalDeptPopulated){
+    try{
+      const d = await callApi('get_departments');
+      const sel = document.getElementById('specialCalDept');
+      sel.innerHTML = '<option value="all">All departments</option>' + (d.departments||[]).map(dep=>`<option value="${escAttr(dep)}">${escHtml(dep)}</option>`).join('');
+      specialCalDeptPopulated = true;
+    }catch(e){ /* non-fatal */ }
+  }
+  const dept = document.getElementById('specialCalDept').value;
+  try{
+    const data = await callApi('get_special_leave_calendar', { year: specialCalYear, month: specialCalMonth, department: dept });
+    await fetchHolidaysCache();
+    renderSpecialCalendar(data.requests || []);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderSpecialCalendar(requests){
+  const grid = document.getElementById('specialCalGrid');
+  const daysInMonth = new Date(specialCalYear, specialCalMonth, 0).getDate();
+  const firstDow = new Date(specialCalYear, specialCalMonth-1, 1).getDay();
+  const pad = n => String(n).padStart(2,'0');
+
+  const dayMap = {};
+  for(let d=1; d<=daysInMonth; d++) dayMap[d] = [];
+  requests.forEach(r=>{
+    const monthStart = `${specialCalYear}-${pad(specialCalMonth)}-01`;
+    const monthEnd = `${specialCalYear}-${pad(specialCalMonth)}-${pad(daysInMonth)}`;
+    const start = r.start_date < monthStart ? monthStart : r.start_date;
+    const end = r.end_date > monthEnd ? monthEnd : r.end_date;
+    let cur = new Date(start+'T00:00:00Z');
+    const endD = new Date(end+'T00:00:00Z');
+    const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
+    while(cur <= endD){
+      const day = cur.getUTCDate();
+      if(dayMap[day]) dayMap[day].push({
+        name: r.employee?.name||'?', code: r.employee?.employee_code||'',
+        leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix,
+      });
+      cur.setUTCDate(cur.getUTCDate()+1);
+    }
+  });
+
+  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const people = dayMap[d];
+    const dateStr = `${specialCalYear}-${pad(specialCalMonth)}-${pad(d)}`;
+    const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const peopleNames = people.map(p=>{
+      const typeLabel = LEAVE_TYPE_LABEL[p.leaveType]||p.leaveType;
+      const reasonPart = p.reason ? ` — ${p.reason}` : '';
+      return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
+    });
+    const allNames = holiday ? [`⭐ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const names = allNames.join('\n');
+    const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
+    const holidayCls = holiday ? ' cal-cell-holiday' : '';
+    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(names)}"`:''}>
+      <div class="cal-daynum">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  document.getElementById('specialCalLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
+  ).join('');
+}
+
 let managerChainsCache = {};
 
 async function loadEmployees(){
