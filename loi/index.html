@@ -168,7 +168,7 @@ tr:hover td{background:var(--cream)}
 .cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
 .cal-dot-annual{background:var(--plum-600)}
 .cal-dot-sick{background:var(--success)}
-.cal-dot-personal{background:var(--gold)}
+.cal-dot-personal{background:#2AA9A0}
 .cal-dot-other{background:var(--text-faint)}
 .cal-dot-maternity{background:#E0679A}
 .cal-dot-paternity{background:#3B82C4}
@@ -353,7 +353,7 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub">Your own leave requests currently awaiting approval</div>
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="myApprovalsBody"></tbody>
         </table></div>
       </div>
@@ -390,6 +390,7 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Add Employee</button>
           <button class="btn btn-gold" onclick="openImportModal()">📊 Import from Excel</button>
           <button class="btn btn-outline" onclick="downloadExcelTemplate()">⬇ Download Template</button>
+          <button class="btn btn-outline" onclick="exportAllEmployeesExcel()">📥 Export All Employees</button>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)">
           <label style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin:0">📥 Export:</label>
@@ -411,6 +412,17 @@ tr:hover td{background:var(--cream)}
           <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Managers (in order)</th><th>Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
+      </div>
+
+      <div class="card">
+        <h3>🗓 Roll Over Balances to New Year</h3>
+        <p class="hint" style="margin-bottom:14px">Copies everyone's current day quotas forward into next year with 0 days used. Existing rows for that year are left untouched (safe to run more than once).</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input type="number" id="rolloverFromYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
+          <span style="color:var(--text-dim)">→</span>
+          <input type="number" id="rolloverToYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
+          <button class="btn btn-primary" onclick="submitRolloverBalances()">Roll Over</button>
+        </div>
       </div>
 
       <div class="card">
@@ -583,6 +595,10 @@ tr:hover td{background:var(--cream)}
       <input type="checkbox" id="neAutoApprove" style="width:auto"/>
       <label style="margin:0" for="neAutoApprove">⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)</label>
     </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <input type="checkbox" id="neBypassConditions" style="width:auto"/>
+      <label style="margin:0" for="neBypassConditions">🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)</label>
+    </div>
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
@@ -658,6 +674,49 @@ tr:hover td{background:var(--cream)}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('editOneRequestModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitEditOneRequest()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT MY OWN LEAVE REQUEST (self-service, pending only) -->
+<div class="modal-bg" id="editMyRequestModal">
+  <div class="modal">
+    <h3>✏️ Edit My Leave Request</h3>
+    <p class="hint">Saving resets the approval process from the beginning, since the details have changed.</p>
+    <div class="form-grid">
+      <div class="field">
+        <label>Leave Type</label>
+        <select id="emrType">
+          <option value="annual">Annual / Vacation</option>
+          <option value="sick">Sick Leave</option>
+          <option value="personal">Personal Leave</option>
+          <option value="other">Other</option>
+          <option value="maternity">🤱 Maternity Leave</option>
+          <option value="paternity">🤝 Paternity Leave</option>
+          <option value="priesthood">🙏 Priesthood Ordination Leave</option>
+        </select>
+      </div>
+      <div class="field"><label>Unit</label>
+        <select id="emrUnit" onchange="toggleEditMyRequestUnit()">
+          <option value="day">Full day(s)</option>
+          <option value="hour">Hourly</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid" id="emrDayFields">
+      <div class="field"><label>Start Date</label><input type="date" id="emrStart"/></div>
+      <div class="field"><label>End Date</label><input type="date" id="emrEnd"/></div>
+    </div>
+    <div class="form-grid" id="emrHourFields" style="display:none">
+      <div class="field"><label>Date</label><input type="date" id="emrHourDate"/></div>
+      <div class="field"><label>Start Time</label><input type="time" id="emrStartTime"/></div>
+      <div class="field"><label>End Time</label><input type="time" id="emrEndTime"/></div>
+    </div>
+    <div class="field" style="margin-bottom:14px"><label>Reason</label><textarea id="emrReason"></textarea></div>
+    <div class="err-text" id="emrErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editMyRequestModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditMyRequest()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -908,7 +967,7 @@ function showPage(id, el){
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2') loadApprovals();
-  if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); }
+  if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); primeRolloverYearInputs(); }
   if(id==='reports') loadMyResolvedRequests();
   if(id==='reports2') loadLeaveCalendar();
   if(id==='settings') loadSettings();
@@ -962,9 +1021,11 @@ function renderMyCalendar(){
       const end = r.end_date > monthEnd ? monthEnd : r.end_date;
       let cur = new Date(start+'T00:00:00Z');
       const endD = new Date(end+'T00:00:00Z');
+      const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
+      const st = STATUS_LABEL[r.status]||{label:r.status};
       while(cur <= endD){
         const day = cur.getUTCDate();
-        if(dayMap[day]) dayMap[day].push(r.leave_type);
+        if(dayMap[day]) dayMap[day].push({ leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, statusLabel: st.label });
         cur.setUTCDate(cur.getUTCDate()+1);
       }
     });
@@ -972,13 +1033,18 @@ function renderMyCalendar(){
   let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
-    const types = dayMap[d];
-    const dots = types.map(t=>`<span class="cal-dot cal-dot-${t}" title="${LEAVE_TYPE_LABEL[t]||t}"></span>`).join('');
+    const entries = dayMap[d];
+    const dots = entries.map(e=>`<span class="cal-dot cal-dot-${e.leaveType}"></span>`).join('');
     const dateStr = `${myCalYear}-${pad(myCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const entryNames = entries.map(e=>{
+      const typeLabel = LEAVE_TYPE_LABEL[e.leaveType]||e.leaveType;
+      const reasonPart = e.reason ? ` — ${e.reason}` : '';
+      return `${typeLabel} (${e.statusLabel})${reasonPart}${e.suffix||''}`;
+    });
+    const allNames = holiday ? [`⭐ ${holiday.label}`, ...entryNames] : entryNames;
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    const holidayAttr = holiday ? ` title="⭐ ${escAttr(holiday.label)}"` : '';
-    html += `<div class="cal-cell${holidayCls}"${holidayAttr}>
+    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -990,24 +1056,30 @@ function renderMyCalendar(){
   ).join('');
 }
 
+// ── แสดงจำนวนวันแบบอ่านง่าย: ปัดเหลือทศนิยม 1 ตำแหน่ง และตัด .0 ทิ้งถ้าเป็นจำนวนเต็ม ──
+function formatDaysNice(n){
+  const rounded = Math.round(Number(n)*10)/10;
+  return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
+}
+
 function renderBalances(balances){
   const order=['annual','sick','personal','other'];
   const sorted=[...balances].sort((a,b)=>order.indexOf(a.leave_type)-order.indexOf(b.leave_type));
   const row=document.getElementById('balanceRow');
   if(!sorted.length){ row.innerHTML='<div class="empty-msg">No leave balance set up yet. Contact Admin.</div>'; return; }
   row.innerHTML = sorted.map(b=>{
-    const remaining = Number(b.total_days) - Number(b.used_days);
+    const remaining = Math.max(0, Number(b.total_days) - Number(b.used_days));
     const pct = b.total_days>0 ? Math.min(100,(b.used_days/b.total_days)*100) : 0;
     return `
       <div class="ticket">
         <div class="ticket-main">
           <div class="ticket-type">${LEAVE_TYPE_LABEL[b.leave_type]||b.leave_type}</div>
-          <div class="ticket-name">${remaining} days left</div>
+          <div class="ticket-name">${formatDaysNice(remaining)} days left</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
-          <div class="ticket-nums"><span>${b.used_days} used</span><span>${b.total_days} total</span></div>
+          <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} used</span><span>${formatDaysNice(b.total_days)} total</span></div>
         </div>
         <div class="ticket-stub">
-          <div class="num">${remaining}</div>
+          <div class="num">${formatDaysNice(remaining)}</div>
           <div class="lbl">left</div>
         </div>
       </div>`;
@@ -1021,9 +1093,77 @@ const RESOLVED_STATUSES = ['approved','rejected_manager','rejected_admin'];
 async function loadMyPendingRequests(){
   try{
     const data = await callApi('get_my_data');
-    const pending = data.requests.filter(r=>PENDING_STATUSES.includes(r.status));
-    renderOwnRequestsTable('myApprovalsBody', pending);
+    myPendingRequestsCache = data.requests.filter(r=>PENDING_STATUSES.includes(r.status));
+    renderOwnRequestsTable('myApprovalsBody', myPendingRequestsCache, true);
   }catch(e){ showToast(e.message,'err'); }
+}
+
+let myPendingRequestsCache = [];
+
+async function cancelMyRequest(requestId){
+  const ok = confirm('Cancel this leave request? This cannot be undone.');
+  if(!ok) return;
+  try{
+    await callApi('cancel_my_request', { request_id: requestId });
+    showToast('✅ Request cancelled');
+    loadMyPendingRequests();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+let editingMyRequestId = null;
+
+function toggleEditMyRequestUnit(){
+  const unit = document.getElementById('emrUnit').value;
+  document.getElementById('emrDayFields').style.display = unit==='hour' ? 'none' : 'grid';
+  document.getElementById('emrHourFields').style.display = unit==='hour' ? 'grid' : 'none';
+}
+
+function openEditMyRequestModal(requestId){
+  const r = myPendingRequestsCache.find(x=>x.id===requestId);
+  if(!r) return;
+  editingMyRequestId = requestId;
+  document.getElementById('emrType').value = r.leave_type;
+  document.getElementById('emrUnit').value = r.leave_unit || 'day';
+  document.getElementById('emrReason').value = r.reason || '';
+  if(r.leave_unit==='hour'){
+    document.getElementById('emrHourDate').value = r.start_date;
+    document.getElementById('emrStartTime').value = r.start_time ? r.start_time.slice(0,5) : '';
+    document.getElementById('emrEndTime').value = r.end_time ? r.end_time.slice(0,5) : '';
+  } else {
+    document.getElementById('emrStart').value = r.start_date;
+    document.getElementById('emrEnd').value = r.end_date;
+  }
+  toggleEditMyRequestUnit();
+  document.getElementById('emrErr').textContent='';
+  openModal('editMyRequestModal');
+}
+
+async function submitEditMyRequest(){
+  const errEl = document.getElementById('emrErr');
+  const unit = document.getElementById('emrUnit').value;
+  const payload = {
+    request_id: editingMyRequestId,
+    leave_type: document.getElementById('emrType').value,
+    reason: document.getElementById('emrReason').value.trim(),
+    leave_unit: unit,
+  };
+  if(unit==='hour'){
+    const date = document.getElementById('emrHourDate').value;
+    payload.start_date = date;
+    payload.start_time = document.getElementById('emrStartTime').value;
+    payload.end_time = document.getElementById('emrEndTime').value;
+    if(!date || !payload.start_time || !payload.end_time){ errEl.textContent='Please fill in date and both times'; return; }
+  } else {
+    payload.start_date = document.getElementById('emrStart').value;
+    payload.end_date = document.getElementById('emrEnd').value;
+    if(!payload.start_date || !payload.end_date){ errEl.textContent='Please fill in both dates'; return; }
+  }
+  try{
+    await callApi('edit_my_request', payload);
+    closeModal('editMyRequestModal');
+    showToast('✅ Request updated — approval restarted from the beginning');
+    loadMyPendingRequests();
+  }catch(e){ errEl.textContent = e.message; }
 }
 
 // ── REPORTS: my own resolved requests (approved / rejected) ──
@@ -1061,17 +1201,23 @@ function formatAmount(r){
   return r.leave_unit==='hour' ? `${r.hours_count} ชม.` : `${r.days_count} วัน`;
 }
 
-function renderOwnRequestsTable(bodyId, requests){
+function renderOwnRequestsTable(bodyId, requests, showActions){
   const body=document.getElementById(bodyId);
-  if(!requests.length){ body.innerHTML='<tr><td colspan="5" class="empty-msg">No requests</td></tr>'; return; }
+  const colCount = showActions ? 6 : 5;
+  if(!requests.length){ body.innerHTML=`<tr><td colspan="${colCount}" class="empty-msg">No requests</td></tr>`; return; }
   body.innerHTML = requests.map(r=>{
     const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
+    const actionsCell = showActions ? `<td style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline" onclick="openEditMyRequestModal('${r.id}')">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="cancelMyRequest('${r.id}')">Cancel</button>
+    </td>` : '';
     return `<tr>
       <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
       <td class="mono">${formatDuration(r)}</td>
       <td>${formatAmount(r)}</td>
       <td>${r.reason?escHtml(r.reason):'—'}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
+      ${actionsCell}
     </tr>`;
   }).join('');
 }
@@ -1520,7 +1666,7 @@ async function loadEmployees(){
         <td>${escHtml(e.name)}</td>
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
-        <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}</td>
+        <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">Edit</button>
@@ -1726,6 +1872,44 @@ function populateMonthYearSelectors(monthId, yearId){
   yearSel.innerHTML = yearHtml;
 }
 
+// ── ADMIN: EXPORT ALL EMPLOYEES TO EXCEL ──
+function exportAllEmployeesExcel(){
+  if(!employeesCache.length){ showToast('No employees to export','err'); return; }
+  const rows = employeesCache.map(e=>{
+    const chain = managerChainsCache[e.id] || [];
+    const managerCodes = chain.map(mid=>employeesCache.find(x=>x.id===mid)?.employee_code).filter(Boolean).join(',');
+    return {
+      employee_code: e.employee_code, name: e.name, email: e.email||'', department: e.department||'',
+      position: e.position||'', role: e.role, manager_codes: managerCodes,
+      auto_approve: e.auto_approve?'yes':'no', bypass_conditions: e.bypass_conditions?'yes':'no',
+      special_calendar_access: e.special_calendar_access?'yes':'no',
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+  XLSX.writeFile(wb, `LOI_All_Employees_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── ADMIN: ROLL OVER BALANCES TO NEW YEAR ──
+function primeRolloverYearInputs(){
+  const fromEl = document.getElementById('rolloverFromYear');
+  const toEl = document.getElementById('rolloverToYear');
+  if(fromEl && !fromEl.value) fromEl.value = new Date().getFullYear();
+  if(toEl && !toEl.value) toEl.value = new Date().getFullYear()+1;
+}
+async function submitRolloverBalances(){
+  primeRolloverYearInputs();
+  const fromYear = Number(document.getElementById('rolloverFromYear').value);
+  const toYear = Number(document.getElementById('rolloverToYear').value);
+  const ok = confirm(`Copy everyone's ${fromYear} quotas forward into ${toYear} (0 days used)? Existing ${toYear} rows are left untouched.`);
+  if(!ok) return;
+  try{
+    const res = await callApi('rollover_balances_new_year', { from_year: fromYear, to_year: toYear });
+    showToast(`✅ Created ${res.created} balance row(s), skipped ${res.skipped} that already existed`);
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 function populateExportFilterSelectors(){
   const empSel = document.getElementById('exportEmployee');
   const deptSel = document.getElementById('exportDept');
@@ -1919,6 +2103,7 @@ function openAddEmployeeModal(){
   document.getElementById('neSick').value=30;
   document.getElementById('nePersonal').value=3;
   document.getElementById('neAutoApprove').checked=false;
+  document.getElementById('neBypassConditions').checked=false;
   document.getElementById('addEmpErr').textContent='';
   document.getElementById('addEmpModalTitle').textContent='➕ Add Employee';
   document.getElementById('addEmpSubmitBtn').textContent='Add Employee';
@@ -1942,6 +2127,7 @@ function openEditEmployeeModal(id){
   document.getElementById('nePosition').value = emp.position || '';
   document.getElementById('neRole').value = emp.role || 'employee';
   document.getElementById('neAutoApprove').checked = !!emp.auto_approve;
+  document.getElementById('neBypassConditions').checked = !!emp.bypass_conditions;
 
   // แปลง manager_id ในผังกลับเป็น employee_code เพื่อแสดงในช่องแก้ไข
   const chain = managerChainsCache[id] || [];
@@ -1971,6 +2157,7 @@ async function submitAddOrEditEmployee(){
       role: document.getElementById('neRole').value,
       manager_code: document.getElementById('neManagerCode').value.trim(),
       auto_approve: document.getElementById('neAutoApprove').checked,
+      bypass_conditions: document.getElementById('neBypassConditions').checked,
     };
     if(!payload.name){ errEl.textContent='Name is required'; return; }
     try{
@@ -1998,6 +2185,7 @@ async function submitAddOrEditEmployee(){
     sick_days: Number(document.getElementById('neSick').value)||0,
     personal_days: Number(document.getElementById('nePersonal').value)||0,
     auto_approve: document.getElementById('neAutoApprove').checked,
+    bypass_conditions: document.getElementById('neBypassConditions').checked,
   };
   if(!payload.employee_code||!payload.name||!payload.password){ errEl.textContent='Employee code, name, and password are required'; return; }
   try{
