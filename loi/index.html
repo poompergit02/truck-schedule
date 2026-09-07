@@ -415,14 +415,15 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>🗓 Roll Over Balances to New Year</h3>
-        <p class="hint" style="margin-bottom:14px">Copies everyone's current day quotas forward into next year with 0 days used. Existing rows for that year are left untouched (safe to run more than once).</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <input type="number" id="rolloverFromYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
-          <span style="color:var(--text-dim)">→</span>
-          <input type="number" id="rolloverToYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
-          <button class="btn btn-primary" onclick="submitRolloverBalances()">Roll Over</button>
+        <h3>🗓 Carry Over Annual Leave (3-day policy)</h3>
+        <p class="hint" style="margin-bottom:14px">Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
+          <input type="number" id="carryoverYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
+          <button class="btn btn-primary" onclick="findCarryoverCandidates()">🔍 Find</button>
+          <button class="btn btn-outline" id="carryoverExportBtn" style="display:none" onclick="exportCarryoverCandidates()">📥 Export</button>
         </div>
+        <div id="carryoverResults"></div>
       </div>
 
       <div class="card">
@@ -600,11 +601,11 @@ tr:hover td{background:var(--cream)}
       <label style="margin:0" for="neBypassConditions">🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)</label>
     </div>
     <div class="err-text" id="addEmpErr"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
-      <button class="btn btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()">💰 Edit Balances</button>
-      <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
-      <button class="btn btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
+    <div class="modal-actions" style="flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
+      <button class="btn btn-sm btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()">💰 Edit Balances</button>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
+      <button class="btn btn-sm btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
     </div>
   </div>
 </div>
@@ -798,6 +799,12 @@ const LEAVE_TYPE_LABEL = {
   annual:'Annual / Vacation', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
 };
+// ── โควตาพักร้อนยกยอด (carryover) มี leave_type เป็น "annual_carry_YYYY" แบบไดนามิก ──
+function getLeaveTypeLabel(type){
+  const m = String(type).match(/^annual_carry_(\d{4})$/);
+  if(m) return `Annual / Vacation (${m[1]})`;
+  return LEAVE_TYPE_LABEL[type] || type;
+}
 const STATUS_LABEL = {
   pending_manager:{label:'Pending Manager', cls:'badge-pending'},
   pending_admin:{label:'Pending Admin', cls:'badge-pending'},
@@ -875,7 +882,7 @@ function doLogout(){
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
    'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody',
-   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','tabBar'].forEach(id=>{
+   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -984,7 +991,28 @@ async function loadMyLeave(){
     myLeaveRequestsCache = data.requests || [];
     await fetchHolidaysCache();
     renderMyCalendar();
+    populateCarryoverOption(data.balances);
   }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
+}
+
+// ── ถ้ามีโควตาพักร้อนยกยอด (annual_carry_YYYY) เหลืออยู่และยังไม่หมดอายุ ให้เพิ่มเป็นตัวเลือกในฟอร์มขอลา ──
+function populateCarryoverOption(balances){
+  const sel = document.getElementById('reqType');
+  // เอาตัวเลือกยกยอดเก่าออกก่อน กันเพิ่มซ้ำเวลาโหลดหลายรอบ
+  [...sel.querySelectorAll('option[data-carryover]')].forEach(o=>o.remove());
+  const today = new Date().toISOString().slice(0,10);
+  balances.forEach(b=>{
+    const m = String(b.leave_type).match(/^annual_carry_(\d{4})$/);
+    if(!m) return;
+    const remaining = Number(b.total_days) - Number(b.used_days);
+    const cutoff = `${Number(m[1])+1}-03-31`;
+    if(remaining <= 0 || today > cutoff) return; // หมดแล้วหรือหมดอายุแล้ว ไม่ต้องโชว์
+    const opt = document.createElement('option');
+    opt.value = b.leave_type;
+    opt.textContent = `${getLeaveTypeLabel(b.leave_type)} — ${formatDaysNice(remaining)} days left, use by 31 Mar`;
+    opt.setAttribute('data-carryover','1');
+    sel.appendChild(opt);
+  });
 }
 
 // ── MY LEAVE CALENDAR (personal, colored by leave type) ──
@@ -1038,7 +1066,7 @@ function renderMyCalendar(){
     const dateStr = `${myCalYear}-${pad(myCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
     const entryNames = entries.map(e=>{
-      const typeLabel = LEAVE_TYPE_LABEL[e.leaveType]||e.leaveType;
+      const typeLabel = getLeaveTypeLabel(e.leaveType);
       const reasonPart = e.reason ? ` — ${e.reason}` : '';
       return `${typeLabel} (${e.statusLabel})${reasonPart}${e.suffix||''}`;
     });
@@ -1064,7 +1092,8 @@ function formatDaysNice(n){
 
 function renderBalances(balances){
   const order=['annual','sick','personal','other'];
-  const sorted=[...balances].sort((a,b)=>order.indexOf(a.leave_type)-order.indexOf(b.leave_type));
+  const rank = t => { const i = order.indexOf(t); return i === -1 ? 999 : i; };
+  const sorted=[...balances].sort((a,b)=>rank(a.leave_type)-rank(b.leave_type));
   const row=document.getElementById('balanceRow');
   if(!sorted.length){ row.innerHTML='<div class="empty-msg">No leave balance set up yet. Contact Admin.</div>'; return; }
   row.innerHTML = sorted.map(b=>{
@@ -1073,7 +1102,7 @@ function renderBalances(balances){
     return `
       <div class="ticket">
         <div class="ticket-main">
-          <div class="ticket-type">${LEAVE_TYPE_LABEL[b.leave_type]||b.leave_type}</div>
+          <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)}</div>
           <div class="ticket-name">${formatDaysNice(remaining)} days left</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
           <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} used</span><span>${formatDaysNice(b.total_days)} total</span></div>
@@ -1212,7 +1241,7 @@ function renderOwnRequestsTable(bodyId, requests, showActions){
       <button class="btn btn-sm btn-danger" onclick="cancelMyRequest('${r.id}')">Cancel</button>
     </td>` : '';
     return `<tr>
-      <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+      <td>${getLeaveTypeLabel(r.leave_type)}</td>
       <td class="mono">${formatDuration(r)}</td>
       <td>${formatAmount(r)}</td>
       <td>${r.reason?escHtml(r.reason):'—'}</td>
@@ -1349,7 +1378,7 @@ async function loadApprovals(){
       <tr>
         <td><input type="checkbox" class="approvalCheckbox" value="${r.id}"/></td>
         <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></td>
-        <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+        <td>${getLeaveTypeLabel(r.leave_type)}</td>
         <td class="mono">${formatDuration(r)}</td>
         <td>${formatAmount(r)}</td>
         <td>${r.reason?escHtml(r.reason):'—'}</td>
@@ -1628,7 +1657,7 @@ function renderSpecialCalendar(requests){
     const dateStr = `${specialCalYear}-${pad(specialCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
     const peopleNames = people.map(p=>{
-      const typeLabel = LEAVE_TYPE_LABEL[p.leaveType]||p.leaveType;
+      const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
@@ -1720,7 +1749,7 @@ function renderEditLeaveList(){
   body.innerHTML = editLeaveRequestsCache.map(r=>{
     const st = STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
     return `<tr>
-      <td>${LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type}</td>
+      <td>${getLeaveTypeLabel(r.leave_type)}</td>
       <td class="mono">${formatDuration(r)}</td>
       <td>${formatAmount(r)}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
@@ -1829,7 +1858,7 @@ function renderEditBalancesFields(balances){
     const used = b ? b.used_days : 0;
     return `
       <div class="field" style="margin-bottom:12px">
-        <label>${LEAVE_TYPE_LABEL[t]||t} — Total Days <span style="color:var(--text-dim);font-weight:400">(${used} used so far)</span></label>
+        <label>${getLeaveTypeLabel(t)} — Total Days <span style="color:var(--text-dim);font-weight:400">(${used} used so far)</span></label>
         <input type="number" step="0.5" class="editBalInput" data-type="${t}" value="${total}"/>
       </div>`;
   }).join('');
@@ -1891,23 +1920,71 @@ function exportAllEmployeesExcel(){
   XLSX.writeFile(wb, `LOI_All_Employees_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ── ADMIN: ROLL OVER BALANCES TO NEW YEAR ──
+// ── ADMIN: CARRY OVER ANNUAL LEAVE (Find → per-person Notify → Export) ──
+let carryoverCandidatesCache = [];
+let carryoverYearCache = null;
+
 function primeRolloverYearInputs(){
-  const fromEl = document.getElementById('rolloverFromYear');
-  const toEl = document.getElementById('rolloverToYear');
-  if(fromEl && !fromEl.value) fromEl.value = new Date().getFullYear();
-  if(toEl && !toEl.value) toEl.value = new Date().getFullYear()+1;
+  const el = document.getElementById('carryoverYear');
+  if(el && !el.value) el.value = new Date().getFullYear();
 }
-async function submitRolloverBalances(){
+
+async function findCarryoverCandidates(){
   primeRolloverYearInputs();
-  const fromYear = Number(document.getElementById('rolloverFromYear').value);
-  const toYear = Number(document.getElementById('rolloverToYear').value);
-  const ok = confirm(`Copy everyone's ${fromYear} quotas forward into ${toYear} (0 days used)? Existing ${toYear} rows are left untouched.`);
+  const year = Number(document.getElementById('carryoverYear').value);
+  const resultsEl = document.getElementById('carryoverResults');
+  resultsEl.innerHTML = '<div class="empty-msg">Searching…</div>';
+  try{
+    const data = await callApi('find_annual_carryover_candidates', { from_year: year });
+    carryoverCandidatesCache = data.candidates || [];
+    carryoverYearCache = year;
+    renderCarryoverCandidates();
+    document.getElementById('carryoverExportBtn').style.display = carryoverCandidatesCache.length ? 'inline-block' : 'none';
+  }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
+}
+
+function renderCarryoverCandidates(){
+  const resultsEl = document.getElementById('carryoverResults');
+  if(!carryoverCandidatesCache.length){
+    resultsEl.innerHTML = `<div class="empty-msg">No one has more than 3 unused Annual/Vacation days in ${carryoverYearCache}</div>`;
+    return;
+  }
+  resultsEl.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${carryoverCandidatesCache.map(c=>`
+      <tr>
+        <td class="mono">${escHtml(c.employee_code)}</td>
+        <td>${escHtml(c.name)}</td>
+        <td>${c.department?escHtml(c.department):'—'}</td>
+        <td>${formatDaysNice(c.remaining_days)}</td>
+        <td>${c.already_granted?'<span class="badge badge-approved">Already granted</span>':'<span class="badge badge-pending">Not yet</span>'}</td>
+        <td><button class="btn btn-sm btn-primary" ${c.already_granted?'disabled':''} onclick="grantAndNotifyCarryover('${c.employee_id}')">📧 Notify &amp; Grant 3 Days</button></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+async function grantAndNotifyCarryover(employeeId){
+  const c = carryoverCandidatesCache.find(x=>x.employee_id===employeeId);
+  const ok = confirm(`Grant a 3-day carryover to ${c?c.name:'this employee'} and email them now?`);
   if(!ok) return;
   try{
-    const res = await callApi('rollover_balances_new_year', { from_year: fromYear, to_year: toYear });
-    showToast(`✅ Created ${res.created} balance row(s), skipped ${res.skipped} that already existed`);
+    const res = await callApi('grant_and_notify_carryover', { employee_id: employeeId, from_year: carryoverYearCache });
+    showToast(res.emailed ? '✅ Granted and emailed' : '✅ Granted (no email on file, not sent)');
+    if(c) c.already_granted = true;
+    renderCarryoverCandidates();
   }catch(e){ showToast(e.message,'err'); }
+}
+
+function exportCarryoverCandidates(){
+  if(!carryoverCandidatesCache.length){ showToast('Nothing to export','err'); return; }
+  const rows = carryoverCandidatesCache.map(c=>({
+    employee_code: c.employee_code, name: c.name, department: c.department||'',
+    remaining_days: c.remaining_days, already_granted: c.already_granted?'yes':'no',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Carryover Candidates');
+  XLSX.writeFile(wb, `LOI_Annual_Carryover_${carryoverYearCache}.xlsx`);
 }
 
 function populateExportFilterSelectors(){
@@ -1965,7 +2042,7 @@ async function exportAllRequestsExcel(){
       employee_code: r.employee?.employee_code||'',
       name: r.employee?.name||'',
       department: r.employee?.department||'',
-      leave_type: LEAVE_TYPE_LABEL[r.leave_type]||r.leave_type,
+      leave_type: getLeaveTypeLabel(r.leave_type),
       unit: r.leave_unit||'day',
       start_date: formatDMY(r.start_date),
       end_date: formatDMY(r.end_date),
@@ -2345,7 +2422,7 @@ function renderCalendar(requests){
     const dateStr = `${calYear}-${pad(calMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
     const peopleNames = people.map(p=>{
-      const typeLabel = LEAVE_TYPE_LABEL[p.leaveType]||p.leaveType;
+      const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
