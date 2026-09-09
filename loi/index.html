@@ -436,6 +436,17 @@ tr:hover td{background:var(--cream)}
         <div id="specialAccessList"></div>
       </div>
 
+      <div class="card">
+        <h3>🗑 Clean Up Old Attachments</h3>
+        <p class="hint" style="margin-bottom:14px">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Older than (days)</label>
+          <input type="number" id="attachmentCleanupDays" value="365" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
+          <button class="btn btn-primary" onclick="findOldAttachments()">🔍 Find</button>
+        </div>
+        <div id="attachmentCleanupResults"></div>
+      </div>
+
       <div class="danger-card">
         <h3>⚠️ Danger Zone — Testing Only</h3>
         <p class="hint">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
@@ -882,7 +893,7 @@ function doLogout(){
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
    'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody',
-   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','tabBar'].forEach(id=>{
+   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','attachmentCleanupResults','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -1294,6 +1305,32 @@ function readFileAsDataUrl(file){
   });
 }
 
+// ── บีบอัดรูปก่อนอัพโหลด (resize ให้กว้างไม่เกิน 1280px + JPEG quality 0.7) ป้องกัน Storage บวมจากรูปมือถือขนาดใหญ่ ──
+// ไฟล์ที่ไม่ใช่รูป (เช่น PDF) จะข้ามการบีบอัดและใช้ไฟล์ต้นฉบับตรงๆ
+function compressImageFile(file){
+  return new Promise((resolve,reject)=>{
+    if(!file.type.startsWith('image/')){ readFileAsDataUrl(file).then(resolve).catch(reject); return; }
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      img.onload = ()=>{
+        const maxW = 1280;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
   const unit=document.getElementById('reqUnit').value;
@@ -1343,8 +1380,10 @@ async function submitLeaveRequest(){
   const attachInput = document.getElementById('reqAttachment');
   if(attachWrap.style.display!=='none'){
     if(!attachInput.files.length){ showToast('⚠️ Please attach a photo of your medical certificate','err'); return; }
+    const file = attachInput.files[0];
+    if(file.size > 8*1024*1024){ showToast('⚠️ File is too large (max 8MB before compression)','err'); return; }
     try{
-      payload.attachment_base64 = await readFileAsDataUrl(attachInput.files[0]);
+      payload.attachment_base64 = await compressImageFile(file);
     }catch(e){ showToast('⚠️ Could not read the attached file','err'); return; }
   }
 
@@ -1365,6 +1404,60 @@ async function submitLeaveRequest(){
 }
 
 // ── APPROVALS ──
+async function viewAttachment(requestId){
+  try{
+    const data = await callApi('get_attachment_url', { request_id: requestId });
+    window.open(data.url, '_blank');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: CLEAN UP OLD ATTACHMENTS ──
+let oldAttachmentsCache = [];
+
+async function findOldAttachments(){
+  const days = Number(document.getElementById('attachmentCleanupDays').value) || 365;
+  const resultsEl = document.getElementById('attachmentCleanupResults');
+  resultsEl.innerHTML = '<div class="empty-msg">Searching…</div>';
+  try{
+    const data = await callApi('find_old_attachments', { older_than_days: days });
+    oldAttachmentsCache = data.requests || [];
+    renderOldAttachments(data.cutoff_date);
+  }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
+}
+
+function renderOldAttachments(cutoffDate){
+  const resultsEl = document.getElementById('attachmentCleanupResults');
+  if(!oldAttachmentsCache.length){
+    resultsEl.innerHTML = `<div class="empty-msg">No attachments older than ${formatDMY(cutoffDate)}</div>`;
+    return;
+  }
+  resultsEl.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Name</th><th>Leave Date</th><th>Action</th></tr></thead>
+    <tbody>${oldAttachmentsCache.map(r=>`
+      <tr id="oldAttRow-${r.id}">
+        <td class="mono">${escHtml(r.employee?.employee_code||'')}</td>
+        <td>${escHtml(r.employee?.name||'')}</td>
+        <td class="mono">${formatDMY(r.start_date)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎 View</button>
+          <button class="btn btn-sm btn-danger" onclick="purgeAttachment('${r.id}')">Delete File</button>
+        </td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+async function purgeAttachment(requestId){
+  const ok = confirm('Delete this attachment file? The leave record itself will be kept.');
+  if(!ok) return;
+  try{
+    await callApi('purge_attachment', { request_id: requestId });
+    showToast('✅ File deleted');
+    oldAttachmentsCache = oldAttachmentsCache.filter(r=>r.id!==requestId);
+    const row = document.getElementById(`oldAttRow-${requestId}`);
+    if(row) row.remove();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 async function loadApprovals(){
   document.getElementById('approvalsSub').textContent =
     currentUser.role==='manager' ? "Requests from your team awaiting your review" : "Requests approved by managers, awaiting final approval";
@@ -1382,7 +1475,10 @@ async function loadApprovals(){
         <td class="mono">${formatDuration(r)}</td>
         <td>${formatAmount(r)}</td>
         <td>${r.reason?escHtml(r.reason):'—'}</td>
-        <td><button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button></td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button>
+          ${r.attachment_path?`<button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎 Certificate</button>`:''}
+        </td>
       </tr>`).join('');
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -1756,6 +1852,7 @@ function renderEditLeaveList(){
       <td>
         <button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="adminDeleteRequest('${r.id}')">Delete</button>
+        ${r.attachment_path?`<button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎</button>`:''}
       </td>
     </tr>`;
   }).join('');
