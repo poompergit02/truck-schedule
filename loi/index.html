@@ -133,6 +133,10 @@ main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
 .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--plum-600);background:var(--white)}
 .field textarea{resize:vertical;min-height:70px}
 .date-confirm{font-size:.74rem;color:var(--plum-700);margin-top:4px;font-family:'IBM Plex Mono',monospace;min-height:14px}
+.date-field-wrap{position:relative}
+.date-field-wrap input[type=date]{color:transparent}
+.date-field-wrap input[type=date]:focus{color:transparent}
+.date-overlay{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-family:'Inter',sans-serif;font-size:.88rem;color:var(--ink)}
 .btn{padding:11px 20px;border:none;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:.88rem;transition:.15s}
 .btn-primary{background:linear-gradient(135deg,var(--plum-600),var(--plum-900));color:#fff}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
@@ -196,6 +200,21 @@ tr:hover td{background:var(--cream)}
 .danger-card h3{color:var(--danger);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:6px}
 .danger-card p.hint{font-size:.82rem;color:#7a3a3a;margin-bottom:16px}
 .danger-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+
+/* ══════════ LOADING OVERLAY (coffee break) ══════════ */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(34,25,53,.4);backdrop-filter:blur(2px);z-index:500;align-items:center;justify-content:center}
+.loading-overlay.open{display:flex}
+.loading-box{width:160px;height:170px;background:var(--white);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.brew-cup{position:relative;width:52px;height:44px;border:2.5px solid var(--plum-700);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;margin-top:18px}
+.brew-fill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--gold);animation:brewFill 2.4s ease-in-out infinite}
+.brew-handle{position:absolute;width:12px;height:16px;border:2.5px solid var(--plum-700);border-left:none;border-radius:0 8px 8px 0;top:56px;left:calc(50% + 24px)}
+.brew-steam{position:absolute;top:26px;width:2px;height:16px;background:var(--text-faint);border-radius:2px}
+.brew-steam1{left:calc(50% - 12px);animation:brewSteam 2.4s ease-in-out infinite}
+.brew-steam2{left:calc(50% + 6px);animation:brewSteam 2.4s ease-in-out .3s infinite}
+.loading-text{margin-top:16px;font-size:.8rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
+@keyframes brewFill{0%,10%{height:0}60%,90%{height:36px}100%{height:36px}}
+@keyframes brewSteam{0%,100%{opacity:.15;transform:translateY(0) scaleY(1)}50%{opacity:.7;transform:translateY(-8px) scaleY(1.3)}}
+
 
 .empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:.86rem}
 
@@ -378,6 +397,18 @@ tr:hover td{background:var(--cream)}
           <tbody id="approvalsBody"></tbody>
         </table></div>
       </div>
+
+      <div class="card">
+        <h3>🗓 Team Leave Calendar</h3>
+        <p class="hint" style="margin-bottom:14px" id="calendarSub">Who's on approved leave this month — check for clashes before you approve</p>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(-1)">← Prev</button>
+          <div class="mono" id="calendarMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)">Next →</button>
+        </div>
+        <div id="calendarGrid" class="cal-grid"></div>
+        <div id="calendarLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
     </div>
 
     <!-- ADMIN: EMPLOYEES -->
@@ -475,7 +506,18 @@ tr:hover td{background:var(--cream)}
     <div class="page" id="page-logs">
       <div class="section-title">LOI Logs</div>
       <div class="section-sub">Recent login activity, most recent first</div>
-      <div class="card" id="logsCard" style="font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.9"></div>
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+          <select id="logsRange" onchange="loadLogs()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem">
+            <option value="all">All (recent 300)</option>
+            <option value="day">Today</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+          </select>
+          <button class="btn btn-outline" onclick="exportLogsExcel()">📥 Export</button>
+        </div>
+        <div id="logsCard" style="font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.9"></div>
+      </div>
     </div>
 
     <!-- ADMIN: COMPANY HOLIDAYS -->
@@ -533,21 +575,6 @@ tr:hover td{background:var(--cream)}
           <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
           <tbody id="myReportsBody"></tbody>
         </table></div>
-      </div>
-    </div>
-
-    <!-- REPORTS 2: team leave calendar (manager sees own team, admin sees everyone) -->
-    <div class="page" id="page-reports2">
-      <div class="section-title">Leave Calendar</div>
-      <div class="section-sub" id="calendarSub">Who's on approved leave this month</div>
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(-1)">← Prev</button>
-          <div class="mono" id="calendarMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
-          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)">Next →</button>
-        </div>
-        <div id="calendarGrid" class="cal-grid"></div>
-        <div id="calendarLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
   </main>
@@ -799,6 +826,18 @@ tr:hover td{background:var(--cream)}
 
 <div class="toast-wrap" id="toastWrap"></div>
 
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="brew-steam brew-steam1"></div>
+    <div class="brew-steam brew-steam2"></div>
+    <div class="brew-cup">
+      <div class="brew-fill"></div>
+    </div>
+    <div class="brew-handle"></div>
+    <div class="loading-text" id="loadingText">Loading...</div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════
 //  ตั้งค่า Edge Function URL และ Supabase anon/publishable key
@@ -841,6 +880,27 @@ async function callApi(action, params={}){
   return data;
 }
 
+function showLoading(msg){
+  document.getElementById('loadingText').textContent = msg || 'Loading...';
+  document.getElementById('loadingOverlay').classList.add('open');
+}
+function hideLoading(){
+  document.getElementById('loadingOverlay').classList.remove('open');
+}
+// รันงานพร้อมโชว์ animation กันหน้าจอกระพริบเร็วเกินไปถ้า action เสร็จไวมาก (ขั้นต่ำ 700ms)
+async function withLoading(fn, msg){
+  showLoading(msg);
+  const start = Date.now();
+  try{
+    return await fn();
+  } finally {
+    const elapsed = Date.now() - start;
+    const minShow = 700;
+    if(elapsed < minShow) await new Promise(r=>setTimeout(r, minShow - elapsed));
+    hideLoading();
+  }
+}
+
 function showToast(msg, type='ok'){
   const wrap=document.getElementById('toastWrap');
   const t=document.createElement('div');
@@ -861,7 +921,7 @@ async function doLogin(){
   if(!code||!password){ errEl.textContent='Please enter employee code and password'; return; }
 
   try{
-    const data = await callApi_noToken('login', { employee_code: code, password });
+    const data = await withLoading(()=>callApi_noToken('login', { employee_code: code, password }), 'Signing in...');
     localStorage.setItem('loi_token', data.token);
     currentUser = data.employee;
     if(currentUser.must_change_password){
@@ -949,7 +1009,6 @@ function buildTabs(){
       {id:'approvals2', label:'My Team Requests'},
       {id:'employees', label:'Employees'},
       {id:'reports', label:'Reports'},
-      {id:'reports2', label:'Leave Calendar'},
       {id:'settings', label:'Settings'},
       {id:'logs', label:'LOI Logs'},
       {id:'holidays', label:'⭐ Company Holidays'},
@@ -960,7 +1019,6 @@ function buildTabs(){
       {id:'approvals', label:'My Requests'},
       {id:'approvals2', label:'My Team Requests'},
       {id:'reports', label:'Reports'},
-      {id:'reports2', label:'Leave Calendar'},
     ];
   } else { // employee — safe default, never falls through to elevated tabs
     tabs = [
@@ -984,10 +1042,9 @@ function showPage(id, el){
   el.classList.add('active');
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
-  if(id==='approvals2') loadApprovals();
+  if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); }
   if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); primeRolloverYearInputs(); }
   if(id==='reports') loadMyResolvedRequests();
-  if(id==='reports2') loadLeaveCalendar();
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
@@ -1223,6 +1280,27 @@ function formatDMY(iso){
   return `${d}/${m}/${y}`;
 }
 
+// ── บังคับให้ทุกช่อง input type=date แสดงผลเป็น dd/mm/yyyy เสมอ ไม่ว่า browser locale จะตั้งเป็นแบบไหน ──
+// ทำโดยซ่อนตัวอักษรของ native input (color:transparent) แล้ววางข้อความที่จัดรูปแบบเองทับไว้ข้างบน
+function wireAllDateOverlays(){
+  document.querySelectorAll('input[type="date"]').forEach(input=>{
+    if(input.dataset.overlayWired) return;
+    input.dataset.overlayWired = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'date-field-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const overlay = document.createElement('span');
+    overlay.className = 'date-overlay';
+    wrap.appendChild(overlay);
+    const update = () => { overlay.textContent = input.value ? formatDMY(input.value) : ''; };
+    input.addEventListener('input', update);
+    input.addEventListener('change', update);
+    update();
+  });
+}
+wireAllDateOverlays();
+
 // ตัวเลือกวันที่ของเบราว์เซอร์บางเครื่องโชว์เป็น mm/dd/yyyy ตาม locale ของเครื่อง
 // เพิ่มข้อความยืนยันแบบ dd/mm/yyyy ที่ชัดเจนไม่กำกวมไว้ใต้ช่องกรอก
 function updateDateConfirm(inputId, confirmId){
@@ -1280,6 +1358,7 @@ function addMultiDateRow(){
   row.innerHTML = `<input type="date" class="multiDateInput" style="flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem;background:var(--cream)"/>
     <button type="button" class="btn btn-sm btn-outline" onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(row);
+  wireAllDateOverlays();
 }
 
 // ── แสดงช่องแนบไฟล์ ถ้าเป็นลาป่วยวันจันทร์/ศุกร์ และ admin เปิดเงื่อนไขนี้ไว้ ──
@@ -1495,12 +1574,14 @@ async function submitBulkDecision(){
   const ok = confirm(`${decision==='approve'?'Approve':'Reject'} ${checked.length} selected request(s)?`);
   if(!ok) return;
   let okCount=0, failCount=0;
-  for(const id of checked){
-    try{
-      await callApi('approve_reject_request', { request_id:id, decision, comment });
-      okCount++;
-    }catch(e){ failCount++; }
-  }
+  await withLoading(async ()=>{
+    for(const id of checked){
+      try{
+        await callApi('approve_reject_request', { request_id:id, decision, comment });
+        okCount++;
+      }catch(e){ failCount++; }
+    }
+  }, decision==='approve' ? 'Approving...' : 'Rejecting...');
   showToast(`✅ ${decision==='approve'?'Approved':'Rejected'} ${okCount} request(s)${failCount?` — ${failCount} failed`:''}`, failCount?'err':'ok');
   loadApprovals();
 }
@@ -1516,9 +1597,9 @@ function openDecisionModal(requestId, empName, start, end){
 async function submitDecision(decision){
   if(!pendingDecision) return;
   try{
-    await callApi('approve_reject_request', {
+    await withLoading(()=>callApi('approve_reject_request', {
       request_id: pendingDecision, decision, comment: document.getElementById('decisionComment').value.trim()
-    });
+    }), decision==='approve' ? 'Approving...' : 'Rejecting...');
     closeModal('decisionModal');
     showToast(decision==='approve' ? '✅ Request approved' : '❌ Request rejected');
     pendingDecision=null;
@@ -2222,15 +2303,32 @@ function formatLogTimestamp(iso){
   return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+let logsCache = [];
+
 async function loadLogs(){
+  const range = document.getElementById('logsRange').value;
   try{
-    const data = await callApi('get_access_logs');
+    const data = await callApi('get_access_logs', { range });
+    logsCache = data.logs || [];
     const card = document.getElementById('logsCard');
-    if(!data.logs.length){ card.innerHTML = '<div class="empty-msg">No logs yet</div>'; return; }
-    card.innerHTML = data.logs.map(l=>
-      `<div>${formatLogTimestamp(l.created_at)} — ${escHtml(l.name||'?')} (${escHtml(l.employee_code||'?')}) — ${escHtml(l.event_type)}</div>`
+    if(!logsCache.length){ card.innerHTML = '<div class="empty-msg">No logs in this range</div>'; return; }
+    card.innerHTML = logsCache.map(l=>
+      `<div>${formatLogTimestamp(l.created_at)} — ${escHtml(l.name||'?')} (${escHtml(l.employee_code||'?')}) — ${escHtml(l.event_type)}${l.detail?` — ${escHtml(l.detail)}`:''}</div>`
     ).join('');
   }catch(e){ showToast(e.message,'err'); }
+}
+
+function exportLogsExcel(){
+  if(!logsCache.length){ showToast('No logs to export','err'); return; }
+  const range = document.getElementById('logsRange').value;
+  const rows = logsCache.map(l=>({
+    timestamp: formatLogTimestamp(l.created_at), employee_code: l.employee_code||'', name: l.name||'',
+    event_type: l.event_type, detail: l.detail||'',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Logs');
+  XLSX.writeFile(wb, `LOI_Logs_${range}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ── ADMIN: DANGER ZONE (testing resets) ──
@@ -2244,7 +2342,7 @@ async function resetAllData(){
   const ok = confirm('This deletes ALL leave requests, balances, manager chains, and every non-admin employee. This cannot be undone. Continue?');
   if(!ok) return;
   try{
-    await callApi('reset_all_data', { confirm_password: pw });
+    await withLoading(()=>callApi('reset_all_data', { confirm_password: pw }), 'Clearing data...');
     showToast('✅ All data deleted');
     document.getElementById('dangerPassword').value='';
     loadEmployees();
@@ -2260,7 +2358,7 @@ async function resetMonthData(){
   const ok = confirm(`Delete all leave requests starting in ${MONTH_NAMES_EN[month-1]} ${year}? This cannot be undone.`);
   if(!ok) return;
   try{
-    const res = await callApi('reset_month_data', { confirm_password: pw, year, month });
+    const res = await withLoading(()=>callApi('reset_month_data', { confirm_password: pw, year, month }), 'Clearing data...');
     showToast(`✅ Deleted ${res.deleted_count} request(s)`);
     document.getElementById('dangerPassword').value='';
   }catch(e){ showToast(e.message,'err'); }
