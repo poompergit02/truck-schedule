@@ -85,6 +85,10 @@ header{
 .user-chip .u-role{font-size:.66rem;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;font-family:'IBM Plex Mono',monospace}
 .btn-logout{background:none;border:1px solid var(--line);color:var(--text-dim);padding:7px 14px;border-radius:20px;font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif}
 .btn-logout:hover{background:var(--line-soft)}
+.lang-btn{padding:5px 11px;border:1px solid var(--line);background:var(--white);color:var(--text-dim);font-size:.72rem;font-weight:600;cursor:pointer;border-radius:14px;font-family:'IBM Plex Mono',monospace}
+.lang-btn.active{background:var(--plum-700);color:#fff;border-color:var(--plum-700)}
+#loginScreen .lang-btn{background:rgba(255,255,255,.06);border-color:rgba(231,217,190,.3);color:rgba(255,255,255,.6)}
+#loginScreen .lang-btn.active{background:var(--gold);color:#241a0c;border-color:var(--gold)}
 
 nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 28px;display:flex;gap:4px;overflow-x:auto}
 .tab-btn{padding:14px 18px;font-size:.86rem;font-weight:600;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;background:none;border-top:none;border-left:none;border-right:none}
@@ -255,21 +259,25 @@ tr:hover td{background:var(--cream)}
 <!-- ══════════ LOGIN SCREEN ══════════ -->
 <div id="loginScreen">
   <div class="login-card">
+    <div class="lang-toggle" style="display:flex;justify-content:center;gap:6px;margin-bottom:16px">
+      <button class="lang-btn" id="langBtnEnLogin" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="langBtnThLogin" onclick="setLang('th')">TH</button>
+    </div>
     <div class="login-eyebrow">IIDA · Internal Systems</div>
     <div class="login-title">LOI</div>
-    <div class="login-sub">Leave Request Online IIDA</div>
+    <div class="login-sub" data-i18n="login_sub">Leave Request Online IIDA</div>
 
     <div class="login-field">
-      <label>Employee Code</label>
+      <label data-i18n="login_code_label">Employee Code</label>
       <input type="text" id="loginCode" placeholder="e.g. 2410" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"/>
     </div>
     <div class="login-field">
-      <label>Password</label>
+      <label data-i18n="login_password_label">Password</label>
       <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div class="login-err" id="loginErr"></div>
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
-    <div class="login-foot">Contact HR / Admin if you don't have login details</div>
+    <button class="btn-login" onclick="doLogin()" data-i18n="login_signin_btn">Sign In</button>
+    <div class="login-foot" data-i18n="login_footer">Contact HR / Admin if you don't have login details</div>
   </div>
 </div>
 
@@ -284,6 +292,10 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
     <div class="header-right">
+      <div class="lang-toggle" style="display:flex;gap:4px">
+        <button class="lang-btn" id="langBtnEnApp" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" id="langBtnThApp" onclick="setLang('th')">TH</button>
+      </div>
       <div class="user-chip">
         <div class="user-avatar" id="userAvatar">?</div>
         <div>
@@ -291,7 +303,7 @@ tr:hover td{background:var(--cream)}
           <div class="u-role" id="userRole">—</div>
         </div>
       </div>
-      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+      <button class="btn-logout" onclick="doLogout()" data-i18n="signout_btn">Sign Out</button>
     </div>
   </header>
 
@@ -300,8 +312,8 @@ tr:hover td{background:var(--cream)}
   <main>
     <!-- MY LEAVE -->
     <div class="page active" id="page-myleave">
-      <div class="section-title">My Leave</div>
-      <div class="section-sub">View your leave balance and submit new requests</div>
+      <div class="section-title" data-i18n="pg_myleave_title">My Leave</div>
+      <div class="section-sub" data-i18n="pg_myleave_sub">View your leave balance and submit new requests</div>
 
       <div class="balance-row" id="balanceRow"></div>
 
@@ -309,7 +321,7 @@ tr:hover td{background:var(--cream)}
         <h3>➕ New Leave Request</h3>
         <div class="form-grid">
           <div class="field">
-            <label>Leave Type</label>
+            <label data-i18n="lbl_leave_type">Leave Type</label>
             <select id="reqType" onchange="checkAttachmentRequirement()">
               <option value="annual">Annual / Vacation</option>
               <option value="sick">Sick Leave</option>
@@ -321,7 +333,7 @@ tr:hover td{background:var(--cream)}
             </select>
           </div>
           <div class="field">
-            <label>Duration</label>
+            <label data-i18n="lbl_duration">Duration</label>
             <select id="reqUnit" onchange="toggleLeaveUnit()">
               <option value="day">Full day(s)</option>
               <option value="hour">Hourly</option>
@@ -330,8 +342,8 @@ tr:hover td{background:var(--cream)}
           </div>
         </div>
         <div class="form-grid" id="dayFields">
-          <div class="field"><label>Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqStartConfirm"></div></div>
-          <div class="field"><label>End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
+          <div class="field"><label data-i18n="lbl_start_date">Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqStartConfirm"></div></div>
+          <div class="field"><label data-i18n="lbl_end_date">End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
           <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
@@ -348,10 +360,10 @@ tr:hover td{background:var(--cream)}
           <input type="file" id="reqAttachment" accept="image/*,application/pdf"/>
         </div>
         <div class="field" style="margin-bottom:14px">
-          <label>Reason</label>
+          <label data-i18n="lbl_reason">Reason</label>
           <textarea id="reqReason" placeholder="Briefly explain the reason for leave..."></textarea>
         </div>
-        <button class="btn btn-primary" onclick="submitLeaveRequest()">Submit Request</button>
+        <button class="btn btn-primary" onclick="submitLeaveRequest()" data-i18n="btn_submit_request">Submit Request</button>
       </div>
 
       <div class="card">
@@ -368,11 +380,11 @@ tr:hover td{background:var(--cream)}
 
     <!-- APPROVALS: my own requests still pending -->
     <div class="page" id="page-approvals">
-      <div class="section-title">My Requests</div>
-      <div class="section-sub">Your own leave requests currently awaiting approval</div>
+      <div class="section-title" data-i18n="pg_myrequests_title">My Requests</div>
+      <div class="section-sub" data-i18n="pg_myrequests_sub">Your own leave requests currently awaiting approval</div>
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="myApprovalsBody"></tbody>
         </table></div>
       </div>
@@ -380,7 +392,7 @@ tr:hover td{background:var(--cream)}
 
     <!-- APPROVALS 2: requests from my team awaiting MY decision (manager/admin) -->
     <div class="page" id="page-approvals2">
-      <div class="section-title">My Team Requests</div>
+      <div class="section-title" data-i18n="pg_teamrequests_title">My Team Requests</div>
       <div class="section-sub" id="approvalsSub">Requests waiting for your review</div>
       <div class="card" style="padding:0" id="approvalsCard">
         <div style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line-soft)">
@@ -393,7 +405,7 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-sm btn-primary" onclick="submitBulkDecision()">Apply to Selected</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th></th><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Action</th></tr></thead>
+          <thead><tr><th></th><th data-i18n="th_employee">Employee</th><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="approvalsBody"></tbody>
         </table></div>
       </div>
@@ -413,15 +425,15 @@ tr:hover td{background:var(--cream)}
 
     <!-- ADMIN: EMPLOYEES -->
     <div class="page" id="page-employees">
-      <div class="section-title">Employee Management</div>
-      <div class="section-sub">Add employees individually or import from Excel</div>
+      <div class="section-title" data-i18n="pg_employees_title">Employee Management</div>
+      <div class="section-sub" data-i18n="pg_employees_sub">Add employees individually or import from Excel</div>
 
       <div class="card">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Add Employee</button>
-          <button class="btn btn-gold" onclick="openImportModal()">📊 Import from Excel</button>
-          <button class="btn btn-outline" onclick="downloadExcelTemplate()">⬇ Download Template</button>
-          <button class="btn btn-outline" onclick="exportAllEmployeesExcel()">📥 Export All Employees</button>
+          <button class="btn btn-primary" onclick="openAddEmployeeModal()" data-i18n="btn_add_employee">➕ Add Employee</button>
+          <button class="btn btn-gold" onclick="openImportModal()" data-i18n="btn_import_excel">📊 Import from Excel</button>
+          <button class="btn btn-outline" onclick="downloadExcelTemplate()" data-i18n="btn_download_template">⬇ Download Template</button>
+          <button class="btn btn-outline" onclick="exportAllEmployeesExcel()" data-i18n="btn_export_employees">📥 Export All Employees</button>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)">
           <label style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin:0">📥 Export:</label>
@@ -434,13 +446,13 @@ tr:hover td{background:var(--cream)}
           <select id="exportYear" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
           <select id="exportEmployee" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All employees</option></select>
           <select id="exportDept" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All departments</option></select>
-          <button class="btn btn-outline" onclick="exportAllRequestsExcel()">Export to Excel</button>
+          <button class="btn btn-outline" onclick="exportAllRequestsExcel()" data-i18n="btn_export_excel">Export to Excel</button>
         </div>
       </div>
 
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Managers (in order)</th><th>Action</th></tr></thead>
+          <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_email">Email</th><th data-i18n="th_dept">Dept</th><th data-i18n="th_role">Role</th><th data-i18n="th_managers">Managers (in order)</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
@@ -451,7 +463,7 @@ tr:hover td{background:var(--cream)}
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
           <input type="number" id="carryoverYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
-          <button class="btn btn-primary" onclick="findCarryoverCandidates()">🔍 Find</button>
+          <button class="btn btn-primary" onclick="findCarryoverCandidates()" data-i18n="btn_find">🔍 Find</button>
           <button class="btn btn-outline" id="carryoverExportBtn" style="display:none" onclick="exportCarryoverCandidates()">📥 Export</button>
         </div>
         <div id="carryoverResults"></div>
@@ -473,7 +485,7 @@ tr:hover td{background:var(--cream)}
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Older than (days)</label>
           <input type="number" id="attachmentCleanupDays" value="365" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
-          <button class="btn btn-primary" onclick="findOldAttachments()">🔍 Find</button>
+          <button class="btn btn-primary" onclick="findOldAttachments()" data-i18n="btn_find">🔍 Find</button>
         </div>
         <div id="attachmentCleanupResults"></div>
       </div>
@@ -497,15 +509,15 @@ tr:hover td{background:var(--cream)}
 
     <!-- ADMIN: SETTINGS -->
     <div class="page" id="page-settings">
-      <div class="section-title">Settings</div>
-      <div class="section-sub">Toggle conditions that apply org-wide</div>
+      <div class="section-title" data-i18n="pg_settings_title">Settings</div>
+      <div class="section-sub" data-i18n="pg_settings_sub">Toggle conditions that apply org-wide</div>
       <div class="card" id="settingsCard"></div>
     </div>
 
     <!-- ADMIN: LOI LOGS (access/login history) -->
     <div class="page" id="page-logs">
-      <div class="section-title">LOI Logs</div>
-      <div class="section-sub">Recent login activity, most recent first</div>
+      <div class="section-title" data-i18n="pg_logs_title">LOI Logs</div>
+      <div class="section-sub" data-i18n="pg_logs_sub">Recent login activity, most recent first</div>
       <div class="card">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <select id="logsRange" onchange="loadLogs()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem">
@@ -522,8 +534,8 @@ tr:hover td{background:var(--cream)}
 
     <!-- ADMIN: COMPANY HOLIDAYS -->
     <div class="page" id="page-holidays">
-      <div class="section-title">⭐ Company Holidays</div>
-      <div class="section-sub">Shown as red days on everyone's leave calendar</div>
+      <div class="section-title" data-i18n="pg_holidays_title">⭐ Company Holidays</div>
+      <div class="section-sub" data-i18n="pg_holidays_sub">Shown as red days on everyone's leave calendar</div>
 
       <div class="card">
         <h3>➕ Add a Holiday</h3>
@@ -531,19 +543,19 @@ tr:hover td{background:var(--cream)}
           <div class="field"><label>Date</label><input type="date" id="holDate"/></div>
           <div class="field"><label>Label</label><input type="text" id="holLabel" placeholder="e.g. Company Party"/></div>
         </div>
-        <button class="btn btn-primary" onclick="submitAddHoliday()">Add Holiday</button>
+        <button class="btn btn-primary" onclick="submitAddHoliday()" data-i18n="btn_add_holiday">Add Holiday</button>
       </div>
 
       <div class="card">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-gold" onclick="openHolidayImportModal()">📊 Import from Excel</button>
-          <button class="btn btn-outline" onclick="downloadHolidayTemplate()">⬇ Download Template</button>
+          <button class="btn btn-gold" onclick="openHolidayImportModal()" data-i18n="btn_import_excel">📊 Import from Excel</button>
+          <button class="btn btn-outline" onclick="downloadHolidayTemplate()" data-i18n="btn_download_template">⬇ Download Template</button>
         </div>
       </div>
 
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Date</th><th>Label</th><th>Action</th></tr></thead>
+          <thead><tr><th data-i18n="th_date">Date</th><th data-i18n="th_label">Label</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="holidaysBody"></tbody>
         </table></div>
       </div>
@@ -551,8 +563,8 @@ tr:hover td{background:var(--cream)}
 
     <!-- SPECIAL LEAVE CALENDAR (admin + hand-picked users, e.g. executives) -->
     <div class="page" id="page-special_calendar">
-      <div class="section-title">⭐ Special Leave Calendar</div>
-      <div class="section-sub">Org-wide approved leave, filterable by department</div>
+      <div class="section-title" data-i18n="pg_special_title">⭐ Special Leave Calendar</div>
+      <div class="section-sub" data-i18n="pg_special_sub">Org-wide approved leave, filterable by department</div>
       <div class="card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(-1)">← Prev</button>
@@ -568,11 +580,11 @@ tr:hover td{background:var(--cream)}
     </div>
     <!-- REPORTS: my own resolved requests -->
     <div class="page" id="page-reports">
-      <div class="section-title">My Leave Results</div>
-      <div class="section-sub">Outcome of your own past leave requests</div>
+      <div class="section-title" data-i18n="pg_reports_title">My Leave Results</div>
+      <div class="section-sub" data-i18n="pg_reports_sub">Outcome of your own past leave requests</div>
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+          <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_status">Status</th></tr></thead>
           <tbody id="myReportsBody"></tbody>
         </table></div>
       </div>
@@ -655,7 +667,7 @@ tr:hover td{background:var(--cream)}
     <p class="hint">Editing here does not automatically adjust the employee's leave balance — use Update Balance separately if needed. Every edit is logged.</p>
     <div class="table-wrap" style="max-height:360px;overflow-y:auto">
       <table>
-        <thead><tr><th>Type</th><th>Dates</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_amount">Amount</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
         <tbody id="editLeaveListBody"></tbody>
       </table>
     </div>
@@ -1004,35 +1016,35 @@ function buildTabs(){
   let tabs;
   if(currentUser.role==='admin'){
     tabs = [
-      {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'My Requests'},
-      {id:'approvals2', label:'My Team Requests'},
-      {id:'employees', label:'Employees'},
-      {id:'reports', label:'Reports'},
-      {id:'settings', label:'Settings'},
-      {id:'logs', label:'LOI Logs'},
-      {id:'holidays', label:'⭐ Company Holidays'},
+      {id:'myleave', label:t('tab_myleave')},
+      {id:'approvals', label:t('tab_myrequests')},
+      {id:'approvals2', label:t('tab_teamrequests')},
+      {id:'employees', label:t('tab_employees')},
+      {id:'reports', label:t('tab_reports')},
+      {id:'settings', label:t('tab_settings')},
+      {id:'logs', label:t('tab_logs')},
+      {id:'holidays', label:t('tab_holidays')},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
-      {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'My Requests'},
-      {id:'approvals2', label:'My Team Requests'},
-      {id:'reports', label:'Reports'},
+      {id:'myleave', label:t('tab_myleave')},
+      {id:'approvals', label:t('tab_myrequests')},
+      {id:'approvals2', label:t('tab_teamrequests')},
+      {id:'reports', label:t('tab_reports')},
     ];
   } else { // employee — safe default, never falls through to elevated tabs
     tabs = [
-      {id:'myleave', label:'My Leave'},
-      {id:'approvals', label:'My Requests'},
-      {id:'reports', label:'Reports'},
+      {id:'myleave', label:t('tab_myleave')},
+      {id:'approvals', label:t('tab_myrequests')},
+      {id:'reports', label:t('tab_reports')},
     ];
   }
   // Special Leave Calendar: มอบสิทธิ์เฉพาะรายบุคคลได้ (มักใช้กับผู้บริหาร) — admin เห็นได้เสมอเช่นกัน
   if(currentUser.role==='admin' || currentUser.special_calendar_access){
-    tabs.push({id:'special_calendar', label:'⭐ Special Leave Calendar'});
+    tabs.push({id:'special_calendar', label:t('tab_special')});
   }
   const bar=document.getElementById('tabBar');
-  bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${t.id}',this)">${t.label}</button>`).join('');
+  bar.innerHTML = tabs.map((tab,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${tab.id}',this)">${tab.label}</button>`).join('');
 }
 
 function showPage(id, el){
@@ -1274,6 +1286,131 @@ async function loadMyResolvedRequests(){
 
 // ── แสดงช่วงวัน/เวลาของคำขอลา ให้อ่านง่ายทั้งแบบวันเต็มและแบบรายชั่วโมง ──
 // ── แปลง YYYY-MM-DD → DD/MM/YYYY (แบบไทย ไม่ใช่ MM/DD/YYYY แบบอเมริกัน) ──
+// ════════════════════════════════════════════
+//  LANGUAGE / i18n
+//  ครอบคลุม UI หลักที่ใช้บ่อย (แท็บ, หัวข้อหน้า, ปุ่มหลัก, หัวตาราง, ประเภทลา, สถานะ, เดือน)
+//  ข้อความ error/toast จาก backend และ hint ย่อยๆ ยังเป็นภาษาไทยเดิม ไม่ได้แปลในรอบนี้
+// ════════════════════════════════════════════
+const I18N = {
+  en: {
+    login_sub:'Leave Request Online IIDA', login_code_label:'Employee Code', login_password_label:'Password',
+    login_signin_btn:'Sign In', login_footer:"Contact HR / Admin if you don't have login details",
+    signout_btn:'Sign Out',
+    tab_myleave:'My Leave', tab_myrequests:'My Requests', tab_teamrequests:'My Team Requests',
+    tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
+    tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar',
+    pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
+    pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
+    pg_teamrequests_title:'My Team Requests',
+    pg_employees_title:'Employee Management', pg_employees_sub:'Add employees individually or import from Excel',
+    pg_settings_title:'Settings', pg_settings_sub:'Toggle conditions that apply org-wide',
+    pg_logs_title:'LOI Logs', pg_logs_sub:'Recent login activity, most recent first',
+    pg_holidays_title:'⭐ Company Holidays', pg_holidays_sub:"Shown as red days on everyone's leave calendar",
+    pg_special_title:'⭐ Special Leave Calendar', pg_special_sub:'Org-wide approved leave, filterable by department',
+    pg_reports_title:'My Leave Results', pg_reports_sub:'Outcome of your own past leave requests',
+    th_type:'Type', th_dates:'Dates', th_days:'Days', th_amount:'Amount', th_reason:'Reason', th_status:'Status',
+    th_action:'Action', th_employee:'Employee', th_code:'Code', th_name:'Name', th_email:'Email', th_dept:'Dept',
+    th_role:'Role', th_managers:'Managers (in order)', th_date:'Date', th_label:'Label', th_leavedate:'Leave Date',
+    th_daysleft:'Days Left',
+    btn_add_employee:'➕ Add Employee', btn_import_excel:'📊 Import from Excel', btn_download_template:'⬇ Download Template',
+    btn_export_employees:'📥 Export All Employees', btn_submit_request:'Submit Request', btn_add_holiday:'Add Holiday',
+    btn_export_excel:'Export to Excel', btn_find:'🔍 Find',
+    lbl_leave_type:'Leave Type', lbl_duration:'Duration', lbl_start_date:'Start Date', lbl_end_date:'End Date', lbl_reason:'Reason',
+    leave_annual:'Annual / Vacation', leave_sick:'Sick Leave', leave_personal:'Personal Leave', leave_other:'Other',
+    leave_maternity:'🤱 Maternity Leave', leave_paternity:'🤝 Paternity Leave', leave_priesthood:'🙏 Priesthood Ordination Leave',
+    st_pending_manager:'Pending Manager', st_pending_admin:'Pending Admin', st_approved:'Approved',
+    st_rejected_manager:'Rejected (Manager)', st_rejected_admin:'Rejected (Admin)',
+    months:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  },
+  th: {
+    login_sub:'ระบบขอลาออนไลน์ IIDA', login_code_label:'รหัสพนักงาน', login_password_label:'รหัสผ่าน',
+    login_signin_btn:'เข้าสู่ระบบ', login_footer:'ติดต่อ HR / Admin หากไม่มีข้อมูลเข้าสู่ระบบ',
+    signout_btn:'ออกจากระบบ',
+    tab_myleave:'วันลาของฉัน', tab_myrequests:'คำขอของฉัน', tab_teamrequests:'คำขอของทีม',
+    tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
+    tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ',
+    pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
+    pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
+    pg_teamrequests_title:'คำขอของทีม',
+    pg_employees_title:'จัดการพนักงาน', pg_employees_sub:'เพิ่มพนักงานทีละคน หรือ import จาก Excel',
+    pg_settings_title:'ตั้งค่า', pg_settings_sub:'เปิด/ปิดเงื่อนไขที่ใช้ทั้งองค์กร',
+    pg_logs_title:'บันทึกการใช้งาน', pg_logs_sub:'ประวัติการเข้าใช้งานล่าสุด เรียงจากใหม่ไปเก่า',
+    pg_holidays_title:'⭐ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีแดงในปฏิทินวันลาของทุกคน',
+    pg_special_title:'⭐ ปฏิทินลาพิเศษ', pg_special_sub:'วันลาที่อนุมัติแล้วทั้งองค์กร กรองตามแผนกได้',
+    pg_reports_title:'ผลการลาของฉัน', pg_reports_sub:'ผลคำขอลาในอดีตของฉันเอง',
+    th_type:'ประเภท', th_dates:'วันที่', th_days:'จำนวนวัน', th_amount:'จำนวน', th_reason:'เหตุผล', th_status:'สถานะ',
+    th_action:'จัดการ', th_employee:'พนักงาน', th_code:'รหัส', th_name:'ชื่อ', th_email:'อีเมล', th_dept:'แผนก',
+    th_role:'ตำแหน่ง', th_managers:'หัวหน้า (ตามลำดับ)', th_date:'วันที่', th_label:'รายละเอียด', th_leavedate:'วันที่ลา',
+    th_daysleft:'วันคงเหลือ',
+    btn_add_employee:'➕ เพิ่มพนักงาน', btn_import_excel:'📊 Import จาก Excel', btn_download_template:'⬇ ดาวน์โหลดเทมเพลต',
+    btn_export_employees:'📥 Export พนักงานทั้งหมด', btn_submit_request:'ส่งคำขอลา', btn_add_holiday:'เพิ่มวันหยุด',
+    btn_export_excel:'Export เป็น Excel', btn_find:'🔍 ค้นหา',
+    lbl_leave_type:'ประเภทการลา', lbl_duration:'ระยะเวลา', lbl_start_date:'วันเริ่ม', lbl_end_date:'วันสิ้นสุด', lbl_reason:'เหตุผล',
+    leave_annual:'ลาพักร้อน', leave_sick:'ลาป่วย', leave_personal:'ลากิจ', leave_other:'อื่นๆ',
+    leave_maternity:'🤱 ลาคลอดบุตร', leave_paternity:'🤝 ลาดูแลภรรยาคลอดบุตร', leave_priesthood:'🙏 ลาอุปสมบท',
+    st_pending_manager:'รอหัวหน้าอนุมัติ', st_pending_admin:'รอ Admin อนุมัติ', st_approved:'อนุมัติแล้ว',
+    st_rejected_manager:'ไม่อนุมัติ (หัวหน้า)', st_rejected_admin:'ไม่อนุมัติ (Admin)',
+    months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
+  },
+};
+
+let currentLang = localStorage.getItem('loi_lang') || 'en';
+
+function t(key){
+  return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+}
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('loi_lang', lang);
+  applyTranslations();
+  updateLangButtons();
+  // อัพเดตค่าคงที่ที่ผูกกับภาษา แล้วรีเฟรชหน้าปัจจุบันถ้าล็อกอินอยู่
+  refreshLangDependentConstants();
+  if(currentUser){
+    buildTabs();
+    const activePage = document.querySelector('.page.active');
+    if(activePage) showPage(activePage.id.replace('page-',''), document.querySelector('.tab-btn.active'));
+  }
+}
+
+function updateLangButtons(){
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  ['langBtnEnLogin','langBtnEnApp'].forEach(id=>{ const el=document.getElementById(id); if(el && currentLang==='en') el.classList.add('active'); });
+  ['langBtnThLogin','langBtnThApp'].forEach(id=>{ const el=document.getElementById(id); if(el && currentLang==='th') el.classList.add('active'); });
+}
+
+function applyTranslations(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+}
+
+// LEAVE_TYPE_LABEL / STATUS_LABEL / MONTH_NAMES_EN เป็น const แต่เป็น object/array จึงแก้ค่าข้างในได้
+// (ตัวแปรยังชื่อเดิมเพื่อไม่ต้องแก้จุดใช้งานอื่นๆ ทั่วทั้งไฟล์ แต่เนื้อหาข้างในจะเปลี่ยนตามภาษาที่เลือก)
+function refreshLangDependentConstants(){
+  const d = I18N[currentLang];
+  if(typeof LEAVE_TYPE_LABEL !== 'undefined'){
+    LEAVE_TYPE_LABEL.annual = d.leave_annual;
+    LEAVE_TYPE_LABEL.sick = d.leave_sick;
+    LEAVE_TYPE_LABEL.personal = d.leave_personal;
+    LEAVE_TYPE_LABEL.other = d.leave_other;
+    LEAVE_TYPE_LABEL.maternity = d.leave_maternity;
+    LEAVE_TYPE_LABEL.paternity = d.leave_paternity;
+    LEAVE_TYPE_LABEL.priesthood = d.leave_priesthood;
+  }
+  if(typeof STATUS_LABEL !== 'undefined'){
+    STATUS_LABEL.pending_manager.label = d.st_pending_manager;
+    STATUS_LABEL.pending_admin.label = d.st_pending_admin;
+    STATUS_LABEL.approved.label = d.st_approved;
+    STATUS_LABEL.rejected_manager.label = d.st_rejected_manager;
+    STATUS_LABEL.rejected_admin.label = d.st_rejected_admin;
+  }
+  if(typeof MONTH_NAMES_EN !== 'undefined'){
+    for(let i=0;i<12;i++) MONTH_NAMES_EN[i] = d.months[i];
+  }
+}
+
 function formatDMY(iso){
   if(!iso) return '';
   const [y,m,d] = iso.split('-');
@@ -1300,6 +1437,9 @@ function wireAllDateOverlays(){
   });
 }
 wireAllDateOverlays();
+applyTranslations();
+updateLangButtons();
+refreshLangDependentConstants();
 
 // ตัวเลือกวันที่ของเบราว์เซอร์บางเครื่องโชว์เป็น mm/dd/yyyy ตาม locale ของเครื่อง
 // เพิ่มข้อความยืนยันแบบ dd/mm/yyyy ที่ชัดเจนไม่กำกวมไว้ใต้ช่องกรอก
@@ -1511,7 +1651,7 @@ function renderOldAttachments(cutoffDate){
     return;
   }
   resultsEl.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Code</th><th>Name</th><th>Leave Date</th><th>Action</th></tr></thead>
+    <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_leavedate">Leave Date</th><th data-i18n="th_action">Action</th></tr></thead>
     <tbody>${oldAttachmentsCache.map(r=>`
       <tr id="oldAttRow-${r.id}">
         <td class="mono">${escHtml(r.employee?.employee_code||'')}</td>
@@ -2128,7 +2268,7 @@ function renderCarryoverCandidates(){
     return;
   }
   resultsEl.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
+    <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_dept">Dept</th><th data-i18n="th_daysleft">Days Left</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
     <tbody>${carryoverCandidatesCache.map(c=>`
       <tr>
         <td class="mono">${escHtml(c.employee_code)}</td>
