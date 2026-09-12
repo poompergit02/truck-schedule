@@ -1437,9 +1437,6 @@ function wireAllDateOverlays(){
   });
 }
 wireAllDateOverlays();
-applyTranslations();
-updateLangButtons();
-refreshLangDependentConstants();
 
 // ตัวเลือกวันที่ของเบราว์เซอร์บางเครื่องโชว์เป็น mm/dd/yyyy ตาม locale ของเครื่อง
 // เพิ่มข้อความยืนยันแบบ dd/mm/yyyy ที่ชัดเจนไม่กำกวมไว้ใต้ช่องกรอก
@@ -2792,6 +2789,11 @@ window.addEventListener('load', async ()=>{
     localStorage.removeItem('loi_token');
   }
 });
+
+// ตอนนี้ทุก const/let ในไฟล์ถูกประกาศครบแล้ว (อยู่ท้ายสุดของสคริปต์) เรียกได้อย่างปลอดภัย ไม่ชน TDZ
+applyTranslations();
+updateLangButtons();
+refreshLangDependentConstants();
 </script>
 </body>
 </html>
