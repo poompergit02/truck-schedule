@@ -323,13 +323,13 @@ tr:hover td{background:var(--cream)}
           <div class="field">
             <label data-i18n="lbl_leave_type">Leave Type</label>
             <select id="reqType" onchange="checkAttachmentRequirement()">
-              <option value="annual">Annual / Vacation</option>
-              <option value="sick">Sick Leave</option>
-              <option value="personal">Personal Leave</option>
-              <option value="other">Other</option>
-              <option value="maternity">🤱 Maternity Leave</option>
-              <option value="paternity">🤝 Paternity Leave</option>
-              <option value="priesthood">🙏 Priesthood Ordination Leave</option>
+              <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
+              <option value="sick" data-i18n="leave_sick">Sick Leave</option>
+              <option value="personal" data-i18n="leave_personal">Personal Leave</option>
+              <option value="other" data-i18n="leave_other">Other</option>
+              <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
+              <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
+              <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
             </select>
           </div>
           <div class="field">
@@ -481,11 +481,12 @@ tr:hover td{background:var(--cream)}
 
       <div class="card">
         <h3>🗑 Clean Up Old Attachments</h3>
-        <p class="hint" style="margin-bottom:14px">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.</p>
+        <p class="hint" style="margin-bottom:14px">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.<br/><b>Note:</b> "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won't show up unless you lower the number. Use <b>0</b> to list every attachment currently stored, e.g. to double-check nothing is missing.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Older than (days)</label>
           <input type="number" id="attachmentCleanupDays" value="365" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
           <button class="btn btn-primary" onclick="findOldAttachments()" data-i18n="btn_find">🔍 Find</button>
+          <button class="btn btn-outline" onclick="document.getElementById('attachmentCleanupDays').value=0; findOldAttachments();">Show all attachments (0 days)</button>
         </div>
         <div id="attachmentCleanupResults"></div>
       </div>
@@ -685,13 +686,13 @@ tr:hover td{background:var(--cream)}
       <div class="field">
         <label>Leave Type</label>
         <select id="erType">
-          <option value="annual">Annual / Vacation</option>
-          <option value="sick">Sick Leave</option>
-          <option value="personal">Personal Leave</option>
-          <option value="other">Other</option>
-          <option value="maternity">🤱 Maternity Leave</option>
-          <option value="paternity">🤝 Paternity Leave</option>
-          <option value="priesthood">🙏 Priesthood Ordination Leave</option>
+          <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
+          <option value="sick" data-i18n="leave_sick">Sick Leave</option>
+          <option value="personal" data-i18n="leave_personal">Personal Leave</option>
+          <option value="other" data-i18n="leave_other">Other</option>
+          <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
+          <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
+          <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
         </select>
       </div>
       <div class="field">
@@ -738,13 +739,13 @@ tr:hover td{background:var(--cream)}
       <div class="field">
         <label>Leave Type</label>
         <select id="emrType">
-          <option value="annual">Annual / Vacation</option>
-          <option value="sick">Sick Leave</option>
-          <option value="personal">Personal Leave</option>
-          <option value="other">Other</option>
-          <option value="maternity">🤱 Maternity Leave</option>
-          <option value="paternity">🤝 Paternity Leave</option>
-          <option value="priesthood">🙏 Priesthood Ordination Leave</option>
+          <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
+          <option value="sick" data-i18n="leave_sick">Sick Leave</option>
+          <option value="personal" data-i18n="leave_personal">Personal Leave</option>
+          <option value="other" data-i18n="leave_other">Other</option>
+          <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
+          <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
+          <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
         </select>
       </div>
       <div class="field"><label>Unit</label>
@@ -1320,6 +1321,16 @@ const I18N = {
     leave_maternity:'🤱 Maternity Leave', leave_paternity:'🤝 Paternity Leave', leave_priesthood:'🙏 Priesthood Ordination Leave',
     st_pending_manager:'Pending Manager', st_pending_admin:'Pending Admin', st_approved:'Approved',
     st_rejected_manager:'Rejected (Manager)', st_rejected_admin:'Rejected (Admin)',
+    set_nosameday_title:'Block same-day leave requests',
+    set_nosameday_desc:"Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
+    set_nopast_title:'Block backdated leave requests',
+    set_nopast_desc:"Employees can't submit a leave request for a date before today — except Sick Leave, which is always allowed.",
+    set_attach_title:'Require certificate for Mon/Fri sick leave',
+    set_attach_desc:'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
+    set_notifycancel_title:'Notify employee when admin cancels their leave',
+    set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
+    set_notifybalance_title:'Notify employee when admin adjusts their balance',
+    set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1350,6 +1361,16 @@ const I18N = {
     leave_maternity:'🤱 ลาคลอดบุตร', leave_paternity:'🤝 ลาดูแลภรรยาคลอดบุตร', leave_priesthood:'🙏 ลาอุปสมบท',
     st_pending_manager:'รอหัวหน้าอนุมัติ', st_pending_admin:'รอ Admin อนุมัติ', st_approved:'อนุมัติแล้ว',
     st_rejected_manager:'ไม่อนุมัติ (หัวหน้า)', st_rejected_admin:'ไม่อนุมัติ (Admin)',
+    set_nosameday_title:'ห้ามลาวันปัจจุบัน',
+    set_nosameday_desc:'พนักงานยื่นคำขอลาที่รวมวันที่ปัจจุบันไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
+    set_nopast_title:'ห้ามลาย้อนหลัง',
+    set_nopast_desc:'พนักงานยื่นคำขอลาสำหรับวันที่ผ่านมาแล้วไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
+    set_attach_title:'ลาป่วยวันจันทร์/ศุกร์ต้องแนบใบรับรองแพทย์',
+    set_attach_desc:'คำขอลาป่วยที่ตกวันจันทร์หรือวันศุกร์ ต้องแนบรูปใบรับรองแพทย์',
+    set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
+    set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
+    set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
+    set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -1644,10 +1665,10 @@ async function findOldAttachments(){
 function renderOldAttachments(cutoffDate){
   const resultsEl = document.getElementById('attachmentCleanupResults');
   if(!oldAttachmentsCache.length){
-    resultsEl.innerHTML = `<div class="empty-msg">No attachments older than ${formatDMY(cutoffDate)}</div>`;
+    resultsEl.innerHTML = `<div class="empty-msg">No attachments older than ${formatDMY(cutoffDate)} — try "Show all attachments (0 days)" if you're checking whether a file exists at all</div>`;
     return;
   }
-  resultsEl.innerHTML = `<div class="table-wrap"><table>
+  resultsEl.innerHTML = `<p style="font-size:.82rem;color:var(--text-dim);margin-bottom:10px">Found ${oldAttachmentsCache.length} attachment(s) older than ${formatDMY(cutoffDate)}</p><div class="table-wrap"><table>
     <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_leavedate">Leave Date</th><th data-i18n="th_action">Action</th></tr></thead>
     <tbody>${oldAttachmentsCache.map(r=>`
       <tr id="oldAttRow-${r.id}">
@@ -2378,31 +2399,11 @@ async function exportAllRequestsExcel(){
 
 // ── ADMIN: SETTINGS (toggle switches) ──
 const SETTING_DEFS = [
-  {
-    key: 'no_same_day_leave_except_sick',
-    title: 'Block same-day leave requests',
-    desc: "Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
-  },
-  {
-    key: 'no_past_date_leave_except_sick',
-    title: 'Block backdated leave requests',
-    desc: "Employees can't submit a leave request for a date before today — except Sick Leave, which is always allowed.",
-  },
-  {
-    key: 'sick_leave_monfri_requires_attachment',
-    title: 'Require certificate for Mon/Fri sick leave',
-    desc: 'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
-  },
-  {
-    key: 'notify_on_admin_cancel',
-    title: 'Notify employee when admin cancels their leave',
-    desc: 'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
-  },
-  {
-    key: 'notify_on_balance_edit',
-    title: 'Notify employee when admin adjusts their balance',
-    desc: 'Send an email when an admin manually changes one of their leave day quotas.',
-  },
+  { key: 'no_same_day_leave_except_sick', titleKey: 'set_nosameday_title', descKey: 'set_nosameday_desc' },
+  { key: 'no_past_date_leave_except_sick', titleKey: 'set_nopast_title', descKey: 'set_nopast_desc' },
+  { key: 'sick_leave_monfri_requires_attachment', titleKey: 'set_attach_title', descKey: 'set_attach_desc' },
+  { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
+  { key: 'notify_on_balance_edit', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
 ];
 
 async function loadSettings(){
@@ -2414,8 +2415,8 @@ async function loadSettings(){
       return `
       <div class="setting-row">
         <div class="setting-text">
-          <h4>${escHtml(def.title)}</h4>
-          <p>${escHtml(def.desc)}</p>
+          <h4>${escHtml(t(def.titleKey))}</h4>
+          <p>${escHtml(t(def.descKey))}</p>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" ${on?'checked':''} onchange="toggleSetting('${def.key}', this.checked)"/>
