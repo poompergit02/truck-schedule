@@ -562,6 +562,19 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
+    <!-- ADMIN: LOGIN PROGRESS (who has never logged in) -->
+    <div class="page" id="page-login_progress">
+      <div class="section-title" data-i18n="pg_loginprogress_title">🚦 Login Progress</div>
+      <div class="section-sub" data-i18n="pg_loginprogress_sub">Employees who have never logged in yet</div>
+      <div class="card">
+        <p id="loginProgressSummary" class="hint" style="margin-bottom:16px"></p>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-outline" onclick="exportNeverLoggedIn()" data-i18n="btn_export_excel">Export to Excel</button>
+        </div>
+        <div id="loginProgressResults"></div>
+      </div>
+    </div>
+
     <!-- SPECIAL LEAVE CALENDAR (admin + hand-picked users, e.g. executives) -->
     <div class="page" id="page-special_calendar">
       <div class="section-title" data-i18n="pg_special_title">⭐ Special Leave Calendar</div>
@@ -966,7 +979,7 @@ function doLogout(){
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
    'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody',
-   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','attachmentCleanupResults','tabBar'].forEach(id=>{
+   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','attachmentCleanupResults','loginProgressResults','loginProgressSummary','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -1025,6 +1038,7 @@ function buildTabs(){
       {id:'settings', label:t('tab_settings')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
+      {id:'login_progress', label:t('tab_login_progress')},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
@@ -1061,6 +1075,7 @@ function showPage(id, el){
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
+  if(id==='login_progress') loadNeverLoggedIn();
   if(id==='special_calendar') loadSpecialCalendar();
 }
 
@@ -1299,7 +1314,7 @@ const I18N = {
     signout_btn:'Sign Out',
     tab_myleave:'My Leave', tab_myrequests:'My Requests', tab_teamrequests:'My Team Requests',
     tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
-    tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar',
+    tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1307,6 +1322,7 @@ const I18N = {
     pg_settings_title:'Settings', pg_settings_sub:'Toggle conditions that apply org-wide',
     pg_logs_title:'LOI Logs', pg_logs_sub:'Recent login activity, most recent first',
     pg_holidays_title:'⭐ Company Holidays', pg_holidays_sub:"Shown as red days on everyone's leave calendar",
+    pg_loginprogress_title:'🚦 Login Progress', pg_loginprogress_sub:'Employees who have never logged in yet',
     pg_special_title:'⭐ Special Leave Calendar', pg_special_sub:'Org-wide approved leave, filterable by department',
     pg_reports_title:'My Leave Results', pg_reports_sub:'Outcome of your own past leave requests',
     th_type:'Type', th_dates:'Dates', th_days:'Days', th_amount:'Amount', th_reason:'Reason', th_status:'Status',
@@ -1339,7 +1355,7 @@ const I18N = {
     signout_btn:'ออกจากระบบ',
     tab_myleave:'วันลาของฉัน', tab_myrequests:'คำขอของฉัน', tab_teamrequests:'คำขอของทีม',
     tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
-    tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ',
+    tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
@@ -1347,6 +1363,7 @@ const I18N = {
     pg_settings_title:'ตั้งค่า', pg_settings_sub:'เปิด/ปิดเงื่อนไขที่ใช้ทั้งองค์กร',
     pg_logs_title:'บันทึกการใช้งาน', pg_logs_sub:'ประวัติการเข้าใช้งานล่าสุด เรียงจากใหม่ไปเก่า',
     pg_holidays_title:'⭐ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีแดงในปฏิทินวันลาของทุกคน',
+    pg_loginprogress_title:'🚦 ความคืบหน้าการล็อกอิน', pg_loginprogress_sub:'พนักงานที่ยังไม่เคยล็อกอินเข้าระบบเลย',
     pg_special_title:'⭐ ปฏิทินลาพิเศษ', pg_special_sub:'วันลาที่อนุมัติแล้วทั้งองค์กร กรองตามแผนกได้',
     pg_reports_title:'ผลการลาของฉัน', pg_reports_sub:'ผลคำขอลาในอดีตของฉันเอง',
     th_type:'ประเภท', th_dates:'วันที่', th_days:'จำนวนวัน', th_amount:'จำนวน', th_reason:'เหตุผล', th_status:'สถานะ',
@@ -2467,6 +2484,48 @@ function exportLogsExcel(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Logs');
   XLSX.writeFile(wb, `LOI_Logs_${range}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── ADMIN: LOGIN PROGRESS (who has never logged in) ──
+let neverLoggedInCache = [];
+
+async function loadNeverLoggedIn(){
+  const resultsEl = document.getElementById('loginProgressResults');
+  const summaryEl = document.getElementById('loginProgressSummary');
+  resultsEl.innerHTML = '<div class="empty-msg">Loading…</div>';
+  try{
+    const data = await callApi('get_never_logged_in');
+    neverLoggedInCache = data.never_logged_in || [];
+    const total = data.total_employees || 0;
+    summaryEl.textContent = `${neverLoggedInCache.length} of ${total} employee(s) have never logged in`;
+    if(!neverLoggedInCache.length){
+      resultsEl.innerHTML = '<div class="empty-msg">🎉 Everyone has logged in at least once</div>';
+      return;
+    }
+    resultsEl.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_dept">Dept</th><th data-i18n="th_email">Email</th><th data-i18n="th_role">Role</th></tr></thead>
+      <tbody>${neverLoggedInCache.map(e=>`
+        <tr>
+          <td class="mono">${escHtml(e.employee_code)}</td>
+          <td>${escHtml(e.name)}</td>
+          <td>${e.department?escHtml(e.department):'—'}</td>
+          <td>${e.email?escHtml(e.email):'—'}</td>
+          <td>${escHtml(e.role)}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>`;
+    applyTranslations();
+  }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
+}
+
+function exportNeverLoggedIn(){
+  if(!neverLoggedInCache.length){ showToast('Nothing to export','err'); return; }
+  const rows = neverLoggedInCache.map(e=>({
+    employee_code: e.employee_code, name: e.name, department: e.department||'', email: e.email||'', role: e.role,
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Never Logged In');
+  XLSX.writeFile(wb, `LOI_Never_Logged_In_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ── ADMIN: DANGER ZONE (testing resets) ──
