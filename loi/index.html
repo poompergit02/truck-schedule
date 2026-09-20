@@ -94,6 +94,21 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .tab-btn{padding:14px 18px;font-size:.86rem;font-weight:600;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;background:none;border-top:none;border-left:none;border-right:none}
 .tab-btn.active{color:var(--plum-700);border-bottom-color:var(--gold)}
 .tab-btn:hover:not(.active){color:var(--ink)}
+.tab-dropdown{position:relative}
+.tab-dropdown-trigger{display:flex;align-items:center;gap:4px}
+.tab-dropdown-menu{
+  display:none;position:absolute;top:100%;left:0;min-width:200px;
+  background:var(--white);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 12px 30px rgba(59,31,99,.15);padding:6px;z-index:60;
+}
+.tab-dropdown:hover .tab-dropdown-menu,
+.tab-dropdown:focus-within .tab-dropdown-menu{display:block}
+.tab-dropdown-item{
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:7px;
+  background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;
+  font-size:.84rem;font-weight:500;color:var(--ink);white-space:nowrap;
+}
+.tab-dropdown-item:hover{background:var(--line-soft);color:var(--plum-700)}
 
 main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
 .page{display:none}
@@ -171,6 +186,14 @@ tr:hover td{background:var(--cream)}
 .cal-cell.empty{background:transparent;border:none}
 .cal-cell-holiday{background:var(--danger-bg);border-color:var(--danger)}
 .cal-cell-holiday .cal-daynum{color:var(--danger);font-weight:700}
+
+/* ══════════ MINI CALENDAR (Year at a Glance) ══════════ */
+.mini-cal-block{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:10px}
+.mini-cal-month{font-size:.74rem;font-weight:700;color:var(--plum-700);margin-bottom:6px;text-align:center;font-family:'IBM Plex Mono',monospace}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini-cal-dow{font-size:.56rem;color:var(--text-faint);text-align:center;font-weight:600}
+.mini-cal-cell{font-size:.62rem;text-align:center;padding:3px 0;border-radius:3px;color:var(--text-dim)}
+.mini-cal-cell.mini-cal-holiday{background:var(--danger);color:#fff;font-weight:700;cursor:default}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
@@ -559,6 +582,16 @@ tr:hover td{background:var(--cream)}
           <thead><tr><th data-i18n="th_date">Date</th><th data-i18n="th_label">Label</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="holidaysBody"></tbody>
         </table></div>
+      </div>
+
+      <div class="card">
+        <h3>📅 Year at a Glance</h3>
+        <p class="hint" style="margin-bottom:14px">All 12 months at once, so you can see every holiday for the year in one screen.</p>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
+          <input type="number" id="holidayYearGlance" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderHolidayYearGlance()"/>
+        </div>
+        <div id="holidayYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
       </div>
     </div>
 
@@ -979,7 +1012,7 @@ function doLogout(){
   // ล้างข้อมูลทุกหน้าที่ค้างอยู่ ป้องกัน user คนถัดไปเห็นข้อมูลของคนก่อนหน้า
   ['balanceRow','myApprovalsBody','myReportsBody','approvalsBody','employeesBody',
    'calendarGrid','calendarLegend','settingsCard','logsCard','myCalGrid','holidaysBody',
-   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','attachmentCleanupResults','loginProgressResults','loginProgressSummary','tabBar'].forEach(id=>{
+   'specialCalGrid','specialCalLegend','specialAccessList','multiDateRows','carryoverResults','attachmentCleanupResults','loginProgressResults','loginProgressSummary','holidayYearGlanceGrid','tabBar'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.innerHTML='';
   });
@@ -1019,7 +1052,8 @@ async function enterApp(){
   document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
   document.getElementById('userAvatar').textContent = currentUser.name.slice(0,2).toUpperCase();
   buildTabs();
-  loadMyLeave();
+  const activeBtn = document.querySelector('.tab-btn.active');
+  if(activeBtn) showPage(activeBtn.dataset.page, activeBtn);
   try{
     const s = await callApi('get_settings');
     appSettingsCache = s.settings || {};
@@ -1027,18 +1061,21 @@ async function enterApp(){
 }
 
 function buildTabs(){
-  let tabs;
+  let tabs, dropdownTabs = [];
   if(currentUser.role==='admin'){
     tabs = [
-      {id:'myleave', label:t('tab_myleave')},
-      {id:'approvals', label:t('tab_myrequests')},
-      {id:'approvals2', label:t('tab_teamrequests')},
       {id:'employees', label:t('tab_employees')},
       {id:'reports', label:t('tab_reports')},
       {id:'settings', label:t('tab_settings')},
+    ];
+    dropdownTabs = [
+      {id:'myleave', label:t('tab_myleave')},
+      {id:'approvals', label:t('tab_myrequests')},
+      {id:'approvals2', label:t('tab_teamrequests')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
       {id:'login_progress', label:t('tab_login_progress')},
+      {id:'special_calendar', label:t('tab_special')},
     ];
   } else if(currentUser.role==='manager'){
     tabs = [
@@ -1054,19 +1091,35 @@ function buildTabs(){
       {id:'reports', label:t('tab_reports')},
     ];
   }
-  // Special Leave Calendar: มอบสิทธิ์เฉพาะรายบุคคลได้ (มักใช้กับผู้บริหาร) — admin เห็นได้เสมอเช่นกัน
-  if(currentUser.role==='admin' || currentUser.special_calendar_access){
+  // Special Leave Calendar: มอบสิทธิ์เฉพาะรายบุคคลได้ (มักใช้กับผู้บริหาร) — สำหรับ non-admin ยังเป็นแท็บปกติ
+  if(currentUser.role!=='admin' && currentUser.special_calendar_access){
     tabs.push({id:'special_calendar', label:t('tab_special')});
   }
   const bar=document.getElementById('tabBar');
-  bar.innerHTML = tabs.map((tab,i)=>`<button class="tab-btn${i===0?' active':''}" onclick="showPage('${tab.id}',this)">${tab.label}</button>`).join('');
+  const mainHtml = tabs.map((tab,i)=>`<button class="tab-btn${i===0?' active':''}" data-page="${tab.id}" onclick="showPage('${tab.id}',this)">${tab.label}</button>`).join('');
+  let dropdownHtml = '';
+  if(dropdownTabs.length){
+    dropdownHtml = `<div class="tab-dropdown">
+      <button type="button" class="tab-btn tab-dropdown-trigger">${t('menu_iida_control')} ▾</button>
+      <div class="tab-dropdown-menu">
+        ${dropdownTabs.map(tab=>`<button type="button" class="tab-dropdown-item" data-page="${tab.id}" onclick="showPage('${tab.id}',this)">${tab.label}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  bar.innerHTML = mainHtml + dropdownHtml;
 }
 
 function showPage(id, el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
-  el.classList.add('active');
+  if(el && el.classList.contains('tab-btn')){
+    el.classList.add('active');
+  } else {
+    // คลิกจากใน dropdown menu (ปุ่มลูกไม่ใช่ .tab-btn) ให้ไฮไลต์ปุ่ม trigger แทน
+    const trigger = document.querySelector('.tab-dropdown-trigger');
+    if(trigger) trigger.classList.add('active');
+  }
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); }
@@ -1315,6 +1368,7 @@ const I18N = {
     tab_myleave:'My Leave', tab_myrequests:'My Requests', tab_teamrequests:'My Team Requests',
     tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
     tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
+    menu_iida_control:'IIDA Control',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1356,6 +1410,7 @@ const I18N = {
     tab_myleave:'วันลาของฉัน', tab_myrequests:'คำขอของฉัน', tab_teamrequests:'คำขอของทีม',
     tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
     tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
+    menu_iida_control:'IIDA Control',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
@@ -1406,9 +1461,12 @@ function setLang(lang){
   // อัพเดตค่าคงที่ที่ผูกกับภาษา แล้วรีเฟรชหน้าปัจจุบันถ้าล็อกอินอยู่
   refreshLangDependentConstants();
   if(currentUser){
+    const previousPageId = document.querySelector('.page.active')?.id.replace('page-','');
     buildTabs();
-    const activePage = document.querySelector('.page.active');
-    if(activePage) showPage(activePage.id.replace('page-',''), document.querySelector('.tab-btn.active'));
+    if(previousPageId){
+      const btn = document.querySelector(`[data-page="${previousPageId}"]`) || document.querySelector('.tab-btn');
+      showPage(previousPageId, btn);
+    }
   }
 }
 
@@ -1801,14 +1859,54 @@ async function loadHolidays(){
     const data = await callApi('get_company_holidays');
     holidaysCache = data.holidays || [];
     const body = document.getElementById('holidaysBody');
-    if(!holidaysCache.length){ body.innerHTML = '<tr><td colspan="3" class="empty-msg">No holidays added yet</td></tr>'; return; }
-    body.innerHTML = holidaysCache.map(h=>`
-      <tr>
-        <td class="mono">${formatDMY(h.holiday_date)}</td>
-        <td>${escHtml(h.label)}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="deleteHoliday('${h.id}','${escAttr(h.label)}')">Delete</button></td>
-      </tr>`).join('');
+    if(!holidaysCache.length){
+      body.innerHTML = '<tr><td colspan="3" class="empty-msg">No holidays added yet</td></tr>';
+    } else {
+      body.innerHTML = holidaysCache.map(h=>`
+        <tr>
+          <td class="mono">${formatDMY(h.holiday_date)}</td>
+          <td>${escHtml(h.label)}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="deleteHoliday('${h.id}','${escAttr(h.label)}')">Delete</button></td>
+        </tr>`).join('');
+    }
+    const yearInput = document.getElementById('holidayYearGlance');
+    if(yearInput && !yearInput.value) yearInput.value = new Date().getFullYear();
+    renderHolidayYearGlance();
   }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ปฏิทินย่อขนาดเล็กแบบดูครบ 12 เดือนในหน้าเดียว (Year at a Glance) ──
+function renderMiniMonthCalendar(year, month, holidayMap){
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDow = new Date(year, month-1, 1).getDay();
+  const pad = n=>String(n).padStart(2,'0');
+  let cells = '';
+  for(let i=0;i<firstDow;i++) cells += `<div class="mini-cal-cell"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${pad(month)}-${pad(d)}`;
+    const label = holidayMap[dateStr];
+    cells += `<div class="mini-cal-cell${label?' mini-cal-holiday':''}"${label?` title="${escAttr(label)}"`:''}>${d}</div>`;
+  }
+  return `<div class="mini-cal-block">
+    <div class="mini-cal-month">${MONTH_NAMES_EN[month-1]}</div>
+    <div class="mini-cal-grid">
+      ${['S','M','T','W','T','F','S'].map(d=>`<div class="mini-cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>
+  </div>`;
+}
+
+function renderHolidayYearGlance(){
+  const yearInput = document.getElementById('holidayYearGlance');
+  if(!yearInput) return;
+  const year = Number(yearInput.value) || new Date().getFullYear();
+  const holidayMap = {};
+  holidaysCache.forEach(h=>{
+    if(h.holiday_date.startsWith(String(year))) holidayMap[h.holiday_date] = h.label;
+  });
+  let html = '';
+  for(let m=1; m<=12; m++) html += renderMiniMonthCalendar(year, m, holidayMap);
+  document.getElementById('holidayYearGlanceGrid').innerHTML = html;
 }
 
 async function submitAddHoliday(){
