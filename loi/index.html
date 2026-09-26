@@ -102,7 +102,8 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
   box-shadow:0 12px 30px rgba(59,31,99,.15);padding:6px;z-index:60;
 }
 .tab-dropdown:hover .tab-dropdown-menu,
-.tab-dropdown:focus-within .tab-dropdown-menu{display:block}
+.tab-dropdown:focus-within .tab-dropdown-menu,
+.tab-dropdown.open .tab-dropdown-menu{display:block}
 .tab-dropdown-item{
   display:block;width:100%;text-align:left;padding:10px 12px;border-radius:7px;
   background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;
@@ -481,7 +482,7 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>🗓 Carry Over Annual Leave (3-day policy)</h3>
+        <h3 data-i18n="h3_carryover">🗓 Carry Over Annual Leave (3-day policy)</h3>
         <p class="hint" style="margin-bottom:14px">Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
@@ -493,7 +494,7 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>⭐ Special Leave Calendar Access</h3>
+        <h3 data-i18n="h3_specialaccess">⭐ Special Leave Calendar Access</h3>
         <p class="hint" style="margin-bottom:14px">Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
           <input type="text" id="specialAccessCode" placeholder="Employee code, e.g. 2410" style="flex:1;min-width:160px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
@@ -503,7 +504,7 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>🗑 Clean Up Old Attachments</h3>
+        <h3 data-i18n="h3_attachcleanup">🗑 Clean Up Old Attachments</h3>
         <p class="hint" style="margin-bottom:14px">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.<br/><b>Note:</b> "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won't show up unless you lower the number. Use <b>0</b> to list every attachment currently stored, e.g. to double-check nothing is missing.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Older than (days)</label>
@@ -515,7 +516,7 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="danger-card">
-        <h3>⚠️ Danger Zone — Testing Only</h3>
+        <h3 data-i18n="h3_dangerzone">⚠️ Danger Zone — Testing Only</h3>
         <p class="hint">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
         <div class="danger-row">
           <input type="password" id="dangerPassword" placeholder="Your admin password" style="max-width:220px;padding:9px 12px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
@@ -1065,13 +1066,13 @@ function buildTabs(){
   if(currentUser.role==='admin'){
     tabs = [
       {id:'employees', label:t('tab_employees')},
-      {id:'reports', label:t('tab_reports')},
       {id:'settings', label:t('tab_settings')},
     ];
     dropdownTabs = [
       {id:'myleave', label:t('tab_myleave')},
       {id:'approvals', label:t('tab_myrequests')},
       {id:'approvals2', label:t('tab_teamrequests')},
+      {id:'reports', label:t('tab_reports')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
       {id:'login_progress', label:t('tab_login_progress')},
@@ -1100,14 +1101,30 @@ function buildTabs(){
   let dropdownHtml = '';
   if(dropdownTabs.length){
     dropdownHtml = `<div class="tab-dropdown">
-      <button type="button" class="tab-btn tab-dropdown-trigger">${t('menu_iida_control')} ▾</button>
+      <button type="button" class="tab-btn tab-dropdown-trigger" onclick="toggleTabDropdown(event)">${t('menu_iida_control')} ▾</button>
       <div class="tab-dropdown-menu">
-        ${dropdownTabs.map(tab=>`<button type="button" class="tab-dropdown-item" data-page="${tab.id}" onclick="showPage('${tab.id}',this)">${tab.label}</button>`).join('')}
+        ${dropdownTabs.map(tab=>`<button type="button" class="tab-dropdown-item" data-page="${tab.id}" onclick="showPage('${tab.id}',this); closeTabDropdown();">${tab.label}</button>`).join('')}
       </div>
     </div>`;
   }
   bar.innerHTML = mainHtml + dropdownHtml;
 }
+
+// ── เปิด/ปิด dropdown "IIDA Control" ด้วยการคลิก/แตะ (มือถือไม่รองรับ :hover) ──
+function toggleTabDropdown(event){
+  event.stopPropagation();
+  const wrap = event.currentTarget.closest('.tab-dropdown');
+  if(!wrap) return;
+  const wasOpen = wrap.classList.contains('open');
+  closeTabDropdown();
+  if(!wasOpen) wrap.classList.add('open');
+}
+function closeTabDropdown(){
+  document.querySelectorAll('.tab-dropdown.open').forEach(el=>el.classList.remove('open'));
+}
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.tab-dropdown')) closeTabDropdown();
+});
 
 function showPage(id, el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1369,6 +1386,8 @@ const I18N = {
     tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
     tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
     menu_iida_control:'IIDA Control',
+    h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
+    h3_attachcleanup:'🗑 Clean Up Old Attachments', h3_dangerzone:'⚠️ Danger Zone — Testing Only',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1411,6 +1430,8 @@ const I18N = {
     tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
     tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
     menu_iida_control:'IIDA Control',
+    h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
+    h3_attachcleanup:'🗑 ล้างไฟล์แนบเก่า', h3_dangerzone:'⚠️ โซนอันตราย — สำหรับทดสอบเท่านั้น',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
