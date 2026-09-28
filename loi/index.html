@@ -111,6 +111,24 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 }
 .tab-dropdown-item:hover{background:var(--line-soft);color:var(--plum-700)}
 
+/* ── avatar / profile photo ── */
+.avatar-img{border-radius:50%;object-fit:cover;display:block;flex-shrink:0;background:var(--line-soft)}
+.avatar-ini{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--plum-600);color:#fff;font-weight:600;flex-shrink:0}
+.user-avatar{cursor:pointer;overflow:hidden;padding:0}
+.name-with-avatar{display:flex;align-items:center;gap:8px}
+.photo-preview{display:flex;justify-content:center;margin:6px 0 14px}
+/* ── special calendar bar chart ── */
+.sc-chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding:18px 4px 0;border-bottom:1px solid var(--line)}
+.sc-bar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.sc-bar-val{font-size:.62rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;height:14px;line-height:14px}
+.sc-bar{width:100%;max-width:26px;background:var(--plum-600);border-radius:4px 4px 0 0;min-height:0;transition:height .25s}
+.sc-bar.weekend{background:var(--line)}
+.sc-bar.peak{background:var(--gold)}
+.sc-x{display:flex;gap:2px;padding:4px 4px 0}
+.sc-x span{flex:1;min-width:0;text-align:center;font-size:.58rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
+.sc-summary{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 12px;font-size:.8rem;color:var(--text-dim)}
+.sc-summary b{color:var(--plum-700);font-family:'IBM Plex Mono',monospace}
+
 main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
 .page{display:none}
 .page.active{display:block}
@@ -321,7 +339,7 @@ tr:hover td{background:var(--cream)}
         <button class="lang-btn" id="langBtnThApp" onclick="setLang('th')">TH</button>
       </div>
       <div class="user-chip">
-        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-avatar" id="userAvatar" onclick="openPhotoModal(null)" data-i18n-title="photo_click_title" title="Click to change your photo">?</div>
         <div>
           <div class="u-name" id="userName">—</div>
           <div class="u-role" id="userRole">—</div>
@@ -483,9 +501,9 @@ tr:hover td{background:var(--cream)}
 
       <div class="card">
         <h3 data-i18n="h3_carryover">🗓 Carry Over Annual Leave (3-day policy)</h3>
-        <p class="hint" style="margin-bottom:14px">Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.</p>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_carryover">Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <input type="number" id="carryoverYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
           <button class="btn btn-primary" onclick="findCarryoverCandidates()" data-i18n="btn_find">🔍 Find</button>
           <button class="btn btn-outline" id="carryoverExportBtn" style="display:none" onclick="exportCarryoverCandidates()">📥 Export</button>
@@ -495,31 +513,32 @@ tr:hover td{background:var(--cream)}
 
       <div class="card">
         <h3 data-i18n="h3_specialaccess">⭐ Special Leave Calendar Access</h3>
-        <p class="hint" style="margin-bottom:14px">Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.</p>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_specialaccess">Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-          <input type="text" id="specialAccessCode" placeholder="Employee code, e.g. 2410" style="flex:1;min-width:160px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
-          <button class="btn btn-primary" onclick="submitGrantSpecialAccess()">Grant Access</button>
+          <input type="text" id="specialAccessCode" placeholder="Employee code, e.g. 2410" data-i18n-ph="ph_emp_code" style="flex:1;min-width:160px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
+          <button class="btn btn-primary" onclick="submitGrantSpecialAccess()" data-i18n="btn_grant_access">Grant Access</button>
         </div>
         <div id="specialAccessList"></div>
       </div>
 
       <div class="card">
         <h3 data-i18n="h3_attachcleanup">🗑 Clean Up Old Attachments</h3>
-        <p class="hint" style="margin-bottom:14px">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.<br/><b>Note:</b> "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won't show up unless you lower the number. Use <b>0</b> to list every attachment currently stored, e.g. to double-check nothing is missing.</p>
+        <p class="hint" style="margin-bottom:8px" data-i18n="hint_attachcleanup">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.</p>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_attachcleanup_note">Note: "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won't show up unless you lower the number. Use 0 to list every attachment currently stored, e.g. to double-check nothing is missing.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Older than (days)</label>
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_older_than">Older than (days)</label>
           <input type="number" id="attachmentCleanupDays" value="365" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
           <button class="btn btn-primary" onclick="findOldAttachments()" data-i18n="btn_find">🔍 Find</button>
-          <button class="btn btn-outline" onclick="document.getElementById('attachmentCleanupDays').value=0; findOldAttachments();">Show all attachments (0 days)</button>
+          <button class="btn btn-outline" onclick="document.getElementById('attachmentCleanupDays').value=0; findOldAttachments();" data-i18n="btn_show_all_attach">Show all attachments (0 days)</button>
         </div>
         <div id="attachmentCleanupResults"></div>
       </div>
 
       <div class="danger-card">
         <h3 data-i18n="h3_dangerzone">⚠️ Danger Zone — Testing Only</h3>
-        <p class="hint">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
+        <p class="hint" data-i18n="hint_danger">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
         <div class="danger-row">
-          <input type="password" id="dangerPassword" placeholder="Your admin password" style="max-width:220px;padding:9px 12px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
+          <input type="password" id="dangerPassword" placeholder="Your admin password" data-i18n-ph="ph_admin_pw" style="max-width:220px;padding:9px 12px;border:1.5px solid var(--danger);border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem"/>
         </div>
         <div class="danger-row">
           <button class="btn btn-sm btn-danger" onclick="resetAllData()">🗑 Delete ALL Data (keep admins)</button>
@@ -589,7 +608,7 @@ tr:hover td{background:var(--cream)}
         <h3>📅 Year at a Glance</h3>
         <p class="hint" style="margin-bottom:14px">All 12 months at once, so you can see every holiday for the year in one screen.</p>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)">Year</label>
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <input type="number" id="holidayYearGlance" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderHolidayYearGlance()"/>
         </div>
         <div id="holidayYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
@@ -618,11 +637,18 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(-1)">← Prev</button>
           <div class="mono" id="specialCalMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
           <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(1)">Next →</button>
-          <select id="specialCalDept" onchange="loadSpecialCalendar()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;margin-left:auto">
-            <option value="all">All departments</option>
+          <select id="specialCalDept" onchange="onSpecialCalDeptChange()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;margin-left:auto">
+            <option value="all" data-i18n="sc_all_depts">All departments</option>
+          </select>
+          <select id="specialCalUser" onchange="applySpecialCalFilters()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;max-width:220px">
+            <option value="all" data-i18n="sc_all_users">All employees</option>
           </select>
         </div>
-        <div id="specialCalGrid" class="cal-grid"></div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin-bottom:2px" data-i18n="sc_chart_title">📊 Employees on leave per day</div>
+        <div class="sc-summary" id="specialCalSummary"></div>
+        <div class="sc-chart" id="specialCalChart"></div>
+        <div class="sc-x" id="specialCalChartX"></div>
+        <div id="specialCalGrid" class="cal-grid" style="margin-top:18px"></div>
         <div id="specialCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
@@ -638,6 +664,26 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
   </main>
+</div>
+
+<!-- MODAL: PROFILE PHOTO (พนักงานเปลี่ยนรูปตัวเอง / admin เปลี่ยนรูปให้ทุกคน) -->
+<div class="modal-bg" id="photoModal">
+  <div class="modal">
+    <h3 data-i18n="photo_title">📷 Profile Photo</h3>
+    <p class="hint" id="photoModalName" style="margin-bottom:6px"></p>
+    <div class="photo-preview" id="photoPreview"></div>
+    <input type="file" id="photoFile" accept="image/*" onchange="onPhotoFileChosen(this)" style="display:none"/>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('photoFile').click()" data-i18n="photo_choose">Choose photo</button>
+      <button class="btn btn-sm btn-outline" onclick="markPhotoRemoved()" data-i18n="photo_remove">Remove photo</button>
+    </div>
+    <p class="hint" style="text-align:center;margin-top:10px" data-i18n="photo_hint">The photo is cropped to a square and resized automatically.</p>
+    <div class="err-text" id="photoErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('photoModal')" data-i18n="photo_cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="savePhoto()" data-i18n="photo_save">Save</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: CHANGE PASSWORD (forced on first login) -->
@@ -1051,7 +1097,7 @@ async function enterApp(){
   document.getElementById('app').style.display='block';
   document.getElementById('userName').textContent = currentUser.name;
   document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
-  document.getElementById('userAvatar').textContent = currentUser.name.slice(0,2).toUpperCase();
+  renderMyAvatar();
   buildTabs();
   const activeBtn = document.querySelector('.tab-btn.active');
   if(activeBtn) showPage(activeBtn.dataset.page, activeBtn);
@@ -1432,6 +1478,18 @@ const I18N = {
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
     h3_attachcleanup:'🗑 Clean Up Old Attachments', h3_dangerzone:'⚠️ Danger Zone — Testing Only',
+    hint_carryover:'Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.',
+    hint_specialaccess:'Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.',
+    hint_attachcleanup:'Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.',
+    hint_attachcleanup_note:'Note: "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won\'t show up unless you lower the number. Use 0 to list every attachment currently stored, e.g. to double-check nothing is missing.',
+    hint_danger:'These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.',
+    lbl_year:'Year', lbl_older_than:'Older than (days)', btn_grant_access:'Grant Access', btn_show_all_attach:'Show all attachments (0 days)',
+    ph_emp_code:'Employee code, e.g. 2410', ph_admin_pw:'Your admin password',
+    photo_title:'📷 Profile Photo', photo_choose:'Choose photo', photo_remove:'Remove photo', photo_save:'Save', photo_cancel:'Cancel',
+    photo_hint:'The photo is cropped to a square and resized automatically.', photo_saved:'Photo saved', photo_removed:'Photo removed',
+    photo_err_type:'Please choose a valid image file', photo_click_title:'Click to change your photo',
+    sc_all_depts:'All departments', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
+    sc_chart_empty:'No approved leave in this month', sc_sum_people:'People on leave', sc_sum_total:'Total person-days', sc_sum_peak:'Busiest day',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1476,6 +1534,18 @@ const I18N = {
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
     h3_attachcleanup:'🗑 ล้างไฟล์แนบเก่า', h3_dangerzone:'⚠️ โซนอันตราย — สำหรับทดสอบเท่านั้น',
+    hint_carryover:'ระบบจะไม่โหลดข้อมูลอัตโนมัติ กด "ค้นหา" เพื่อดูว่าใครมีวันลาพักร้อนคงเหลือเกิน 3 วันในปีที่เลือก จากนั้นให้สิทธิ์ยกยอดและแจ้งเตือนทีละคน — ไม่มีการดำเนินการแบบรวมกลุ่ม',
+    hint_specialaccess:'ให้สิทธิ์บุคคลที่คัดเลือก (เช่น ผู้บริหาร) เข้าดูปฏิทินลาพิเศษของทั้งองค์กรได้ โดยไม่ขึ้นกับตำแหน่ง/บทบาท',
+    hint_attachcleanup:'ลบไฟล์จริง (รูป/PDF ใบรับรอง) ของใบลาเก่าออกจากที่เก็บข้อมูลเพื่อเพิ่มพื้นที่ — ประวัติใบลายังอยู่ครบ ลบเฉพาะไฟล์แนบ ระบบไม่โหลดอัตโนมัติ กด "ค้นหา" ก่อน',
+    hint_attachcleanup_note:'หมายเหตุ: "เก่ากว่า (วัน)" จะค้นหาเฉพาะไฟล์แนบที่เก่ากว่าจำนวนวันที่ระบุ — ใบรับรองที่เพิ่งอัปโหลดจะไม่แสดง เว้นแต่ลดตัวเลขลง ใส่ 0 เพื่อแสดงไฟล์แนบทั้งหมดที่เก็บอยู่ เช่น เพื่อตรวจว่าไม่มีอะไรตกหล่น',
+    hint_danger:'การกระทำเหล่านี้ลบข้อมูลถาวร ต้องกรอกรหัสผ่านแอดมินของคุณอีกครั้งเพื่อยืนยัน "ลบทั้งหมด" จะคงบัญชีแอดมินทุกคนไว้ แต่ลบพนักงานคนอื่นและข้อมูลการลาทั้งหมด',
+    lbl_year:'ปี', lbl_older_than:'เก่ากว่า (วัน)', btn_grant_access:'ให้สิทธิ์', btn_show_all_attach:'แสดงไฟล์แนบทั้งหมด (0 วัน)',
+    ph_emp_code:'รหัสพนักงาน เช่น 2410', ph_admin_pw:'รหัสผ่านแอดมินของคุณ',
+    photo_title:'📷 รูปโปรไฟล์', photo_choose:'เลือกรูป', photo_remove:'ลบรูป', photo_save:'บันทึก', photo_cancel:'ยกเลิก',
+    photo_hint:'ระบบจะครอปรูปเป็นสี่เหลี่ยมจัตุรัสและย่อขนาดให้อัตโนมัติ', photo_saved:'บันทึกรูปแล้ว', photo_removed:'ลบรูปแล้ว',
+    photo_err_type:'กรุณาเลือกไฟล์รูปภาพที่ใช้งานได้', photo_click_title:'คลิกเพื่อเปลี่ยนรูปของคุณ',
+    sc_all_depts:'ทุกแผนก', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
+    sc_chart_empty:'เดือนนี้ไม่มีวันลาที่อนุมัติแล้ว', sc_sum_people:'จำนวนคนที่ลา', sc_sum_total:'รวมคน-วัน', sc_sum_peak:'วันที่ลาเยอะสุด',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
@@ -1544,6 +1614,12 @@ function updateLangButtons(){
 function applyTranslations(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{
     el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    el.placeholder = t(el.getAttribute('data-i18n-ph'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    el.title = t(el.getAttribute('data-i18n-title'));
   });
 }
 
@@ -1847,7 +1923,7 @@ async function loadApprovals(){
     body.innerHTML = data.requests.map(r=>`
       <tr>
         <td><input type="checkbox" class="approvalCheckbox" value="${r.id}"/></td>
-        <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></td>
+        <td><span class="name-with-avatar">${avatarHtml(r.employee,34)}<span>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${r.employee?.employee_code||''} · ${escHtml(r.employee?.department||'')}</span></span></span></td>
         <td>${getLeaveTypeLabel(r.leave_type)}</td>
         <td class="mono">${formatDuration(r)}</td>
         <td>${formatAmount(r)}</td>
@@ -2109,6 +2185,94 @@ async function revokeSpecialAccess(employeeId){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// ── PROFILE PHOTO ──
+// เก็บรูปเป็น data URL (JPEG สี่เหลี่ยมจัตุรัส 256px ~15-30KB) ในคอลัมน์ employees.photo
+function isSafePhotoSrc(v){ return typeof v==='string' && (v.startsWith('data:image/') || v.startsWith('https://')); }
+function avatarHtml(person, px){
+  px = px || 28;
+  const st = `width:${px}px;height:${px}px;`;
+  if(person && isSafePhotoSrc(person.photo)) return `<img class="avatar-img" style="${st}" src="${escAttr(person.photo)}" alt=""/>`;
+  const ini = escHtml(((person && person.name) || '?').slice(0,2).toUpperCase());
+  return `<span class="avatar-ini" style="${st}font-size:${Math.round(px*.4)}px">${ini}</span>`;
+}
+function renderMyAvatar(){
+  const el = document.getElementById('userAvatar');
+  if(el && currentUser) el.innerHTML = avatarHtml(currentUser, 30);
+}
+let photoTarget = null;   // null = รูปของตัวเอง, ไม่งั้นเป็น employee id (เฉพาะ admin)
+let photoPending;         // undefined = ยังไม่แก้, '' = ลบรูป, 'data:image/...' = รูปใหม่
+function openPhotoModal(target){
+  photoTarget = target || null;
+  photoPending = undefined;
+  let person = currentUser;
+  if(photoTarget){
+    if(currentUser.role!=='admin') return;
+    person = employeesCache.find(e=>e.id===photoTarget);
+    if(!person){ showToast('Employee not found','err'); return; }
+  }
+  document.getElementById('photoModalName').textContent = person.name || '';
+  document.getElementById('photoPreview').innerHTML = avatarHtml(person, 120);
+  document.getElementById('photoFile').value = '';
+  document.getElementById('photoErr').textContent = '';
+  openModal('photoModal');
+}
+function resizeImageToSquareDataUrl(file, size){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side)/2, sy = (img.height - side)/2;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      c.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+async function onPhotoFileChosen(input){
+  const errEl = document.getElementById('photoErr');
+  errEl.textContent = '';
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ errEl.textContent = t('photo_err_type'); return; }
+  try{
+    photoPending = await resizeImageToSquareDataUrl(file, 256);
+    document.getElementById('photoPreview').innerHTML = avatarHtml({photo: photoPending}, 120);
+  }catch(e){ errEl.textContent = t('photo_err_type'); }
+}
+function markPhotoRemoved(){
+  photoPending = '';
+  const person = photoTarget ? employeesCache.find(e=>e.id===photoTarget) : currentUser;
+  document.getElementById('photoPreview').innerHTML = avatarHtml({name: person?.name, photo: null}, 120);
+}
+async function savePhoto(){
+  if(photoPending === undefined){ closeModal('photoModal'); return; }
+  const errEl = document.getElementById('photoErr');
+  errEl.textContent = '';
+  try{
+    await withLoading(async ()=>{
+      if(photoTarget) await callApi('admin_set_employee_photo', { employee_id: photoTarget, photo: photoPending });
+      else await callApi('update_my_photo', { photo: photoPending });
+    }, 'Saving...');
+    const newVal = photoPending || null;
+    if(photoTarget){
+      const emp = employeesCache.find(e=>e.id===photoTarget);
+      if(emp) emp.photo = newVal;
+      if(currentUser.id === photoTarget) currentUser.photo = newVal;
+    } else {
+      currentUser.photo = newVal;
+    }
+    renderMyAvatar();
+    closeModal('photoModal');
+    showToast(newVal ? t('photo_saved') : t('photo_removed'));
+    if(document.getElementById('page-employees')?.classList.contains('active')) loadEmployees();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
 // ── SPECIAL LEAVE CALENDAR (org-wide, department-filterable) ──
 let specialCalYear = new Date().getFullYear();
 let specialCalMonth = new Date().getMonth()+1;
@@ -2121,13 +2285,22 @@ function shiftSpecialCalendarMonth(delta){
   loadSpecialCalendar();
 }
 
+let specialCalRequests = [];
+let specialCalUserLabel = '';
+
+function onSpecialCalDeptChange(){
+  document.getElementById('specialCalUser').value = 'all';
+  specialCalUserLabel = '';
+  loadSpecialCalendar();
+}
+
 async function loadSpecialCalendar(){
   document.getElementById('specialCalMonthLabel').textContent = `${MONTH_NAMES_EN[specialCalMonth-1]} ${specialCalYear}`;
   if(!specialCalDeptPopulated){
     try{
       const d = await callApi('get_departments');
       const sel = document.getElementById('specialCalDept');
-      sel.innerHTML = '<option value="all">All departments</option>' + (d.departments||[]).map(dep=>`<option value="${escAttr(dep)}">${escHtml(dep)}</option>`).join('');
+      sel.innerHTML = `<option value="all" data-i18n="sc_all_depts">${escHtml(t('sc_all_depts'))}</option>` + (d.departments||[]).map(dep=>`<option value="${escAttr(dep)}">${escHtml(dep)}</option>`).join('');
       specialCalDeptPopulated = true;
     }catch(e){ /* non-fatal */ }
   }
@@ -2135,8 +2308,76 @@ async function loadSpecialCalendar(){
   try{
     const data = await callApi('get_special_leave_calendar', { year: specialCalYear, month: specialCalMonth, department: dept });
     await fetchHolidaysCache();
-    renderSpecialCalendar(data.requests || []);
+    specialCalRequests = data.requests || [];
+    populateSpecialCalUsers();
+    applySpecialCalFilters();
   }catch(e){ showToast(e.message,'err'); }
+}
+
+// รายชื่อใน dropdown "เลือกตาม user" มาจากคนที่มีวันลาในเดือน/แผนกที่โหลดมา
+function populateSpecialCalUsers(){
+  const sel = document.getElementById('specialCalUser');
+  const keep = sel.value || 'all';
+  const people = {};
+  specialCalRequests.forEach(r=>{
+    const c = r.employee?.employee_code; if(!c) return;
+    people[c] = r.employee?.name || c;
+  });
+  if(keep!=='all' && !people[keep] && specialCalUserLabel) people[keep] = specialCalUserLabel; // คงตัวเลือกเดิมไว้แม้เดือนนี้ไม่มีวันลา
+  const opts = Object.keys(people).sort((a,b)=>people[a].localeCompare(people[b]))
+    .map(c=>`<option value="${escAttr(c)}">${escHtml(people[c])} (${escHtml(c)})</option>`).join('');
+  sel.innerHTML = `<option value="all" data-i18n="sc_all_users">${escHtml(t('sc_all_users'))}</option>` + opts;
+  sel.value = (keep==='all' || people[keep]) ? keep : 'all';
+}
+
+function applySpecialCalFilters(){
+  const sel = document.getElementById('specialCalUser');
+  const u = sel.value;
+  if(u!=='all') specialCalUserLabel = sel.options[sel.selectedIndex]?.textContent.replace(/\s*\([^)]*\)\s*$/,'') || '';
+  const list = u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u);
+  renderSpecialChart(list);
+  renderSpecialCalendar(list);
+}
+
+function renderSpecialChart(requests){
+  const pad = n => String(n).padStart(2,'0');
+  const daysInMonth = new Date(specialCalYear, specialCalMonth, 0).getDate();
+  const monthStart = `${specialCalYear}-${pad(specialCalMonth)}-01`;
+  const monthEnd = `${specialCalYear}-${pad(specialCalMonth)}-${pad(daysInMonth)}`;
+  const perDay = {}; for(let d=1; d<=daysInMonth; d++) perDay[d] = new Set();
+  const everyone = new Set();
+  requests.forEach(r=>{
+    const who = r.employee?.employee_code || r.employee?.name || r.id;
+    const start = r.start_date < monthStart ? monthStart : r.start_date;
+    const end = r.end_date > monthEnd ? monthEnd : r.end_date;
+    let cur = new Date(start+'T00:00:00Z'); const endD = new Date(end+'T00:00:00Z');
+    while(cur <= endD){ const day = cur.getUTCDate(); if(perDay[day]){ perDay[day].add(who); everyone.add(who); } cur.setUTCDate(cur.getUTCDate()+1); }
+  });
+  let max = 0, peakDay = 0, totalDays = 0;
+  for(let d=1; d<=daysInMonth; d++){ const n = perDay[d].size; totalDays += n; if(n>max){ max=n; peakDay=d; } }
+  const chart = document.getElementById('specialCalChart');
+  const xAxis = document.getElementById('specialCalChartX');
+  const summary = document.getElementById('specialCalSummary');
+  if(!max){
+    chart.innerHTML = `<div class="empty-msg" style="width:100%;align-self:center">${escHtml(t('sc_chart_empty'))}</div>`;
+    xAxis.innerHTML = '';
+    summary.innerHTML = '';
+    return;
+  }
+  let bars = '', xs = '';
+  for(let d=1; d<=daysInMonth; d++){
+    const n = perDay[d].size;
+    const dow = new Date(Date.UTC(specialCalYear, specialCalMonth-1, d)).getUTCDay();
+    const cls = 'sc-bar' + (dow===0||dow===6 ? ' weekend' : '') + (d===peakDay ? ' peak' : '');
+    const h = n ? Math.max(4, Math.round(n/max*100)) : 0;
+    bars += `<div class="sc-bar-col" title="${d}: ${n}"><div class="sc-bar-val">${n||''}</div><div class="${cls}" style="height:${h}%"></div></div>`;
+    xs += `<span>${d}</span>`;
+  }
+  chart.innerHTML = bars; xAxis.innerHTML = xs;
+  summary.innerHTML =
+    `<span>${escHtml(t('sc_sum_people'))}: <b>${everyone.size}</b></span>` +
+    `<span>${escHtml(t('sc_sum_total'))}: <b>${totalDays}</b></span>` +
+    `<span>${escHtml(t('sc_sum_peak'))}: <b>${peakDay} ${escHtml(MONTH_NAMES_EN[specialCalMonth-1])} (${max})</b></span>`;
 }
 
 function renderSpecialCalendar(requests){
@@ -2207,12 +2448,13 @@ async function loadEmployees(){
       return `
       <tr>
         <td class="mono">${e.employee_code}</td>
-        <td>${escHtml(e.name)}</td>
+        <td><span class="name-with-avatar">${avatarHtml(e,28)}<span>${escHtml(e.name)}</span></span></td>
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
         <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
           <button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">Edit</button>
           <button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button>
           <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">Delete</button>
