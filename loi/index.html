@@ -117,11 +117,49 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .user-avatar{cursor:pointer;overflow:hidden;padding:0}
 .name-with-avatar{display:flex;align-items:center;gap:8px}
 .photo-preview{display:flex;justify-content:center;margin:6px 0 14px}
-.exp-block{padding:16px 0;border-top:1px solid var(--line-soft)}
-.exp-block:first-of-type{border-top:none;padding-top:6px}
-.exp-block-title{font-size:.9rem;font-weight:600;color:var(--plum-700);margin-bottom:2px}
-.exp-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
-.exp-row select{padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem}
+/* ── Export section (premium) ── */
+.exp-card{position:relative;overflow:hidden}
+.exp-card::before{content:'';position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--plum-600))}
+.exp-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.exp-head h3{margin:0}
+.exp-head-ico{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--plum-600),var(--plum-900));display:flex;align-items:center;justify-content:center;color:var(--gold-light);flex-shrink:0;box-shadow:0 6px 16px rgba(59,31,99,.25)}
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.exp-tile{border:1px solid var(--line);border-radius:14px;padding:18px;background:linear-gradient(180deg,#fff,var(--cream));display:flex;flex-direction:column;gap:14px;transition:.18s}
+.exp-tile:hover{box-shadow:0 10px 28px rgba(59,31,99,.10);transform:translateY(-2px);border-color:var(--gold-light)}
+.exp-tile-hero{grid-column:1/-1;background:linear-gradient(135deg,var(--plum-900),var(--plum-700));border-color:transparent}
+.exp-tile-hero:hover{border-color:transparent;box-shadow:0 14px 34px rgba(59,31,99,.32)}
+.exp-tile-head{display:flex;gap:12px;align-items:flex-start}
+.exp-ico{width:38px;height:38px;border-radius:10px;background:var(--line-soft);color:var(--plum-700);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.exp-tile-hero .exp-ico{background:rgba(231,217,190,.16);color:var(--gold-light)}
+.exp-tile-title{font-weight:600;font-size:.95rem;color:var(--plum-900)}
+.exp-tile-desc{font-size:.8rem;color:var(--text-dim);margin-top:2px;line-height:1.5}
+.exp-tile-hero .exp-tile-title{color:#fff}
+.exp-tile-hero .exp-tile-desc{color:rgba(255,255,255,.72)}
+.exp-controls{display:flex;gap:8px;flex-wrap:wrap}
+.exp-select{padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-family:'Inter',sans-serif;font-size:.84rem;color:var(--ink);min-width:0;max-width:100%}
+.exp-tile-hero .exp-select{background:rgba(255,255,255,.10);border-color:rgba(231,217,190,.35);color:#fff}
+.exp-tile-hero .exp-select option{color:var(--ink)}
+.btn-export{display:inline-flex;align-items:center;gap:9px;padding:11px 18px;border:none;border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:.86rem;color:#fff;background:linear-gradient(135deg,#23885A,#14603D);box-shadow:0 4px 12px rgba(20,96,61,.25);transition:.15s;align-self:flex-start;margin-top:auto}
+.btn-export:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(20,96,61,.32)}
+.btn-export:active{transform:translateY(0)}
+.btn-export svg{flex-shrink:0}
+.btn-export .xl-tag{font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.06em;background:rgba(255,255,255,.2);padding:2px 6px;border-radius:5px}
+.btn-export.gold{background:linear-gradient(135deg,var(--gold),#8f6f3f);color:#241a0c;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.btn-export.gold .xl-tag{background:rgba(36,26,12,.14)}
+@media(max-width:720px){.exp-grid{grid-template-columns:1fr}}
+/* ── Login progress ── */
+.lp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.lp-stat{background:var(--line-soft);border-radius:12px;padding:14px 16px}
+.lp-stat b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.5rem;color:var(--plum-700)}
+.lp-stat span{font-size:.74rem;color:var(--text-dim)}
+.lp-row{display:grid;grid-template-columns:minmax(110px,190px) 1fr 44px;align-items:center;gap:10px;padding:5px 0}
+.lp-name{font-size:.84rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-name small{display:block;color:var(--text-dim);font-size:.68rem;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis}
+.lp-track{background:var(--line-soft);border-radius:6px;height:20px;overflow:hidden}
+.lp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--plum-600),var(--plum-700));min-width:4px}
+.lp-row.top .lp-fill{background:linear-gradient(90deg,var(--gold),#8f6f3f)}
+.lp-count{font-family:'IBM Plex Mono',monospace;font-size:.82rem;text-align:right;font-weight:600;color:var(--plum-700)}
+@media(max-width:560px){.lp-stats{grid-template-columns:1fr}.lp-row{grid-template-columns:100px 1fr 34px}}
 /* ── special calendar bar chart ── */
 .sc-chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding:18px 4px 0;border-bottom:1px solid var(--line)}
 .sc-bar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
@@ -483,51 +521,64 @@ tr:hover td{background:var(--cream)}
         </div>
       </div>
 
-      <!-- EXPORT SECTION (แยกเป็นส่วนของตัวเอง) -->
-      <div class="card" id="exportCard" style="border-left:4px solid var(--gold)">
-        <h3 data-i18n="exp_title">📥 Export Data</h3>
-        <p class="hint" data-i18n="exp_sub">Download reports as Excel files</p>
-
-        <div class="exp-block">
-          <div class="exp-block-title" data-i18n="exp_loi_title">LOI Data — leave balance &amp; usage</div>
-          <div class="hint" data-i18n="exp_loi_hint">One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.</div>
-          <div class="exp-row">
-            <select id="exportLoiYear"></select>
-            <select id="exportLoiDept"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
-            <button class="btn btn-primary" onclick="exportLoiDataExcel()" data-i18n="exp_loi_btn">📥 Export LOI Data</button>
-          </div>
-        </div>
-
-        <div class="exp-block">
-          <div class="exp-block-title" data-i18n="exp_req_title">Leave requests</div>
-          <div class="exp-row">
-            <select id="exportScope" onchange="onExportScopeChange()">
-              <option value="all" data-i18n="exp_scope_all">All requests</option>
-              <option value="month" data-i18n="exp_scope_month">By month</option>
-              <option value="year" data-i18n="exp_scope_year">By year</option>
-            </select>
-            <select id="exportMonth" style="display:none"></select>
-            <select id="exportYear" style="display:none"></select>
-            <select id="exportEmployee"><option value="all" data-i18n="sc_all_users">All employees</option></select>
-            <select id="exportDept"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
-            <button class="btn btn-outline" onclick="exportAllRequestsExcel()" data-i18n="btn_export_excel">Export to Excel</button>
-          </div>
-        </div>
-
-        <div class="exp-block">
-          <div class="exp-block-title" data-i18n="exp_emp_title">Employee list</div>
-          <div class="exp-row">
-            <button class="btn btn-outline" onclick="exportAllEmployeesExcel()" data-i18n="btn_export_employees">📥 Export All Employees</button>
-          </div>
-        </div>
-      </div>
-
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
           <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_email">Email</th><th data-i18n="th_dept">Dept</th><th data-i18n="th_role">Role</th><th data-i18n="th_managers">Managers (in order)</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
+
+      <!-- EXPORT SECTION (อยู่ใต้ตารางพนักงาน) -->
+      <div class="card exp-card" id="exportCard">
+        <div class="exp-head">
+          <div class="exp-head-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+          <div><h3 data-i18n="exp_title">Export Data</h3><p class="hint" style="margin:0" data-i18n="exp_sub">Download reports as Excel files</p></div>
+        </div>
+        <div class="exp-grid">
+          <div class="exp-tile exp-tile-hero">
+            <div class="exp-tile-head">
+              <div class="exp-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></div>
+              <div><div class="exp-tile-title" data-i18n="exp_loi_title">LOI Data — leave balance &amp; usage</div>
+              <div class="exp-tile-desc" data-i18n="exp_loi_hint">One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.</div></div>
+            </div>
+            <div class="exp-controls">
+              <select id="exportLoiYear" class="exp-select"></select>
+              <select id="exportLoiDept" class="exp-select"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+            </div>
+            <button class="btn-export gold" onclick="exportLoiDataExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_loi_btn">Export LOI Data</span><span class="xl-tag">.XLSX</span></button>
+          </div>
+
+          <div class="exp-tile">
+            <div class="exp-tile-head">
+              <div class="exp-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
+              <div><div class="exp-tile-title" data-i18n="exp_req_title">Leave requests</div>
+              <div class="exp-tile-desc" data-i18n="exp_req_desc">Every leave request with dates, type, status and reason.</div></div>
+            </div>
+            <div class="exp-controls">
+              <select id="exportScope" class="exp-select" onchange="onExportScopeChange()">
+                <option value="all" data-i18n="exp_scope_all">All requests</option>
+                <option value="month" data-i18n="exp_scope_month">By month</option>
+                <option value="year" data-i18n="exp_scope_year">By year</option>
+              </select>
+              <select id="exportMonth" class="exp-select" style="display:none"></select>
+              <select id="exportYear" class="exp-select" style="display:none"></select>
+              <select id="exportEmployee" class="exp-select"><option value="all" data-i18n="sc_all_users">All employees</option></select>
+              <select id="exportDept" class="exp-select"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+            </div>
+            <button class="btn-export" onclick="exportAllRequestsExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_req_btn">Export Requests</span><span class="xl-tag">.XLSX</span></button>
+          </div>
+
+          <div class="exp-tile">
+            <div class="exp-tile-head">
+              <div class="exp-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <div><div class="exp-tile-title" data-i18n="exp_emp_title">Employee list</div>
+              <div class="exp-tile-desc" data-i18n="exp_emp_desc">Everyone in the system with role, manager chain and permissions.</div></div>
+            </div>
+            <button class="btn-export" onclick="exportAllEmployeesExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_emp_btn">Export Employees</span><span class="xl-tag">.XLSX</span></button>
+          </div>
+        </div>
+      </div>
+
 
       <div class="card">
         <h3 data-i18n="h3_carryover">🗓 Carry Over Annual Leave (3-day policy)</h3>
@@ -608,7 +659,7 @@ tr:hover td{background:var(--cream)}
 
     <!-- ADMIN: COMPANY HOLIDAYS -->
     <div class="page" id="page-holidays">
-      <div class="section-title" data-i18n="pg_holidays_title">⭐ Company Holidays</div>
+      <div class="section-title" data-i18n="pg_holidays_title">🏖️ Company Holidays</div>
       <div class="section-sub" data-i18n="pg_holidays_sub">Shown as red days on everyone's leave calendar</div>
 
       <div class="card">
@@ -645,11 +696,24 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ADMIN: LOGIN PROGRESS (who has never logged in) -->
+    <!-- ADMIN: LOGIN PROGRESS (frequent users chart + never logged in) -->
     <div class="page" id="page-login_progress">
       <div class="section-title" data-i18n="pg_loginprogress_title">🚦 Login Progress</div>
-      <div class="section-sub" data-i18n="pg_loginprogress_sub">Employees who have never logged in yet</div>
+      <div class="section-sub" data-i18n="pg_loginprogress_sub">Who uses LOI the most, and who has never logged in</div>
       <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h3 style="margin:0" data-i18n="lp_chart_title">📊 Most frequent logins</h3>
+          <select id="loginStatsRange" class="exp-select" onchange="loadLoginStats()">
+            <option value="7" data-i18n="lp_range_7">Last 7 days</option>
+            <option value="30" data-i18n="lp_range_30" selected>Last 30 days</option>
+            <option value="all" data-i18n="lp_range_all">All time</option>
+          </select>
+        </div>
+        <div class="lp-stats" id="loginStats"></div>
+        <div id="loginBars"></div>
+      </div>
+      <div class="card">
+        <h3 data-i18n="lp_never_title">Never logged in</h3>
         <p id="loginProgressSummary" class="hint" style="margin-bottom:16px"></p>
         <div style="margin-bottom:16px">
           <button class="btn btn-outline" onclick="exportNeverLoggedIn()" data-i18n="btn_export_excel">Export to Excel</button>
@@ -760,35 +824,35 @@ tr:hover td{background:var(--cream)}
   <div class="modal">
     <h3 id="addEmpModalTitle">➕ Add Employee</h3>
     <div class="form-grid">
-      <div class="field"><label>Employee Code *</label><input type="text" id="neCode"/></div>
-      <div class="field"><label>Name *</label><input type="text" id="neName"/></div>
-      <div class="field"><label>Email</label><input type="email" id="neEmail"/></div>
-      <div class="field"><label>Department</label><input type="text" id="neDept"/></div>
-      <div class="field"><label>Position</label><input type="text" id="nePosition"/></div>
-      <div class="field"><label>Role</label>
-        <select id="neRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
+      <div class="field"><label data-i18n="em_code">Employee Code *</label><input type="text" id="neCode"/></div>
+      <div class="field"><label data-i18n="em_name">Name *</label><input type="text" id="neName"/></div>
+      <div class="field"><label data-i18n="em_email">Email</label><input type="email" id="neEmail"/></div>
+      <div class="field"><label data-i18n="em_dept">Department</label><input type="text" id="neDept"/></div>
+      <div class="field"><label data-i18n="em_position">Position</label><input type="text" id="nePosition"/></div>
+      <div class="field"><label data-i18n="em_role">Role</label>
+        <select id="neRole"><option value="employee" data-i18n="em_role_employee">Employee</option><option value="manager" data-i18n="em_role_manager">Manager</option><option value="admin" data-i18n="em_role_admin">Admin</option></select>
       </div>
-      <div class="field"><label>Manager Code(s)</label><input type="text" id="neManagerCode" placeholder="เช่น 2400,2401 (เรียงลำดับอนุมัติ)"/></div>
-      <div class="field" id="nePasswordWrap"><label>Password *</label><input type="text" id="nePassword" placeholder="Temporary password"/></div>
+      <div class="field"><label data-i18n="em_mgr_codes">Manager Code(s)</label><input type="text" id="neManagerCode" data-i18n-ph="em_mgr_ph" placeholder="e.g. 2400,2401 (in approval order)"/></div>
+      <div class="field" id="nePasswordWrap"><label data-i18n="em_password">Password *</label><input type="text" id="nePassword" data-i18n-ph="em_password_ph" placeholder="Temporary password"/></div>
     </div>
     <div class="form-grid" id="neQuotaFields">
-      <div class="field"><label>Annual Days</label><input type="number" id="neAnnual" value="10"/></div>
-      <div class="field"><label>Sick Days</label><input type="number" id="neSick" value="30"/></div>
-      <div class="field"><label>Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
+      <div class="field"><label data-i18n="em_annual_days">Annual Days</label><input type="number" id="neAnnual" value="10"/></div>
+      <div class="field"><label data-i18n="em_sick_days">Sick Days</label><input type="number" id="neSick" value="30"/></div>
+      <div class="field"><label data-i18n="em_personal_days">Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
     </div>
     <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neAutoApprove" style="width:auto"/>
-      <label style="margin:0" for="neAutoApprove">⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)</label>
+      <label style="margin:0" for="neAutoApprove" data-i18n="em_auto_approve">⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)</label>
     </div>
     <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neBypassConditions" style="width:auto"/>
-      <label style="margin:0" for="neBypassConditions">🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)</label>
+      <label style="margin:0" for="neBypassConditions" data-i18n="em_emergency">🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)</label>
     </div>
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions" style="flex-wrap:wrap">
-      <button class="btn btn-sm btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()">📝 Edit Leave Requests</button>
-      <button class="btn btn-sm btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()">💰 Edit Balances</button>
-      <button class="btn btn-sm btn-outline" onclick="closeModal('addEmpModal')">Cancel</button>
+      <button class="btn btn-sm btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()" data-i18n="em_btn_editleave">📝 Edit Leave Requests</button>
+      <button class="btn btn-sm btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()" data-i18n="em_btn_editbal">💰 Edit Balances</button>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('addEmpModal')" data-i18n="c_cancel">Cancel</button>
       <button class="btn btn-sm btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
     </div>
   </div>
@@ -798,7 +862,7 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="editLeaveListModal">
   <div class="modal wide">
     <h3 id="editLeaveListTitle">📝 Leave Requests</h3>
-    <p class="hint">Editing here does not automatically adjust the employee's leave balance — use Update Balance separately if needed. Every edit is logged.</p>
+    <p class="hint" data-i18n="el_hint">Editing here does not automatically adjust the employee's leave balance — use Edit Balances separately if needed. Every edit is logged.</p>
     <div class="table-wrap" style="max-height:360px;overflow-y:auto">
       <table>
         <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_amount">Amount</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
@@ -806,7 +870,7 @@ tr:hover td{background:var(--cream)}
       </table>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editLeaveListModal')">Close</button>
+      <button class="btn btn-outline" onclick="closeModal('editLeaveListModal')" data-i18n="c_close">Close</button>
     </div>
   </div>
 </div>
@@ -814,10 +878,10 @@ tr:hover td{background:var(--cream)}
 <!-- MODAL: EDIT ONE LEAVE REQUEST (admin) -->
 <div class="modal-bg" id="editOneRequestModal">
   <div class="modal">
-    <h3>✏️ Edit Leave Request</h3>
+    <h3 data-i18n="eo_title">✏️ Edit Leave Request</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Leave Type</label>
+        <label data-i18n="eo_type">Leave Type</label>
         <select id="erType">
           <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
           <option value="sick" data-i18n="leave_sick">Sick Leave</option>
@@ -829,36 +893,36 @@ tr:hover td{background:var(--cream)}
         </select>
       </div>
       <div class="field">
-        <label>Status</label>
+        <label data-i18n="eo_status">Status</label>
         <select id="erStatus">
-          <option value="pending_manager">Pending Manager</option>
-          <option value="pending_admin">Pending Admin</option>
-          <option value="approved">Approved</option>
-          <option value="rejected_manager">Rejected (Manager)</option>
-          <option value="rejected_admin">Rejected (Admin)</option>
+          <option value="pending_manager" data-i18n="st_pending_manager">Pending Manager</option>
+          <option value="pending_admin" data-i18n="st_pending_admin">Pending Admin</option>
+          <option value="approved" data-i18n="st_approved">Approved</option>
+          <option value="rejected_manager" data-i18n="st_rejected_manager">Rejected (Manager)</option>
+          <option value="rejected_admin" data-i18n="st_rejected_admin">Rejected (Admin)</option>
         </select>
       </div>
-      <div class="field"><label>Unit</label>
+      <div class="field"><label data-i18n="eo_unit">Unit</label>
         <select id="erUnit" onchange="toggleEditRequestUnit()">
-          <option value="day">Full day(s)</option>
-          <option value="hour">Hourly</option>
+          <option value="day" data-i18n="eo_unit_day">Full day(s)</option>
+          <option value="hour" data-i18n="eo_unit_hour">Hourly</option>
         </select>
       </div>
     </div>
     <div class="form-grid" id="erDayFields">
-      <div class="field"><label>Start Date</label><input type="date" id="erStart"/></div>
-      <div class="field"><label>End Date</label><input type="date" id="erEnd"/></div>
+      <div class="field"><label data-i18n="eo_start">Start Date</label><input type="date" id="erStart"/></div>
+      <div class="field"><label data-i18n="eo_end">End Date</label><input type="date" id="erEnd"/></div>
     </div>
     <div class="form-grid" id="erHourFields" style="display:none">
-      <div class="field"><label>Date</label><input type="date" id="erHourDate"/></div>
-      <div class="field"><label>Start Time</label><input type="time" id="erStartTime"/></div>
-      <div class="field"><label>End Time</label><input type="time" id="erEndTime"/></div>
+      <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="erHourDate"/></div>
+      <div class="field"><label data-i18n="eo_start_time">Start Time</label><input type="time" id="erStartTime"/></div>
+      <div class="field"><label data-i18n="eo_end_time">End Time</label><input type="time" id="erEndTime"/></div>
     </div>
-    <div class="field" style="margin-bottom:14px"><label>Reason</label><textarea id="erReason"></textarea></div>
+    <div class="field" style="margin-bottom:14px"><label data-i18n="eo_reason">Reason</label><textarea id="erReason"></textarea></div>
     <div class="err-text" id="erErr"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editOneRequestModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditOneRequest()">Save Changes</button>
+      <button class="btn btn-outline" onclick="closeModal('editOneRequestModal')" data-i18n="c_cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditOneRequest()" data-i18n="c_save_changes">Save Changes</button>
     </div>
   </div>
 </div>
@@ -910,12 +974,12 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="editBalancesModal">
   <div class="modal">
     <h3 id="editBalancesTitle">💰 Edit Leave Balances</h3>
-    <p class="hint">Adjusts the total day quota for this year. Days already used are not affected.</p>
+    <p class="hint" data-i18n="eb_hint">Adjusts the total day quota for this year. Days already used are not affected.</p>
     <div id="editBalancesFields"></div>
     <div class="err-text" id="editBalancesErr"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editBalancesModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditBalances()">Save Changes</button>
+      <button class="btn btn-outline" onclick="closeModal('editBalancesModal')" data-i18n="c_cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditBalances()" data-i18n="c_save_changes">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1155,10 +1219,6 @@ function buildTabs(){
       {id:'settings', label:t('tab_settings')},
     ];
     dropdownTabs = [
-      {id:'myleave', label:t('tab_myleave')},
-      {id:'approvals', label:t('tab_myrequests')},
-      {id:'approvals2', label:t('tab_teamrequests')},
-      {id:'reports', label:t('tab_reports')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
       {id:'login_progress', label:t('tab_login_progress')},
@@ -1275,7 +1335,7 @@ function showPage(id, el){
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
-  if(id==='login_progress') loadNeverLoggedIn();
+  if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
   if(id==='special_calendar') loadSpecialCalendar();
 }
 
@@ -1366,7 +1426,7 @@ function renderMyCalendar(){
       const reasonPart = e.reason ? ` — ${e.reason}` : '';
       return `${typeLabel} (${e.statusLabel})${reasonPart}${e.suffix||''}`;
     });
-    const allNames = holiday ? [`⭐ ${holiday.label}`, ...entryNames] : entryNames;
+    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...entryNames] : entryNames;
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
     html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
       <div class="cal-daynum">${d}</div>
@@ -1514,7 +1574,7 @@ const I18N = {
     signout_btn:'Sign Out',
     tab_myleave:'My Leave', tab_myrequests:'My Requests', tab_teamrequests:'My Team Requests',
     tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
-    tab_holidays:'⭐ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
+    tab_holidays:'🏖️ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
     h3_attachcleanup:'🗑 Clean Up Old Attachments', h3_dangerzone:'⚠️ Danger Zone — Testing Only',
@@ -1535,21 +1595,46 @@ const I18N = {
     cal_team_sub_admin:'Approved leave across the whole organization',
     cal_team_sub_mgr:'Approved leave for employees who report to you (at any approval step)',
     sc_cal_title:'🗓 Calendar', sc_chart_hint:'Follows the month and filters selected above',
-    exp_title:'📥 Export Data', exp_sub:'Download reports as Excel files',
+    exp_title:'Export Data', exp_sub:'Download reports as Excel files',
     exp_loi_title:'LOI Data — leave balance & usage',
     exp_loi_hint:'One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.',
-    exp_loi_btn:'📥 Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
+    exp_loi_btn:'Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     exp_col_code:'Employee Code', exp_col_user:'User', exp_col_dept:'Department', exp_col_remaining:'Remaining', exp_col_used:'Used',
     exp_none:'No employees to export',
+    exp_req_desc:'Every leave request with dates, type, status and reason.', exp_emp_desc:'Everyone in the system with role, manager chain and permissions.',
+    exp_req_btn:'Export Requests', exp_emp_btn:'Export Employees',
+    lp_chart_title:'📊 Most frequent logins', lp_range_7:'Last 7 days', lp_range_30:'Last 30 days', lp_range_all:'All time',
+    lp_stat_logins:'Total logins', lp_stat_active:'Active users', lp_stat_never:'Never logged in',
+    lp_no_data:'No logins in this period', lp_top_note:'Top {n} users by number of logins', lp_never_title:'Never logged in',
+    lp_loading:'Loading…', lp_summary:'{n} of {total} employee(s) have never logged in', lp_all_in:'🎉 Everyone has logged in at least once',
+    c_cancel:'Cancel', c_close:'Close', c_edit:'Edit', c_delete:'Delete', c_save_changes:'Save Changes',
+    em_add_title:'➕ Add Employee', em_add_btn:'Add Employee', em_edit_prefix:'Edit',
+    em_code:'Employee Code *', em_name:'Name *', em_email:'Email', em_dept:'Department', em_position:'Position', em_role:'Role',
+    em_role_employee:'Employee', em_role_manager:'Manager', em_role_admin:'Admin', em_mgr_codes:'Manager Code(s)',
+    em_mgr_ph:'e.g. 2400,2401 (in approval order)', em_password:'Password *', em_password_ph:'Temporary password',
+    em_annual_days:'Annual Days', em_sick_days:'Sick Days', em_personal_days:'Personal Days',
+    em_auto_approve:'⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)',
+    em_emergency:'🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)',
+    em_btn_editleave:'📝 Edit Leave Requests', em_btn_editbal:'💰 Edit Balances',
+    el_title:'Leave Requests', el_none:'No requests',
+    el_hint:"Editing here does not automatically adjust the employee's leave balance — use Edit Balances separately if needed. Every edit is logged.",
+    eo_title:'✏️ Edit Leave Request', eo_type:'Leave Type', eo_status:'Status', eo_unit:'Unit', eo_unit_day:'Full day(s)', eo_unit_hour:'Hourly',
+    eo_start:'Start Date', eo_end:'End Date', eo_date:'Date', eo_start_time:'Start Time', eo_end_time:'End Time', eo_reason:'Reason',
+    eb_title:'Leave Balances', eb_hint:'Adjusts the total day quota for this year. Days already used are not affected.',
+    eb_total_days:'Total Days', eb_used_so_far:'used so far', eb_updated:'✅ Balances updated', eb_no_change:'No changes to save',
+    eb_mail_sent:'📧 Email sent to the employee',
+    eb_mail_off:'Email not sent — the "notify employee" setting is OFF (Settings page)',
+    eb_mail_noemail:'Email not sent — this employee has no email address on file',
+    eb_mail_failed:'Balances updated but the email failed to send',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
     pg_employees_title:'Employee Management', pg_employees_sub:'Add employees individually or import from Excel',
     pg_settings_title:'Settings', pg_settings_sub:'Toggle conditions that apply org-wide',
     pg_logs_title:'LOI Logs', pg_logs_sub:'Recent login activity, most recent first',
-    pg_holidays_title:'⭐ Company Holidays', pg_holidays_sub:"Shown as red days on everyone's leave calendar",
-    pg_loginprogress_title:'🚦 Login Progress', pg_loginprogress_sub:'Employees who have never logged in yet',
+    pg_holidays_title:'🏖️ Company Holidays', pg_holidays_sub:"Shown as red days on everyone's leave calendar",
+    pg_loginprogress_title:'🚦 Login Progress', pg_loginprogress_sub:'Who uses LOI the most, and who has never logged in',
     pg_special_title:'⭐ Special Leave Calendar', pg_special_sub:'Org-wide approved leave, filterable by department',
     pg_reports_title:'My Leave Results', pg_reports_sub:'Outcome of your own past leave requests',
     th_type:'Type', th_dates:'Dates', th_days:'Days', th_amount:'Amount', th_reason:'Reason', th_status:'Status',
@@ -1582,7 +1667,7 @@ const I18N = {
     signout_btn:'ออกจากระบบ',
     tab_myleave:'วันลาของฉัน', tab_myrequests:'คำขอของฉัน', tab_teamrequests:'คำขอของทีม',
     tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
-    tab_holidays:'⭐ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
+    tab_holidays:'🏖️ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
     h3_attachcleanup:'🗑 ล้างไฟล์แนบเก่า', h3_dangerzone:'⚠️ โซนอันตราย — สำหรับทดสอบเท่านั้น',
@@ -1603,21 +1688,46 @@ const I18N = {
     cal_team_sub_admin:'วันลาที่อนุมัติแล้วของพนักงานทั้งองค์กร',
     cal_team_sub_mgr:'วันลาที่อนุมัติแล้วของพนักงานที่อยู่ภายใต้การอนุมัติของคุณ (ทุกลำดับขั้น)',
     sc_cal_title:'🗓 ปฏิทิน', sc_chart_hint:'แสดงตามเดือนและตัวกรองด้านบน',
-    exp_title:'📥 Export ข้อมูล', exp_sub:'ดาวน์โหลดรายงานเป็นไฟล์ Excel',
+    exp_title:'Export ข้อมูล', exp_sub:'ดาวน์โหลดรายงานเป็นไฟล์ Excel',
     exp_loi_title:'ข้อมูล LOI — วันลาคงเหลือและที่ใช้ไปแล้ว',
     exp_loi_hint:'หนึ่งแถวต่อพนักงาน แต่ละประเภทการลามีคอลัมน์ "คงเหลือ" และ "ใช้ไปแล้ว" อยู่ติดกัน',
-    exp_loi_btn:'📥 Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
+    exp_loi_btn:'Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     exp_col_code:'รหัสพนักงาน', exp_col_user:'ผู้ใช้', exp_col_dept:'แผนก', exp_col_remaining:'คงเหลือ', exp_col_used:'ใช้ไปแล้ว',
     exp_none:'ไม่มีพนักงานให้ export',
+    exp_req_desc:'ใบลาทั้งหมดพร้อมวันที่ ประเภท สถานะ และเหตุผล', exp_emp_desc:'รายชื่อพนักงานทุกคน พร้อมบทบาท สายอนุมัติ และสิทธิ์พิเศษ',
+    exp_req_btn:'Export ใบลา', exp_emp_btn:'Export พนักงาน',
+    lp_chart_title:'📊 ผู้ที่ล็อกอินบ่อยที่สุด', lp_range_7:'7 วันล่าสุด', lp_range_30:'30 วันล่าสุด', lp_range_all:'ทั้งหมด',
+    lp_stat_logins:'จำนวนการล็อกอินรวม', lp_stat_active:'ผู้ใช้ที่ใช้งาน', lp_stat_never:'ยังไม่เคยล็อกอิน',
+    lp_no_data:'ไม่มีการล็อกอินในช่วงเวลานี้', lp_top_note:'{n} อันดับแรกตามจำนวนครั้งที่ล็อกอิน', lp_never_title:'ยังไม่เคยล็อกอิน',
+    lp_loading:'กำลังโหลด…', lp_summary:'{n} จาก {total} คน ยังไม่เคยล็อกอิน', lp_all_in:'🎉 ทุกคนเคยล็อกอินอย่างน้อย 1 ครั้งแล้ว',
+    c_cancel:'ยกเลิก', c_close:'ปิด', c_edit:'แก้ไข', c_delete:'ลบ', c_save_changes:'บันทึกการเปลี่ยนแปลง',
+    em_add_title:'➕ เพิ่มพนักงาน', em_add_btn:'เพิ่มพนักงาน', em_edit_prefix:'แก้ไข',
+    em_code:'รหัสพนักงาน *', em_name:'ชื่อ *', em_email:'อีเมล', em_dept:'แผนก', em_position:'ตำแหน่ง', em_role:'บทบาท',
+    em_role_employee:'พนักงาน', em_role_manager:'หัวหน้า', em_role_admin:'ผู้ดูแลระบบ', em_mgr_codes:'รหัสหัวหน้า',
+    em_mgr_ph:'เช่น 2400,2401 (เรียงลำดับอนุมัติ)', em_password:'รหัสผ่าน *', em_password_ph:'รหัสผ่านชั่วคราว',
+    em_annual_days:'วันลาพักร้อน', em_sick_days:'วันลาป่วย', em_personal_days:'วันลากิจ',
+    em_auto_approve:'⚡ อนุมัติอัตโนมัติ (ผู้บริหาร — คำขอลาข้ามขั้นตอนอนุมัติและหักวันลาทันที)',
+    em_emergency:'🚨 ลาฉุกเฉิน (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่าชั่วคราว — อย่าลืมติ๊กออกหลังใช้งาน)',
+    em_btn_editleave:'📝 แก้ไขใบลา', em_btn_editbal:'💰 แก้ไขโควตาวันลา',
+    el_title:'ใบลา', el_none:'ไม่มีใบลา',
+    el_hint:'การแก้ไขที่นี่ไม่ได้ปรับโควตาวันลาของพนักงานอัตโนมัติ — หากต้องการ ให้ใช้ "แก้ไขโควตาวันลา" แยกต่างหาก ทุกการแก้ไขจะถูกบันทึกไว้',
+    eo_title:'✏️ แก้ไขใบลา', eo_type:'ประเภทการลา', eo_status:'สถานะ', eo_unit:'หน่วย', eo_unit_day:'เต็มวัน', eo_unit_hour:'รายชั่วโมง',
+    eo_start:'วันที่เริ่ม', eo_end:'วันที่สิ้นสุด', eo_date:'วันที่', eo_start_time:'เวลาเริ่ม', eo_end_time:'เวลาสิ้นสุด', eo_reason:'เหตุผล',
+    eb_title:'โควตาวันลา', eb_hint:'ปรับจำนวนวันลารวมของปีนี้ วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
+    eb_total_days:'จำนวนวันรวม', eb_used_so_far:'ใช้ไปแล้ว', eb_updated:'✅ อัปเดตโควตาแล้ว', eb_no_change:'ไม่มีการเปลี่ยนแปลงให้บันทึก',
+    eb_mail_sent:'📧 ส่งอีเมลแจ้งพนักงานแล้ว',
+    eb_mail_off:'ไม่ได้ส่งอีเมล — การตั้งค่า "แจ้งพนักงานเมื่อ admin ปรับโควตา" ปิดอยู่ (หน้าตั้งค่า)',
+    eb_mail_noemail:'ไม่ได้ส่งอีเมล — พนักงานคนนี้ยังไม่มีอีเมลในระบบ',
+    eb_mail_failed:'อัปเดตโควตาแล้ว แต่ส่งอีเมลไม่สำเร็จ',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
     pg_employees_title:'จัดการพนักงาน', pg_employees_sub:'เพิ่มพนักงานทีละคน หรือ import จาก Excel',
     pg_settings_title:'ตั้งค่า', pg_settings_sub:'เปิด/ปิดเงื่อนไขที่ใช้ทั้งองค์กร',
     pg_logs_title:'บันทึกการใช้งาน', pg_logs_sub:'ประวัติการเข้าใช้งานล่าสุด เรียงจากใหม่ไปเก่า',
-    pg_holidays_title:'⭐ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีแดงในปฏิทินวันลาของทุกคน',
-    pg_loginprogress_title:'🚦 ความคืบหน้าการล็อกอิน', pg_loginprogress_sub:'พนักงานที่ยังไม่เคยล็อกอินเข้าระบบเลย',
+    pg_holidays_title:'🏖️ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีแดงในปฏิทินวันลาของทุกคน',
+    pg_loginprogress_title:'🚦 ความคืบหน้าการล็อกอิน', pg_loginprogress_sub:'ใครใช้งาน LOI บ่อยที่สุด และใครยังไม่เคยล็อกอิน',
     pg_special_title:'⭐ ปฏิทินลาพิเศษ', pg_special_sub:'วันลาที่อนุมัติแล้วทั้งองค์กร กรองตามแผนกได้',
     pg_reports_title:'ผลการลาของฉัน', pg_reports_sub:'ผลคำขอลาในอดีตของฉันเอง',
     th_type:'ประเภท', th_dates:'วันที่', th_days:'จำนวนวัน', th_amount:'จำนวน', th_reason:'เหตุผล', th_status:'สถานะ',
@@ -2482,7 +2592,7 @@ function renderSpecialCalendar(requests){
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
-    const allNames = holiday ? [`⭐ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...peopleNames] : peopleNames;
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
@@ -2555,7 +2665,7 @@ let editingRequestId = null;
 async function openEditLeaveRequestsModal(){
   if(!editingEmployeeId) return;
   const emp = employeesCache.find(e=>e.id===editingEmployeeId);
-  document.getElementById('editLeaveListTitle').textContent = `📝 Leave Requests — ${emp?emp.name:''}`;
+  document.getElementById('editLeaveListTitle').textContent = `📝 ${t('el_title')} — ${emp?emp.name:''}`;
   closeModal('addEmpModal');
   openModal('editLeaveListModal');
   try{
@@ -2567,7 +2677,7 @@ async function openEditLeaveRequestsModal(){
 
 function renderEditLeaveList(){
   const body = document.getElementById('editLeaveListBody');
-  if(!editLeaveRequestsCache.length){ body.innerHTML = '<tr><td colspan="5" class="empty-msg">No requests</td></tr>'; return; }
+  if(!editLeaveRequestsCache.length){ body.innerHTML = `<tr><td colspan="5" class="empty-msg">${escHtml(t('el_none'))}</td></tr>`; return; }
   body.innerHTML = editLeaveRequestsCache.map(r=>{
     const st = STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
     return `<tr>
@@ -2576,8 +2686,8 @@ function renderEditLeaveList(){
       <td>${formatAmount(r)}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
       <td>
-        <button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="adminDeleteRequest('${r.id}')">Delete</button>
+        <button class="btn btn-sm btn-outline" onclick="openEditOneRequestModal('${r.id}')">${escHtml(t('c_edit'))}</button>
+        <button class="btn btn-sm btn-danger" onclick="adminDeleteRequest('${r.id}')">${escHtml(t('c_delete'))}</button>
         ${r.attachment_path?`<button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎</button>`:''}
       </td>
     </tr>`;
@@ -2660,7 +2770,7 @@ const BALANCE_TYPE_ORDER = ['annual','sick','personal','other','maternity','pate
 async function openEditBalancesModal(){
   if(!editingEmployeeId) return;
   const emp = employeesCache.find(e=>e.id===editingEmployeeId);
-  document.getElementById('editBalancesTitle').textContent = `💰 Leave Balances — ${emp?emp.name:''}`;
+  document.getElementById('editBalancesTitle').textContent = `💰 ${t('eb_title')} — ${emp?emp.name:''}`;
   closeModal('addEmpModal');
   openModal('editBalancesModal');
   document.getElementById('editBalancesErr').textContent='';
@@ -2675,31 +2785,36 @@ function renderEditBalancesFields(balances){
   balances.forEach(b=>{ byType[b.leave_type] = b; });
   const types = Array.from(new Set([...BALANCE_TYPE_ORDER, ...balances.map(b=>b.leave_type)]));
   const wrap = document.getElementById('editBalancesFields');
-  wrap.innerHTML = types.filter(t=>byType[t] || ['annual','sick','personal'].includes(t)).map(t=>{
-    const b = byType[t];
-    const total = b ? b.total_days : (t==='annual'?10:t==='sick'?30:t==='personal'?3:0);
+  wrap.innerHTML = types.filter(ty=>byType[ty] || ['annual','sick','personal'].includes(ty)).map(ty=>{
+    const b = byType[ty];
+    const total = b ? b.total_days : (ty==='annual'?10:ty==='sick'?30:ty==='personal'?3:0);
     const used = b ? b.used_days : 0;
     return `
       <div class="field" style="margin-bottom:12px">
-        <label>${getLeaveTypeLabel(t)} — Total Days <span style="color:var(--text-dim);font-weight:400">(${used} used so far)</span></label>
-        <input type="number" step="0.5" class="editBalInput" data-type="${t}" value="${total}"/>
+        <label>${getLeaveTypeLabel(ty)} — ${escHtml(t('eb_total_days'))} <span style="color:var(--text-dim);font-weight:400">(${used} ${escHtml(t('eb_used_so_far'))})</span></label>
+        <input type="number" step="0.5" class="editBalInput" data-type="${ty}" data-orig="${total}" value="${total}"/>
       </div>`;
   }).join('');
 }
 
 async function submitEditBalances(){
   const errEl = document.getElementById('editBalancesErr');
-  const inputs = document.querySelectorAll('.editBalInput');
+  errEl.textContent = '';
+  // ส่งเฉพาะประเภทที่ค่าเปลี่ยนจริง → พนักงานได้อีเมล "1 ฉบับ" สรุปทุกรายการที่ถูกปรับ
+  const changes = [];
+  document.querySelectorAll('.editBalInput').forEach(inp=>{
+    const now = Number(inp.value) || 0;
+    if(now !== Number(inp.dataset.orig)) changes.push({ leave_type: inp.dataset.type, total_days: now });
+  });
+  if(!changes.length){ errEl.textContent = t('eb_no_change'); return; }
   try{
-    for(const inp of inputs){
-      await callApi('update_balance', {
-        employee_id: editingEmployeeId,
-        leave_type: inp.dataset.type,
-        total_days: Number(inp.value)||0,
-      });
-    }
+    const res = await callApi('update_balances', { employee_id: editingEmployeeId, changes });
     closeModal('editBalancesModal');
-    showToast('✅ Balances updated');
+    const n = res.notify || {};
+    const map = { sent:'eb_mail_sent', setting_off:'eb_mail_off', no_email:'eb_mail_noemail' };
+    if(n.status === 'send_failed') showToast(`${t('eb_mail_failed')}: ${n.detail||''}`, 'err');
+    else if(map[n.status]) showToast(`${t('eb_updated')} · ${t(map[n.status])}`);
+    else showToast(t('eb_updated'));
   }catch(e){ errEl.textContent = e.message; }
 }
 
@@ -3018,14 +3133,14 @@ let neverLoggedInCache = [];
 async function loadNeverLoggedIn(){
   const resultsEl = document.getElementById('loginProgressResults');
   const summaryEl = document.getElementById('loginProgressSummary');
-  resultsEl.innerHTML = '<div class="empty-msg">Loading…</div>';
+  resultsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
   try{
     const data = await callApi('get_never_logged_in');
     neverLoggedInCache = data.never_logged_in || [];
     const total = data.total_employees || 0;
-    summaryEl.textContent = `${neverLoggedInCache.length} of ${total} employee(s) have never logged in`;
+    summaryEl.textContent = t('lp_summary').replace('{n}', neverLoggedInCache.length).replace('{total}', total);
     if(!neverLoggedInCache.length){
-      resultsEl.innerHTML = '<div class="empty-msg">🎉 Everyone has logged in at least once</div>';
+      resultsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_all_in'))}</div>`;
       return;
     }
     resultsEl.innerHTML = `<div class="table-wrap"><table>
@@ -3041,6 +3156,35 @@ async function loadNeverLoggedIn(){
     </table></div>`;
     applyTranslations();
   }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
+}
+
+
+// ── LOGIN FREQUENCY BAR CHART (top 15 ผู้ใช้ที่ล็อกอินบ่อยที่สุด) ──
+let loginNeverTotal = 0;
+async function loadLoginStats(){
+  const range = document.getElementById('loginStatsRange').value;
+  const statsEl = document.getElementById('loginStats');
+  const barsEl = document.getElementById('loginBars');
+  barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
+  try{
+    const data = await callApi('get_login_stats', { days: range });
+    const users = data.users || [];
+    statsEl.innerHTML =
+      `<div class="lp-stat"><b>${data.total_logins||0}</b><span>${escHtml(t('lp_stat_logins'))}</span></div>` +
+      `<div class="lp-stat"><b>${users.length}</b><span>${escHtml(t('lp_stat_active'))}</span></div>` +
+      `<div class="lp-stat"><b>${neverLoggedInCache.length}</b><span>${escHtml(t('lp_stat_never'))}</span></div>`;
+    if(!users.length){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
+    const top = users.slice(0, 15);
+    const max = top[0].login_count || 1;
+    barsEl.innerHTML =
+      `<p class="hint" style="margin-bottom:8px">${escHtml(t('lp_top_note').replace('{n}', top.length))}</p>` +
+      top.map((u,i)=>`
+        <div class="lp-row${i<3?' top':''}" title="${escAttr(u.name)} — ${u.login_count}">
+          <div class="lp-name">${escHtml(u.name||'?')}<small>${escHtml(u.employee_code||'')}${u.department?' · '+escHtml(u.department):''}</small></div>
+          <div class="lp-track"><div class="lp-fill" style="width:${Math.max(3, Math.round(u.login_count/max*100))}%"></div></div>
+          <div class="lp-count">${u.login_count}</div>
+        </div>`).join('');
+  }catch(e){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
 }
 
 function exportNeverLoggedIn(){
@@ -3100,8 +3244,8 @@ function openAddEmployeeModal(){
   document.getElementById('neAutoApprove').checked=false;
   document.getElementById('neBypassConditions').checked=false;
   document.getElementById('addEmpErr').textContent='';
-  document.getElementById('addEmpModalTitle').textContent='➕ Add Employee';
-  document.getElementById('addEmpSubmitBtn').textContent='Add Employee';
+  document.getElementById('addEmpModalTitle').textContent=t('em_add_title');
+  document.getElementById('addEmpSubmitBtn').textContent=t('em_add_btn');
   document.getElementById('nePasswordWrap').style.display='block';
   document.getElementById('neQuotaFields').style.display='grid';
   document.getElementById('editLeaveTriggerBtn').style.display='none';
@@ -3130,8 +3274,8 @@ function openEditEmployeeModal(id){
   document.getElementById('neManagerCode').value = codes.join(',');
 
   document.getElementById('addEmpErr').textContent='';
-  document.getElementById('addEmpModalTitle').textContent=`✏️ Edit ${emp.name}`;
-  document.getElementById('addEmpSubmitBtn').textContent='Save Changes';
+  document.getElementById('addEmpModalTitle').textContent=`✏️ ${t('em_edit_prefix')} ${emp.name}`;
+  document.getElementById('addEmpSubmitBtn').textContent=t('c_save_changes');
   document.getElementById('nePasswordWrap').style.display='none'; // แก้รหัสผ่านใช้ปุ่ม Reset PW แทน
   document.getElementById('editLeaveTriggerBtn').style.display='inline-block';
   document.getElementById('editBalancesTriggerBtn').style.display='inline-block';
@@ -3344,7 +3488,7 @@ function renderCalendar(requests){
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
-    const allNames = holiday ? [`⭐ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...peopleNames] : peopleNames;
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
