@@ -117,6 +117,11 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .user-avatar{cursor:pointer;overflow:hidden;padding:0}
 .name-with-avatar{display:flex;align-items:center;gap:8px}
 .photo-preview{display:flex;justify-content:center;margin:6px 0 14px}
+.exp-block{padding:16px 0;border-top:1px solid var(--line-soft)}
+.exp-block:first-of-type{border-top:none;padding-top:6px}
+.exp-block-title{font-size:.9rem;font-weight:600;color:var(--plum-700);margin-bottom:2px}
+.exp-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.exp-row select{padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem}
 /* ── special calendar bar chart ── */
 .sc-chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding:18px 4px 0;border-bottom:1px solid var(--line)}
 .sc-bar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
@@ -409,11 +414,11 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>🗓️ My Leave Calendar</h3>
+        <h3 data-i18n="cal_my_title">🗓️ My Leave Calendar</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(-1)">← Prev</button>
+          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(-1)" data-i18n="btn_prev">← Prev</button>
           <div class="mono" id="myCalMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
-          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(1)">Next →</button>
+          <button class="btn btn-sm btn-outline" onclick="shiftMyCalendarMonth(1)" data-i18n="btn_next">Next →</button>
         </div>
         <div id="myCalGrid" class="cal-grid"></div>
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
@@ -453,12 +458,12 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>🗓 Team Leave Calendar</h3>
+        <h3 data-i18n="cal_team_title">🗓 Team Leave Calendar</h3>
         <p class="hint" style="margin-bottom:14px" id="calendarSub">Who's on approved leave this month — check for clashes before you approve</p>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(-1)">← Prev</button>
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(-1)" data-i18n="btn_prev">← Prev</button>
           <div class="mono" id="calendarMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
-          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)">Next →</button>
+          <button class="btn btn-sm btn-outline" onclick="shiftCalendarMonth(1)" data-i18n="btn_next">Next →</button>
         </div>
         <div id="calendarGrid" class="cal-grid"></div>
         <div id="calendarLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
@@ -475,20 +480,45 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-primary" onclick="openAddEmployeeModal()" data-i18n="btn_add_employee">➕ Add Employee</button>
           <button class="btn btn-gold" onclick="openImportModal()" data-i18n="btn_import_excel">📊 Import from Excel</button>
           <button class="btn btn-outline" onclick="downloadExcelTemplate()" data-i18n="btn_download_template">⬇ Download Template</button>
-          <button class="btn btn-outline" onclick="exportAllEmployeesExcel()" data-i18n="btn_export_employees">📥 Export All Employees</button>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)">
-          <label style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin:0">📥 Export:</label>
-          <select id="exportScope" onchange="onExportScopeChange()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem">
-            <option value="all">All requests</option>
-            <option value="month">By month</option>
-            <option value="year">By year</option>
-          </select>
-          <select id="exportMonth" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
-          <select id="exportYear" style="display:none;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"></select>
-          <select id="exportEmployee" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All employees</option></select>
-          <select id="exportDept" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem"><option value="all">All departments</option></select>
-          <button class="btn btn-outline" onclick="exportAllRequestsExcel()" data-i18n="btn_export_excel">Export to Excel</button>
+      </div>
+
+      <!-- EXPORT SECTION (แยกเป็นส่วนของตัวเอง) -->
+      <div class="card" id="exportCard" style="border-left:4px solid var(--gold)">
+        <h3 data-i18n="exp_title">📥 Export Data</h3>
+        <p class="hint" data-i18n="exp_sub">Download reports as Excel files</p>
+
+        <div class="exp-block">
+          <div class="exp-block-title" data-i18n="exp_loi_title">LOI Data — leave balance &amp; usage</div>
+          <div class="hint" data-i18n="exp_loi_hint">One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.</div>
+          <div class="exp-row">
+            <select id="exportLoiYear"></select>
+            <select id="exportLoiDept"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+            <button class="btn btn-primary" onclick="exportLoiDataExcel()" data-i18n="exp_loi_btn">📥 Export LOI Data</button>
+          </div>
+        </div>
+
+        <div class="exp-block">
+          <div class="exp-block-title" data-i18n="exp_req_title">Leave requests</div>
+          <div class="exp-row">
+            <select id="exportScope" onchange="onExportScopeChange()">
+              <option value="all" data-i18n="exp_scope_all">All requests</option>
+              <option value="month" data-i18n="exp_scope_month">By month</option>
+              <option value="year" data-i18n="exp_scope_year">By year</option>
+            </select>
+            <select id="exportMonth" style="display:none"></select>
+            <select id="exportYear" style="display:none"></select>
+            <select id="exportEmployee"><option value="all" data-i18n="sc_all_users">All employees</option></select>
+            <select id="exportDept"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+            <button class="btn btn-outline" onclick="exportAllRequestsExcel()" data-i18n="btn_export_excel">Export to Excel</button>
+          </div>
+        </div>
+
+        <div class="exp-block">
+          <div class="exp-block-title" data-i18n="exp_emp_title">Employee list</div>
+          <div class="exp-row">
+            <button class="btn btn-outline" onclick="exportAllEmployeesExcel()" data-i18n="btn_export_employees">📥 Export All Employees</button>
+          </div>
         </div>
       </div>
 
@@ -633,10 +663,10 @@ tr:hover td{background:var(--cream)}
       <div class="section-title" data-i18n="pg_special_title">⭐ Special Leave Calendar</div>
       <div class="section-sub" data-i18n="pg_special_sub">Org-wide approved leave, filterable by department</div>
       <div class="card">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(-1)">← Prev</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(-1)" data-i18n="btn_prev">← Prev</button>
           <div class="mono" id="specialCalMonthLabel" style="font-weight:600;min-width:140px;text-align:center"></div>
-          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(1)">Next →</button>
+          <button class="btn btn-sm btn-outline" onclick="shiftSpecialCalendarMonth(1)" data-i18n="btn_next">Next →</button>
           <select id="specialCalDept" onchange="onSpecialCalDeptChange()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;margin-left:auto">
             <option value="all" data-i18n="sc_all_depts">All departments</option>
           </select>
@@ -644,11 +674,21 @@ tr:hover td{background:var(--cream)}
             <option value="all" data-i18n="sc_all_users">All employees</option>
           </select>
         </div>
-        <div style="font-size:.82rem;font-weight:600;color:var(--plum-700);margin-bottom:2px" data-i18n="sc_chart_title">📊 Employees on leave per day</div>
+      </div>
+
+      <!-- SECTION: bar chart -->
+      <div class="card">
+        <h3 data-i18n="sc_chart_title">📊 Employees on leave per day</h3>
+        <p class="hint" style="margin-bottom:6px"><span data-i18n="sc_chart_hint">Follows the month and filters selected above</span> · <span class="mono" id="specialChartMonth"></span></p>
         <div class="sc-summary" id="specialCalSummary"></div>
         <div class="sc-chart" id="specialCalChart"></div>
         <div class="sc-x" id="specialCalChartX"></div>
-        <div id="specialCalGrid" class="cal-grid" style="margin-top:18px"></div>
+      </div>
+
+      <!-- SECTION: calendar -->
+      <div class="card">
+        <h3 data-i18n="sc_cal_title">🗓 Calendar</h3>
+        <div id="specialCalGrid" class="cal-grid"></div>
         <div id="specialCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
@@ -1490,6 +1530,18 @@ const I18N = {
     photo_err_type:'Please choose a valid image file', photo_click_title:'Click to change your photo',
     sc_all_depts:'All departments', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
     sc_chart_empty:'No approved leave in this month', sc_sum_people:'People on leave', sc_sum_total:'Total person-days', sc_sum_peak:'Busiest day',
+    btn_prev:'← Prev', btn_next:'Next →',
+    cal_team_title:'🗓 Team Leave Calendar', cal_my_title:'🗓️ My Leave Calendar',
+    cal_team_sub_admin:'Approved leave across the whole organization',
+    cal_team_sub_mgr:'Approved leave for employees who report to you (at any approval step)',
+    sc_cal_title:'🗓 Calendar', sc_chart_hint:'Follows the month and filters selected above',
+    exp_title:'📥 Export Data', exp_sub:'Download reports as Excel files',
+    exp_loi_title:'LOI Data — leave balance & usage',
+    exp_loi_hint:'One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.',
+    exp_loi_btn:'📥 Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
+    exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
+    exp_col_code:'Employee Code', exp_col_user:'User', exp_col_dept:'Department', exp_col_remaining:'Remaining', exp_col_used:'Used',
+    exp_none:'No employees to export',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1546,6 +1598,18 @@ const I18N = {
     photo_err_type:'กรุณาเลือกไฟล์รูปภาพที่ใช้งานได้', photo_click_title:'คลิกเพื่อเปลี่ยนรูปของคุณ',
     sc_all_depts:'ทุกแผนก', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
     sc_chart_empty:'เดือนนี้ไม่มีวันลาที่อนุมัติแล้ว', sc_sum_people:'จำนวนคนที่ลา', sc_sum_total:'รวมคน-วัน', sc_sum_peak:'วันที่ลาเยอะสุด',
+    btn_prev:'← ก่อนหน้า', btn_next:'ถัดไป →',
+    cal_team_title:'🗓 ปฏิทินการลาของทีม', cal_my_title:'🗓️ ปฏิทินการลาของฉัน',
+    cal_team_sub_admin:'วันลาที่อนุมัติแล้วของพนักงานทั้งองค์กร',
+    cal_team_sub_mgr:'วันลาที่อนุมัติแล้วของพนักงานที่อยู่ภายใต้การอนุมัติของคุณ (ทุกลำดับขั้น)',
+    sc_cal_title:'🗓 ปฏิทิน', sc_chart_hint:'แสดงตามเดือนและตัวกรองด้านบน',
+    exp_title:'📥 Export ข้อมูล', exp_sub:'ดาวน์โหลดรายงานเป็นไฟล์ Excel',
+    exp_loi_title:'ข้อมูล LOI — วันลาคงเหลือและที่ใช้ไปแล้ว',
+    exp_loi_hint:'หนึ่งแถวต่อพนักงาน แต่ละประเภทการลามีคอลัมน์ "คงเหลือ" และ "ใช้ไปแล้ว" อยู่ติดกัน',
+    exp_loi_btn:'📥 Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
+    exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
+    exp_col_code:'รหัสพนักงาน', exp_col_user:'ผู้ใช้', exp_col_dept:'แผนก', exp_col_remaining:'คงเหลือ', exp_col_used:'ใช้ไปแล้ว',
+    exp_none:'ไม่มีพนักงานให้ export',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
@@ -2340,6 +2404,7 @@ function applySpecialCalFilters(){
 }
 
 function renderSpecialChart(requests){
+  const _m = document.getElementById('specialChartMonth'); if(_m) _m.textContent = `${MONTH_NAMES_EN[specialCalMonth-1]} ${specialCalYear}`;
   const pad = n => String(n).padStart(2,'0');
   const daysInMonth = new Date(specialCalYear, specialCalMonth, 0).getDate();
   const monthStart = `${specialCalYear}-${pad(specialCalMonth)}-01`;
@@ -2748,17 +2813,73 @@ function exportCarryoverCandidates(){
 function populateExportFilterSelectors(){
   const empSel = document.getElementById('exportEmployee');
   const deptSel = document.getElementById('exportDept');
-  const currentEmp = empSel.value, currentDept = deptSel.value;
+  const loiDeptSel = document.getElementById('exportLoiDept');
+  const loiYearSel = document.getElementById('exportLoiYear');
+  const currentEmp = empSel.value, currentDept = deptSel.value, currentLoiDept = loiDeptSel.value;
 
-  empSel.innerHTML = '<option value="all">All employees</option>' +
+  empSel.innerHTML = `<option value="all">${escHtml(t('sc_all_users'))}</option>` +
     employeesCache.map(e=>`<option value="${e.id}">${escHtml(e.employee_code)} — ${escHtml(e.name)}</option>`).join('');
   const depts = Array.from(new Set(employeesCache.map(e=>e.department).filter(Boolean))).sort();
-  deptSel.innerHTML = '<option value="all">All departments</option>' +
+  const deptOpts = `<option value="all">${escHtml(t('sc_all_depts'))}</option>` +
     depts.map(d=>`<option value="${escAttr(d)}">${escHtml(d)}</option>`).join('');
+  deptSel.innerHTML = deptOpts;
+  loiDeptSel.innerHTML = deptOpts;
+
+  if(!loiYearSel.options.length){
+    const y0 = new Date().getFullYear();
+    let h=''; for(let y=y0-2; y<=y0+1; y++) h += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
+    loiYearSel.innerHTML = h;
+  }
 
   // เก็บค่าที่เลือกไว้เดิมถ้ายังมีอยู่ในลิสต์ใหม่
   if([...empSel.options].some(o=>o.value===currentEmp)) empSel.value=currentEmp;
   if([...deptSel.options].some(o=>o.value===currentDept)) deptSel.value=currentDept;
+  if([...loiDeptSel.options].some(o=>o.value===currentLoiDept)) loiDeptSel.value=currentLoiDept;
+}
+
+// ── ADMIN: EXPORT LOI DATA (คงเหลือ + ใช้ไปแล้ว ของทุกประเภทการลา อยู่ติดกัน) ──
+async function exportLoiDataExcel(){
+  const year = Number(document.getElementById('exportLoiYear').value) || new Date().getFullYear();
+  const dept = document.getElementById('exportLoiDept').value;
+  try{
+    if(!employeesCache.length) await loadEmployees();
+    const data = await callApi('list_all_balances', { year });
+    const balances = data.balances || [];
+
+    const byEmp = {};
+    balances.forEach(b=>{ (byEmp[b.employee_id] = byEmp[b.employee_id] || {})[b.leave_type] = b; });
+
+    // เรียงประเภท: annual, annual_carry_*, sick, personal, อื่นๆ (เฉพาะที่มีข้อมูลจริง)
+    const present = new Set(balances.map(b=>b.leave_type));
+    const carry = [...present].filter(x=>/^annual_carry_/.test(x)).sort();
+    const known = ['annual', ...carry, 'sick', 'personal'];
+    const types = [...known.filter(x=>present.has(x)), ...[...present].filter(x=>!known.includes(x)).sort()];
+
+    let emps = employeesCache.slice();
+    if(dept!=='all') emps = emps.filter(e=>e.department===dept);
+    if(!emps.length){ showToast(t('exp_none'),'err'); return; }
+
+    const round2 = n => Math.round(n*100)/100;
+    const rows = emps.map(e=>{
+      const row = {};
+      row[t('exp_col_code')] = e.employee_code;
+      row[t('exp_col_user')] = e.name;
+      row[t('exp_col_dept')] = e.department || '';
+      types.forEach(ty=>{
+        const b = (byEmp[e.id]||{})[ty];
+        const label = getLeaveTypeLabel(ty);
+        row[`${label} — ${t('exp_col_remaining')}`] = b ? round2(Number(b.total_days) - Number(b.used_days)) : '';
+        row[`${label} — ${t('exp_col_used')}`] = b ? round2(Number(b.used_days)) : '';
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = Object.keys(rows[0]).map((k,i)=>({ wch: i===1 ? 26 : i===2 ? 16 : Math.max(12, k.length+2) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `LOI ${year}`);
+    XLSX.writeFile(wb, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}.xlsx`);
+  }catch(e){ showToast(e.message,'err'); }
 }
 
 async function exportAllRequestsExcel(){
@@ -3178,7 +3299,7 @@ function shiftCalendarMonth(delta){
 
 async function loadLeaveCalendar(){
   document.getElementById('calendarSub').textContent =
-    currentUser.role==='admin' ? "Approved leave across the whole organization" : "Approved leave for employees who report to you (at any approval step)";
+    currentUser.role==='admin' ? t('cal_team_sub_admin') : t('cal_team_sub_mgr');
   document.getElementById('calendarMonthLabel').textContent = `${MONTH_NAMES_EN[calMonth-1]} ${calYear}`;
   try{
     const data = await callApi('get_leave_calendar', { year: calYear, month: calMonth });
