@@ -1111,19 +1111,63 @@ function buildTabs(){
 }
 
 // ── เปิด/ปิด dropdown "IIDA Control" ด้วยการคลิก/แตะ (มือถือไม่รองรับ :hover) ──
+// หมายเหตุ: nav.tabs ตั้ง overflow-x:auto ไว้ (ให้แท็บเลื่อนแนวนอนบนมือถือ) ซึ่งตาม
+// สเปก CSS จะบังคับให้ overflow-y กลายเป็น auto ไปด้วย ผลคือเมนู dropdown แบบ
+// position:absolute (ลูกของ nav.tabs) จะถูก "ตัด" มองไม่เห็นทันทีที่ล้นขอบล่างของ nav
+// (กดปุ่มแล้ว class .open ติดจริง แต่เมนูถูกครอบตัดจนไม่โผล่ให้เห็น/กดไม่ได้)
+// วิธีแก้แบบไม่แตะ layout เดิม: ย้ายเมนูไป position:fixed คำนวณตำแหน่งจาก
+// getBoundingClientRect ของปุ่ม trigger ตอนเปิด ซึ่งจะหลุดพ้นกรอบ overflow ของ nav.tabs
 function toggleTabDropdown(event){
   event.stopPropagation();
   const wrap = event.currentTarget.closest('.tab-dropdown');
   if(!wrap) return;
   const wasOpen = wrap.classList.contains('open');
   closeTabDropdown();
-  if(!wasOpen) wrap.classList.add('open');
+  if(!wasOpen){
+    wrap.classList.add('open');
+    positionTabDropdownMenu(wrap, event.currentTarget);
+  }
+}
+function positionTabDropdownMenu(wrap, trigger){
+  const menu = wrap.querySelector('.tab-dropdown-menu');
+  if(!menu) return;
+  const rect = trigger.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = rect.bottom + 'px';
+  let left = rect.left;
+  // กันเมนูล้นขอบขวาจอบนมือถือ: ถ้าเกินขอบขวา ให้ชิดขวาปุ่มแทน
+  const menuWidth = Math.max(menu.offsetWidth, 200);
+  if(left + menuWidth > window.innerWidth - 8){
+    left = Math.max(8, rect.right - menuWidth);
+  }
+  menu.style.left = left + 'px';
 }
 function closeTabDropdown(){
   document.querySelectorAll('.tab-dropdown.open').forEach(el=>el.classList.remove('open'));
 }
+window.addEventListener('resize', ()=>{
+  const openWrap = document.querySelector('.tab-dropdown.open');
+  if(openWrap){
+    const trigger = openWrap.querySelector('.tab-dropdown-trigger');
+    if(trigger) positionTabDropdownMenu(openWrap, trigger);
+  }
+});
 document.addEventListener('click', (e)=>{
   if(!e.target.closest('.tab-dropdown')) closeTabDropdown();
+});
+// เมาส์ hover บนเดสก์ท็อป (CSS :hover) ก็โดน overflow ของ nav.tabs ครอบตัดเมนูเหมือนกัน
+// จึงต้องคำนวณตำแหน่ง fixed ให้ตอน hover ด้วย ไม่ใช่แค่ตอนคลิก (delegated เพราะ .tab-dropdown
+// ถูกสร้างใหม่ทุกครั้งที่ buildTabs() เขียน innerHTML ของ #tabBar)
+document.addEventListener('mouseover', (e)=>{
+  const wrap = e.target.closest('.tab-dropdown');
+  if(!wrap || wrap.classList.contains('open')) return;
+  if(wrap.dataset.hoverPositioned==='1') return;
+  const trigger = wrap.querySelector('.tab-dropdown-trigger');
+  if(trigger){ positionTabDropdownMenu(wrap, trigger); wrap.dataset.hoverPositioned='1'; }
+});
+document.addEventListener('mouseout', (e)=>{
+  const wrap = e.target.closest('.tab-dropdown');
+  if(wrap && !wrap.contains(e.relatedTarget)) wrap.dataset.hoverPositioned='0';
 });
 
 function showPage(id, el){
