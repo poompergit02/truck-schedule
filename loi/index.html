@@ -403,7 +403,7 @@ tr:hover td{background:var(--cream)}
       <div class="balance-row" id="balanceRow"></div>
 
       <div class="card">
-        <h3>➕ New Leave Request</h3>
+        <h3 data-i18n="h3_newrequest">➕ New Leave Request</h3>
         <div class="form-grid">
           <div class="field">
             <label data-i18n="lbl_leave_type">Leave Type</label>
@@ -420,9 +420,9 @@ tr:hover td{background:var(--cream)}
           <div class="field">
             <label data-i18n="lbl_duration">Duration</label>
             <select id="reqUnit" onchange="toggleLeaveUnit()">
-              <option value="day">Full day(s)</option>
-              <option value="hour">Hourly</option>
-              <option value="multi">Multiple specific dates</option>
+              <option value="day" data-i18n="eo_unit_day">Full day(s)</option>
+              <option value="hour" data-i18n="eo_unit_hour">Hourly</option>
+              <option value="multi" data-i18n="lbl_unit_multi">Multiple specific dates</option>
             </select>
           </div>
         </div>
@@ -431,22 +431,22 @@ tr:hover td{background:var(--cream)}
           <div class="field"><label data-i18n="lbl_end_date">End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
-          <div class="field"><label>Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
-          <div class="field"><label>Start Time</label><input type="time" id="reqStartTime"/></div>
-          <div class="field"><label>End Time</label><input type="time" id="reqEndTime"/></div>
+          <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
+          <div class="field"><label data-i18n="eo_start_time">Start Time</label><input type="time" id="reqStartTime"/></div>
+          <div class="field"><label data-i18n="eo_end_time">End Time</label><input type="time" id="reqEndTime"/></div>
         </div>
         <div id="multiFields" style="display:none;margin-bottom:14px">
-          <label style="display:block;font-size:.74rem;font-weight:600;color:var(--plum-700);margin-bottom:8px">Specific Dates (same leave type applies to all)</label>
+          <label style="display:block;font-size:.74rem;font-weight:600;color:var(--plum-700);margin-bottom:8px" data-i18n="lbl_specific_dates">Specific Dates (same leave type applies to all)</label>
           <div id="multiDateRows"></div>
-          <button type="button" class="btn btn-sm btn-outline" style="margin-top:6px" onclick="addMultiDateRow()">+ Add Date</button>
+          <button type="button" class="btn btn-sm btn-outline" style="margin-top:6px" onclick="addMultiDateRow()" data-i18n="btn_add_date">+ Add Date</button>
         </div>
         <div class="field" style="margin-bottom:14px;display:none" id="reqAttachmentWrap">
-          <label>🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
+          <label data-i18n="lbl_medcert">🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
           <input type="file" id="reqAttachment" accept="image/*,application/pdf"/>
         </div>
         <div class="field" style="margin-bottom:14px">
           <label data-i18n="lbl_reason">Reason</label>
-          <textarea id="reqReason" placeholder="Briefly explain the reason for leave..."></textarea>
+          <textarea id="reqReason" data-i18n-ph="ph_reason" placeholder="Briefly explain the reason for leave..."></textarea>
         </div>
         <button class="btn btn-primary" onclick="submitLeaveRequest()" data-i18n="btn_submit_request">Submit Request</button>
       </div>
@@ -481,13 +481,13 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub" id="approvalsSub">Requests waiting for your review</div>
       <div class="card" style="padding:0" id="approvalsCard">
         <div style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line-soft)">
-          <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="selectAllApprovals" onchange="toggleSelectAllApprovals(this)"/> Select All</label>
+          <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="selectAllApprovals" onchange="toggleSelectAllApprovals(this)"/> <span data-i18n="lbl_select_all">Select All</span></label>
           <select id="bulkDecision" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.84rem">
-            <option value="approve">Approve</option>
-            <option value="reject">Reject</option>
+            <option value="approve" data-i18n="btn_approve">Approve</option>
+            <option value="reject" data-i18n="btn_reject">Reject</option>
           </select>
-          <input type="text" id="bulkComment" placeholder="Comment (optional, applied to all selected)" style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.84rem"/>
-          <button class="btn btn-sm btn-primary" onclick="submitBulkDecision()">Apply to Selected</button>
+          <input type="text" id="bulkComment" data-i18n-ph="ph_bulk_comment" placeholder="Comment (optional, applied to all selected)" style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.84rem"/>
+          <button class="btn btn-sm btn-primary" onclick="submitBulkDecision()" data-i18n="btn_apply_selected">Apply to Selected</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
           <thead><tr><th></th><th data-i18n="th_employee">Employee</th><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_action">Action</th></tr></thead>
@@ -605,12 +605,14 @@ tr:hover td{background:var(--cream)}
       <div class="card">
         <h3 data-i18n="h3_attachcleanup">🗑 Clean Up Old Attachments</h3>
         <p class="hint" style="margin-bottom:8px" data-i18n="hint_attachcleanup">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.</p>
-        <p class="hint" style="margin-bottom:14px" data-i18n="hint_attachcleanup_note">Note: "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won't show up unless you lower the number. Use 0 to list every attachment currently stored, e.g. to double-check nothing is missing.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_older_than">Older than (days)</label>
-          <input type="number" id="attachmentCleanupDays" value="365" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
-          <button class="btn btn-primary" onclick="findOldAttachments()" data-i18n="btn_find">🔍 Find</button>
-          <button class="btn btn-outline" onclick="document.getElementById('attachmentCleanupDays').value=0; findOldAttachments();" data-i18n="btn_show_all_attach">Show all attachments (0 days)</button>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_attach_all">Every certificate file currently stored. Tick any to delete, or delete one at a time.</p>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary" onclick="findOldAttachments()" data-i18n="btn_view_all_docs">📎 View All Documents</button>
+        </div>
+        <div id="attachmentCleanupToolbar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:var(--line-soft);border-radius:10px">
+          <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="selectAllAttachments" onchange="toggleSelectAllAttachments(this)"/> <span data-i18n="lbl_select_all">Select All</span></label>
+          <span class="mono" id="attachmentSelectCount" style="font-size:.78rem;color:var(--text-dim)"></span>
+          <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSelectedAttachments()" data-i18n="btn_delete_selected">Delete Selected</button>
         </div>
         <div id="attachmentCleanupResults"></div>
       </div>
@@ -663,10 +665,10 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub" data-i18n="pg_holidays_sub">Shown as red days on everyone's leave calendar</div>
 
       <div class="card">
-        <h3>➕ Add a Holiday</h3>
+        <h3 data-i18n="h3_add_holiday">➕ Add a Holiday</h3>
         <div class="form-grid">
-          <div class="field"><label>Date</label><input type="date" id="holDate"/></div>
-          <div class="field"><label>Label</label><input type="text" id="holLabel" placeholder="e.g. Company Party"/></div>
+          <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="holDate"/></div>
+          <div class="field"><label data-i18n="th_label">Label</label><input type="text" id="holLabel" data-i18n-ph="ph_holiday_label" placeholder="e.g. Company Party"/></div>
         </div>
         <button class="btn btn-primary" onclick="submitAddHoliday()" data-i18n="btn_add_holiday">Add Holiday</button>
       </div>
@@ -686,8 +688,8 @@ tr:hover td{background:var(--cream)}
       </div>
 
       <div class="card">
-        <h3>📅 Year at a Glance</h3>
-        <p class="hint" style="margin-bottom:14px">All 12 months at once, so you can see every holiday for the year in one screen.</p>
+        <h3 data-i18n="h3_year_glance">📅 Year at a Glance</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_year_glance">All 12 months at once, so you can see every holiday for the year in one screen.</p>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <input type="number" id="holidayYearGlance" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderHolidayYearGlance()"/>
@@ -810,7 +812,7 @@ tr:hover td{background:var(--cream)}
   <div class="modal">
     <h3 id="decisionTitle">Review Request</h3>
     <p class="hint" id="decisionSub"></p>
-    <div class="field"><label>Comment (optional)</label><textarea id="decisionComment"></textarea></div>
+    <div class="field"><label data-i18n="lbl_comment_optional">Comment (optional)</label><textarea id="decisionComment"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('decisionModal')">Cancel</button>
       <button class="btn btn-danger" onclick="submitDecision('reject')">Reject</button>
@@ -1437,7 +1439,7 @@ function renderMyCalendar(){
       }
     });
 
-  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  let html = CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const entries = dayMap[d];
@@ -1685,6 +1687,19 @@ const I18N = {
     set_attach_desc:'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
     set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
+    h3_newrequest:'New Leave Request', lbl_unit_multi:'Multiple specific dates',
+    lbl_specific_dates:'Specific Dates (same leave type applies to all)', btn_add_date:'+ Add Date',
+    lbl_medcert:'Medical Certificate (photo required — Sick Leave on Mon/Fri)', ph_reason:'Briefly explain the reason for leave...',
+    lbl_select_all:'Select All', btn_approve:'Approve', btn_reject:'Reject', ph_bulk_comment:'Comment (optional, applied to all selected)',
+    btn_apply_selected:'Apply to Selected', lbl_comment_optional:'Comment (optional)',
+    approvalsub_mgr:'Requests from your team awaiting your review', approvalsub_admin:'Requests approved by managers, awaiting final approval',
+    h3_add_holiday:'Add a Holiday', ph_holiday_label:'e.g. Company Party', h3_year_glance:'Year at a Glance',
+    hint_year_glance:'All 12 months at once, so you can see every holiday for the year in one screen.',
+    h3_attach_all:'All Attachments', hint_attach_all:'Every certificate file currently stored. Tick any to delete, or delete one at a time.',
+    btn_view_all_docs:'📎 View All Documents', th_select:'', lbl_select_files:'files selected',
+    btn_delete_selected:'Delete Selected', confirm_delete_selected:'Delete {n} attachment file(s)? The leave records themselves will be kept.',
+    attach_empty:'No attachments stored yet.', attach_deleted_some:'✅ Deleted {n} file(s)',
+    lp_history_title:'📈 Login History', lp_chart_sub:'Daily login count over the selected period',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1781,6 +1796,19 @@ const I18N = {
     set_attach_desc:'คำขอลาป่วยที่ตกวันจันทร์หรือวันศุกร์ ต้องแนบรูปใบรับรองแพทย์',
     set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
+    h3_newrequest:'ยื่นคำขอลาใหม่', lbl_unit_multi:'หลายวันที่ไม่ติดกัน',
+    lbl_specific_dates:'เลือกวันที่ (ใช้ประเภทการลาเดียวกันทุกวัน)', btn_add_date:'+ เพิ่มวันที่',
+    lbl_medcert:'ใบรับรองแพทย์ (ต้องแนบ — ลาป่วยวันจันทร์/ศุกร์)', ph_reason:'อธิบายเหตุผลการลาโดยย่อ...',
+    lbl_select_all:'เลือกทั้งหมด', btn_approve:'อนุมัติ', btn_reject:'ไม่อนุมัติ', ph_bulk_comment:'ความเห็น (ไม่บังคับ ใช้กับรายการที่เลือกทั้งหมด)',
+    btn_apply_selected:'ดำเนินการกับรายการที่เลือก', lbl_comment_optional:'ความเห็น (ไม่บังคับ)',
+    approvalsub_mgr:'คำขอจากทีมของคุณที่รอการพิจารณา', approvalsub_admin:'คำขอที่หัวหน้าอนุมัติแล้ว รอการอนุมัติขั้นสุดท้าย',
+    h3_add_holiday:'เพิ่มวันหยุด', ph_holiday_label:'เช่น งานเลี้ยงบริษัท', h3_year_glance:'ภาพรวมทั้งปี',
+    hint_year_glance:'ดูวันหยุดทั้ง 12 เดือนพร้อมกันในหน้าเดียว',
+    h3_attach_all:'ไฟล์แนบทั้งหมด', hint_attach_all:'ไฟล์ใบรับรองทุกไฟล์ที่เก็บอยู่ในระบบ ติ๊กเพื่อลบทีละหลายไฟล์ หรือลบทีละไฟล์ก็ได้',
+    btn_view_all_docs:'📎 ดูเอกสารทั้งหมด', th_select:'', lbl_select_files:'ไฟล์ที่เลือก',
+    btn_delete_selected:'ลบไฟล์ที่เลือก', confirm_delete_selected:'ลบไฟล์แนบ {n} ไฟล์? ประวัติใบลายังอยู่ครบ',
+    attach_empty:'ยังไม่มีไฟล์แนบในระบบ', attach_deleted_some:'✅ ลบแล้ว {n} ไฟล์',
+    lp_history_title:'📈 ประวัติการ Login', lp_chart_sub:'จำนวนการล็อกอินต่อวันในช่วงเวลาที่เลือก',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -1829,6 +1857,7 @@ function applyTranslations(){
 // LEAVE_TYPE_LABEL / STATUS_LABEL / MONTH_NAMES_EN เป็น const แต่เป็น object/array จึงแก้ค่าข้างในได้
 // (ตัวแปรยังชื่อเดิมเพื่อไม่ต้องแก้จุดใช้งานอื่นๆ ทั่วทั้งไฟล์ แต่เนื้อหาข้างในจะเปลี่ยนตามภาษาที่เลือก)
 function refreshLangDependentConstants(){
+  CAL_DOW = currentLang==='th' ? ['อา','จ','อ','พ','พฤ','ศ','ส'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const d = I18N[currentLang];
   if(typeof LEAVE_TYPE_LABEL !== 'undefined'){
     LEAVE_TYPE_LABEL.annual = d.leave_annual;
@@ -2067,56 +2096,88 @@ async function viewAttachment(requestId){
   }catch(e){ showToast(e.message,'err'); }
 }
 
-// ── ADMIN: CLEAN UP OLD ATTACHMENTS ──
+// ── ADMIN: ATTACHMENTS — view every stored file, tick to bulk-delete (prevents storage from filling up) ──
 let oldAttachmentsCache = [];
 
 async function findOldAttachments(){
-  const days = Number(document.getElementById('attachmentCleanupDays').value) || 365;
   const resultsEl = document.getElementById('attachmentCleanupResults');
-  resultsEl.innerHTML = '<div class="empty-msg">Searching…</div>';
+  resultsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
+  document.getElementById('attachmentCleanupToolbar').style.display = 'none';
   try{
-    const data = await callApi('find_old_attachments', { older_than_days: days });
+    const data = await callApi('find_old_attachments', { older_than_days: 0 });
     oldAttachmentsCache = data.requests || [];
-    renderOldAttachments(data.cutoff_date);
+    renderOldAttachments();
   }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
 }
 
-function renderOldAttachments(cutoffDate){
+function renderOldAttachments(){
   const resultsEl = document.getElementById('attachmentCleanupResults');
+  const toolbar = document.getElementById('attachmentCleanupToolbar');
   if(!oldAttachmentsCache.length){
-    resultsEl.innerHTML = `<div class="empty-msg">No attachments older than ${formatDMY(cutoffDate)} — try "Show all attachments (0 days)" if you're checking whether a file exists at all</div>`;
+    resultsEl.innerHTML = `<div class="empty-msg">${escHtml(t('attach_empty'))}</div>`;
+    toolbar.style.display = 'none';
     return;
   }
-  resultsEl.innerHTML = `<p style="font-size:.82rem;color:var(--text-dim);margin-bottom:10px">Found ${oldAttachmentsCache.length} attachment(s) older than ${formatDMY(cutoffDate)}</p><div class="table-wrap"><table>
-    <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_leavedate">Leave Date</th><th data-i18n="th_action">Action</th></tr></thead>
+  toolbar.style.display = 'flex';
+  document.getElementById('selectAllAttachments').checked = false;
+  resultsEl.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th></th><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_leavedate">Leave Date</th><th data-i18n="th_action">Action</th></tr></thead>
     <tbody>${oldAttachmentsCache.map(r=>`
       <tr id="oldAttRow-${r.id}">
+        <td><input type="checkbox" class="attachSelectBox" data-id="${r.id}" onchange="updateAttachmentSelectCount()"/></td>
         <td class="mono">${escHtml(r.employee?.employee_code||'')}</td>
         <td>${escHtml(r.employee?.name||'')}</td>
         <td class="mono">${formatDMY(r.start_date)}</td>
         <td>
           <button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎 View</button>
-          <button class="btn btn-sm btn-danger" onclick="purgeAttachment('${r.id}')">Delete File</button>
+          <button class="btn btn-sm btn-danger" onclick="purgeAttachment('${r.id}')" data-i18n="c_delete">Delete</button>
         </td>
       </tr>`).join('')}</tbody>
   </table></div>`;
+  applyTranslations();
+  updateAttachmentSelectCount();
+}
+
+function toggleSelectAllAttachments(box){
+  document.querySelectorAll('.attachSelectBox').forEach(el=>{ el.checked = box.checked; });
+  updateAttachmentSelectCount();
+}
+
+function updateAttachmentSelectCount(){
+  const n = document.querySelectorAll('.attachSelectBox:checked').length;
+  document.getElementById('attachmentSelectCount').textContent = n ? `${n} ${t('lbl_select_files')}` : '';
 }
 
 async function purgeAttachment(requestId){
-  const ok = confirm('Delete this attachment file? The leave record itself will be kept.');
+  const ok = confirm(t('confirm_delete_selected').replace('{n}','1'));
   if(!ok) return;
   try{
     await callApi('purge_attachment', { request_id: requestId });
-    showToast('✅ File deleted');
     oldAttachmentsCache = oldAttachmentsCache.filter(r=>r.id!==requestId);
     const row = document.getElementById(`oldAttRow-${requestId}`);
     if(row) row.remove();
+    updateAttachmentSelectCount();
+    showToast(t('attach_deleted_some').replace('{n}','1'));
   }catch(e){ showToast(e.message,'err'); }
+}
+
+async function deleteSelectedAttachments(){
+  const ids = [...document.querySelectorAll('.attachSelectBox:checked')].map(el=>el.dataset.id);
+  if(!ids.length) return;
+  const ok = confirm(t('confirm_delete_selected').replace('{n}', ids.length));
+  if(!ok) return;
+  let done = 0;
+  for(const id of ids){
+    try{ await callApi('purge_attachment', { request_id: id }); done++; }catch(e){ showToast(e.message,'err'); }
+  }
+  oldAttachmentsCache = oldAttachmentsCache.filter(r=>!ids.includes(r.id));
+  renderOldAttachments();
+  if(done) showToast(t('attach_deleted_some').replace('{n}', done));
 }
 
 async function loadApprovals(){
   document.getElementById('approvalsSub').textContent =
-    currentUser.role==='manager' ? "Requests from your team awaiting your review" : "Requests approved by managers, awaiting final approval";
+    currentUser.role==='manager' ? t('approvalsub_mgr') : t('approvalsub_admin');
   document.getElementById('selectAllApprovals').checked = false;
   document.getElementById('bulkComment').value='';
   try{
@@ -2234,7 +2295,7 @@ function renderMiniMonthCalendar(year, month, holidayMap){
   return `<div class="mini-cal-block">
     <div class="mini-cal-month">${MONTH_NAMES_EN[month-1]}</div>
     <div class="mini-cal-grid">
-      ${['S','M','T','W','T','F','S'].map(d=>`<div class="mini-cal-dow">${d}</div>`).join('')}
+      ${CAL_DOW.map(d=>`<div class="mini-cal-dow">${d}</div>`).join('')}
       ${cells}
     </div>
   </div>`;
@@ -2610,7 +2671,7 @@ function renderSpecialCalendar(requests){
     }
   });
 
-  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  let html = CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const people = dayMap[d];
@@ -3209,7 +3270,7 @@ async function loadNeverLoggedIn(){
 }
 
 
-// ── LOGIN FREQUENCY BAR CHART (top 15 ผู้ใช้ที่ล็อกอินบ่อยที่สุด) ──
+// ── LOGIN HISTORY LINE CHART (จำนวนล็อกอินต่อวัน แนวโน้มขึ้น-ลงแบบกราฟหุ้น) ──
 let loginNeverTotal = 0;
 async function loadLoginStats(){
   const range = document.getElementById('loginStatsRange').value;
@@ -3219,22 +3280,51 @@ async function loadLoginStats(){
   try{
     const data = await callApi('get_login_stats', { days: range });
     const users = data.users || [];
+    const daily = data.daily || [];
     statsEl.innerHTML =
       `<div class="lp-stat"><b>${data.total_logins||0}</b><span>${escHtml(t('lp_stat_logins'))}</span></div>` +
       `<div class="lp-stat"><b>${users.length}</b><span>${escHtml(t('lp_stat_active'))}</span></div>` +
       `<div class="lp-stat"><b>${neverLoggedInCache.length}</b><span>${escHtml(t('lp_stat_never'))}</span></div>`;
-    if(!users.length){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
-    const top = users.slice(0, 15);
-    const max = top[0].login_count || 1;
-    barsEl.innerHTML =
-      `<p class="hint" style="margin-bottom:8px">${escHtml(t('lp_top_note').replace('{n}', top.length))}</p>` +
-      top.map((u,i)=>`
-        <div class="lp-row${i<3?' top':''}" title="${escAttr(u.name)} — ${u.login_count}">
-          <div class="lp-name">${escHtml(u.name||'?')}<small>${escHtml(u.employee_code||'')}${u.department?' · '+escHtml(u.department):''}</small></div>
-          <div class="lp-track"><div class="lp-fill" style="width:${Math.max(3, Math.round(u.login_count/max*100))}%"></div></div>
-          <div class="lp-count">${u.login_count}</div>
-        </div>`).join('');
+    if(!daily.length){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
+    barsEl.innerHTML = `<p class="hint" style="margin-bottom:8px">${escHtml(t('lp_chart_sub'))}</p>` + renderLoginLineSvg(daily);
   }catch(e){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
+}
+
+function renderLoginLineSvg(daily){
+  const W = 680, H = 200, padL = 34, padR = 14, padT = 14, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const max = Math.max(1, ...daily.map(d=>d.count));
+  const n = daily.length;
+  const x = i => n<=1 ? padL : padL + (innerW * i/(n-1));
+  const y = v => padT + innerH - (v/max)*innerH;
+  const pts = daily.map((d,i)=>[x(i), y(d.count)]);
+  const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${x(n-1).toFixed(1)},${(padT+innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT+innerH).toFixed(1)} Z`;
+  // ป้ายวันที่: โชว์ไม่เกิน ~8 จุด กันชนกัน
+  const labelEvery = Math.max(1, Math.ceil(n/8));
+  const dots = pts.map((p,i)=>
+    `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--plum-700)"><title>${escAttr(formatDMY(daily[i].date))}: ${daily[i].count}</title></circle>`
+  ).join('');
+  const labels = pts.map((p,i)=> i%labelEvery===0 || i===n-1 ?
+    `<text x="${p[0].toFixed(1)}" y="${H-8}" font-size="9" text-anchor="middle" fill="var(--text-dim)">${escHtml(daily[i].date.slice(5))}</text>` : ''
+  ).join('');
+  const yTicks = [0, 0.5, 1].map(f=>{
+    const val = Math.round(max*f);
+    const yy = y(val);
+    return `<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="var(--line-soft)" stroke-width="1"/>`+
+           `<text x="4" y="${(yy+3).toFixed(1)}" font-size="9" fill="var(--text-dim)">${val}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+    <defs><linearGradient id="lpGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--plum-600)" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="var(--plum-600)" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${yTicks}
+    <path d="${areaPath}" fill="url(#lpGrad)" stroke="none"/>
+    <path d="${linePath}" fill="none" stroke="var(--plum-700)" stroke-width="2"/>
+    ${dots}
+    ${labels}
+  </svg>`;
 }
 
 function exportNeverLoggedIn(){
@@ -3481,6 +3571,7 @@ async function submitImport(){
 
 // ── REPORTS 2: team leave calendar (manager: own team, admin: everyone) ──
 const MONTH_NAMES_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let CAL_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth()+1; // 1-12
 
@@ -3527,7 +3618,7 @@ function renderCalendar(requests){
     }
   });
 
-  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  let html = CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const people = dayMap[d];
