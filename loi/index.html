@@ -852,7 +852,6 @@ tr:hover td{background:var(--cream)}
     <div class="modal-actions" style="flex-wrap:wrap">
       <button class="btn btn-sm btn-outline" id="editLeaveTriggerBtn" style="display:none" onclick="openEditLeaveRequestsModal()" data-i18n="em_btn_editleave">📝 Edit Leave Requests</button>
       <button class="btn btn-sm btn-outline" id="editBalancesTriggerBtn" style="display:none" onclick="openEditBalancesModal()" data-i18n="em_btn_editbal">💰 Edit Balances</button>
-      <button class="btn btn-sm btn-outline" id="editBalances2TriggerBtn" style="display:none" onclick="openEditBalances2Modal()" data-i18n="em_btn_editbal2">💰 Edit Balances 2</button>
       <button class="btn btn-sm btn-outline" onclick="closeModal('addEmpModal')" data-i18n="c_cancel">Cancel</button>
       <button class="btn btn-sm btn-primary" id="addEmpSubmitBtn" onclick="submitAddOrEditEmployee()">Add Employee</button>
     </div>
@@ -928,39 +927,39 @@ tr:hover td{background:var(--cream)}
   </div>
 </div>
 
-<!-- MODAL: LIST OF ONE EMPLOYEE'S LEAVE BALANCES — v2 (แยกต่างหากจาก Edit Balances เดิม) -->
-<div class="modal-bg" id="editBalances2ListModal">
+<!-- MODAL: LIST OF ONE EMPLOYEE'S LEAVE BALANCES (admin) -->
+<div class="modal-bg" id="editBalancesListModal">
   <div class="modal wide">
-    <h3 id="editBalances2ListTitle">💰 Leave Balances 2</h3>
-    <p class="hint" data-i18n="eb2_hint">Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.</p>
+    <h3 id="editBalancesListTitle">💰 Leave Balances</h3>
+    <p class="hint" data-i18n="eb_hint">Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.</p>
     <div class="table-wrap" style="max-height:360px;overflow-y:auto">
       <table>
-        <thead><tr><th data-i18n="eb2_th_type">Type</th><th data-i18n="eb2_th_total">Total</th><th data-i18n="eb2_th_used">Used</th><th data-i18n="eb2_th_remaining">Remaining</th><th data-i18n="th_action">Action</th></tr></thead>
-        <tbody id="editBalances2ListBody"></tbody>
+        <thead><tr><th data-i18n="eb_th_type">Type</th><th data-i18n="eb_th_total">Total</th><th data-i18n="eb_th_used">Used</th><th data-i18n="eb_th_remaining">Remaining</th><th data-i18n="th_action">Action</th></tr></thead>
+        <tbody id="editBalancesListBody"></tbody>
       </table>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editBalances2ListModal')" data-i18n="c_close">Close</button>
+      <button class="btn btn-outline" onclick="closeModal('editBalancesListModal')" data-i18n="c_close">Close</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: EDIT ONE LEAVE BALANCE — v2 -->
-<div class="modal-bg" id="editOneBalance2Modal">
+<!-- MODAL: EDIT ONE LEAVE BALANCE -->
+<div class="modal-bg" id="editOneBalanceModal">
   <div class="modal">
-    <h3 data-i18n="eb2_edit_title">✏️ Edit Leave Balance</h3>
+    <h3 data-i18n="eb_edit_title">✏️ Edit Leave Balance</h3>
     <div class="field" style="margin-bottom:14px">
-      <label data-i18n="eb2_type">Leave Type</label>
-      <input type="text" id="eb2TypeLabel" disabled style="font-weight:600;color:var(--plum-700)"/>
+      <label data-i18n="eb_type">Leave Type</label>
+      <input type="text" id="ebTypeLabel" disabled style="font-weight:600;color:var(--plum-700)"/>
     </div>
     <div class="form-grid">
-      <div class="field"><label data-i18n="eb2_total">Total Days</label><input type="number" step="0.5" id="eb2Total"/></div>
-      <div class="field"><label data-i18n="eb2_used">Used So Far</label><input type="text" id="eb2Used" disabled/></div>
+      <div class="field"><label data-i18n="eb_total">Total Days</label><input type="number" step="0.5" id="ebTotal"/></div>
+      <div class="field"><label data-i18n="eb_used">Used So Far</label><input type="text" id="ebUsed" disabled/></div>
     </div>
-    <div class="err-text" id="eb2Err"></div>
+    <div class="err-text" id="ebErr"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editOneBalance2Modal')" data-i18n="c_cancel">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditOneBalance2()" data-i18n="c_save_changes">Save Changes</button>
+      <button class="btn btn-outline" onclick="closeModal('editOneBalanceModal')" data-i18n="c_cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditOneBalance()" data-i18n="c_save_changes">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1004,20 +1003,6 @@ tr:hover td{background:var(--cream)}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('editMyRequestModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitEditMyRequest()">Save Changes</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: EDIT ONE EMPLOYEE'S LEAVE BALANCES (admin) -->
-<div class="modal-bg" id="editBalancesModal">
-  <div class="modal">
-    <h3 id="editBalancesTitle">💰 Edit Leave Balances</h3>
-    <p class="hint" data-i18n="eb_hint">Adjusts the total day quota for this year. Days already used are not affected.</p>
-    <div id="editBalancesFields"></div>
-    <div class="err-text" id="editBalancesErr"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editBalancesModal')" data-i18n="c_cancel">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditBalances()" data-i18n="c_save_changes">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1659,20 +1644,17 @@ const I18N = {
     el_hint:"Editing here does not automatically adjust the employee's leave balance — use Edit Balances separately if needed. Every edit is logged.",
     eo_title:'✏️ Edit Leave Request', eo_type:'Leave Type', eo_status:'Status', eo_unit:'Unit', eo_unit_day:'Full day(s)', eo_unit_hour:'Hourly',
     eo_start:'Start Date', eo_end:'End Date', eo_date:'Date', eo_start_time:'Start Time', eo_end_time:'End Time', eo_reason:'Reason',
-    eb_title:'Leave Balances', eb_hint:'Adjusts the total day quota for this year. Days already used are not affected.',
-    eb_total_days:'Total Days', eb_used_so_far:'used so far', eb_updated:'✅ Balances updated', eb_no_change:'No changes to save',
-    eb_mail_sent:'📧 Email sent to the employee',
+    eb_used_so_far:'used so far', eb_updated:'✅ Balance updated',
     eb_mail_off:'Email not sent — the "notify employee" setting is OFF (Settings page)',
+    eb_mail_sent:'📧 Email sent to the employee',
     eb_mail_noemail:'Email not sent — this employee has no email address on file',
     eb_mail_failed:'Balances updated but the email failed to send',
-    em_btn_editbal2:'💰 Edit Balances 2',
-    eb2_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
-    eb2_title:'Leave Balances 2', eb2_th_type:'Type', eb2_th_total:'Total', eb2_th_used:'Used', eb2_th_remaining:'Remaining',
-    eb2_none:'No balances to show', eb2_edit_title:'✏️ Edit Leave Balance', eb2_type:'Leave Type', eb2_total:'Total Days', eb2_used:'Used So Far',
-    eb2_invalid:'Please enter a valid number of days', eb2_updated:'✅ Balance updated',
-    eb2_mail_off:'Email not sent — the "notify employee (2)" setting is OFF (Settings page)',
-    set_notifybalance2_title:'Notify employee when admin adjusts their balance (2)',
-    set_notifybalance2_desc:'Second, independent switch for the new Edit Balances 2 feature — sends an email when an admin changes a leave day quota through it.',
+    eb_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
+    eb_title:'Leave Balances', eb_th_type:'Type', eb_th_total:'Total', eb_th_used:'Used', eb_th_remaining:'Remaining',
+    eb_none:'No balances to show', eb_edit_title:'✏️ Edit Leave Balance', eb_type:'Leave Type', eb_total:'Total Days', eb_used:'Used So Far',
+    eb_invalid:'Please enter a valid number of days',
+    set_notifybalance_title:'Notify employee when admin adjusts their balance',
+    set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
     pg_myrequests_title:'My Requests', pg_myrequests_sub:'Your own leave requests currently awaiting approval',
     pg_teamrequests_title:'My Team Requests',
@@ -1703,8 +1685,6 @@ const I18N = {
     set_attach_desc:'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
     set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
-    set_notifybalance_title:'Notify employee when admin adjusts their balance',
-    set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1760,20 +1740,17 @@ const I18N = {
     el_hint:'การแก้ไขที่นี่ไม่ได้ปรับโควตาวันลาของพนักงานอัตโนมัติ — หากต้องการ ให้ใช้ "แก้ไขโควตาวันลา" แยกต่างหาก ทุกการแก้ไขจะถูกบันทึกไว้',
     eo_title:'✏️ แก้ไขใบลา', eo_type:'ประเภทการลา', eo_status:'สถานะ', eo_unit:'หน่วย', eo_unit_day:'เต็มวัน', eo_unit_hour:'รายชั่วโมง',
     eo_start:'วันที่เริ่ม', eo_end:'วันที่สิ้นสุด', eo_date:'วันที่', eo_start_time:'เวลาเริ่ม', eo_end_time:'เวลาสิ้นสุด', eo_reason:'เหตุผล',
-    eb_title:'โควตาวันลา', eb_hint:'ปรับจำนวนวันลารวมของปีนี้ วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
-    eb_total_days:'จำนวนวันรวม', eb_used_so_far:'ใช้ไปแล้ว', eb_updated:'✅ อัปเดตโควตาแล้ว', eb_no_change:'ไม่มีการเปลี่ยนแปลงให้บันทึก',
-    eb_mail_sent:'📧 ส่งอีเมลแจ้งพนักงานแล้ว',
+    eb_used_so_far:'ใช้ไปแล้ว', eb_updated:'✅ อัปเดตโควตาแล้ว',
     eb_mail_off:'ไม่ได้ส่งอีเมล — การตั้งค่า "แจ้งพนักงานเมื่อ admin ปรับโควตา" ปิดอยู่ (หน้าตั้งค่า)',
+    eb_mail_sent:'📧 ส่งอีเมลแจ้งพนักงานแล้ว',
     eb_mail_noemail:'ไม่ได้ส่งอีเมล — พนักงานคนนี้ยังไม่มีอีเมลในระบบ',
     eb_mail_failed:'อัปเดตโควตาแล้ว แต่ส่งอีเมลไม่สำเร็จ',
-    em_btn_editbal2:'💰 ปรับโควตาวันลา 2',
-    eb2_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
-    eb2_title:'โควตาวันลา 2', eb2_th_type:'ประเภท', eb2_th_total:'รวม', eb2_th_used:'ใช้ไปแล้ว', eb2_th_remaining:'คงเหลือ',
-    eb2_none:'ไม่มีโควตาให้แสดง', eb2_edit_title:'✏️ แก้ไขโควตาวันลา', eb2_type:'ประเภทการลา', eb2_total:'จำนวนวันรวม', eb2_used:'ใช้ไปแล้ว',
-    eb2_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', eb2_updated:'✅ อัปเดตโควตาแล้ว',
-    eb2_mail_off:'ไม่ได้ส่งอีเมล — การตั้งค่า "แจ้งพนักงานเมื่อ admin ปรับโควตา2" ปิดอยู่ (หน้าตั้งค่า)',
-    set_notifybalance2_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา2',
-    set_notifybalance2_desc:'สวิตช์อีกตัวหนึ่ง แยกจากตัวเดิม ใช้กับฟีเจอร์ปรับโควตาวันลา 2 — ส่งอีเมลเมื่อ admin ปรับโควตาผ่านฟีเจอร์นี้',
+    eb_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
+    eb_title:'โควตาวันลา', eb_th_type:'ประเภท', eb_th_total:'รวม', eb_th_used:'ใช้ไปแล้ว', eb_th_remaining:'คงเหลือ',
+    eb_none:'ไม่มีโควตาให้แสดง', eb_edit_title:'✏️ แก้ไขโควตาวันลา', eb_type:'ประเภทการลา', eb_total:'จำนวนวันรวม', eb_used:'ใช้ไปแล้ว',
+    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง',
+    set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
+    set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
     pg_myrequests_title:'คำขอของฉัน', pg_myrequests_sub:'คำขอลาของฉันที่ยังรออนุมัติอยู่',
     pg_teamrequests_title:'คำขอของทีม',
@@ -1804,8 +1781,6 @@ const I18N = {
     set_attach_desc:'คำขอลาป่วยที่ตกวันจันทร์หรือวันศุกร์ ต้องแนบรูปใบรับรองแพทย์',
     set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
-    set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
-    set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2819,31 +2794,30 @@ async function adminDeleteRequest(requestId){
 }
 
 
-// ── ADMIN: EDIT LEAVE BALANCES — v2 (โค้ดคัดลอกโครงสร้างมาจาก "Edit Leave Requests" ด้านบน
-//    ไม่ได้อ้างอิงฟังก์ชัน Edit Balances เดิมเลย เพื่อไม่ให้บั๊กเก่าลามมาที่นี่) ──
-let editBalances2Cache = [];
-let editingBalance2Type = null;
+// ── ADMIN: EDIT LEAVE BALANCES (แก้ทีละประเภท — โครงสร้างคัดลอกมาจาก "Edit Leave Requests" ด้านบน) ──
+let editBalancesCache = [];
+let editingBalanceType = null;
 
-async function openEditBalances2Modal(){
+async function openEditBalancesModal(){
   if(!editingEmployeeId) return;
   const emp = employeesCache.find(e=>e.id===editingEmployeeId);
-  document.getElementById('editBalances2ListTitle').textContent = `💰 ${t('eb2_title')} — ${emp?emp.name:''}`;
+  document.getElementById('editBalancesListTitle').textContent = `💰 ${t('eb_title')} — ${emp?emp.name:''}`;
   closeModal('addEmpModal');
-  openModal('editBalances2ListModal');
+  openModal('editBalancesListModal');
   try{
     const data = await callApi('get_employee_balances', { employee_id: editingEmployeeId });
-    editBalances2Cache = data.balances || [];
-    renderEditBalances2List();
+    editBalancesCache = data.balances || [];
+    renderEditBalancesList();
   }catch(e){ showToast(e.message,'err'); }
 }
 
-function renderEditBalances2List(){
-  const body = document.getElementById('editBalances2ListBody');
+function renderEditBalancesList(){
+  const body = document.getElementById('editBalancesListBody');
   const byType = {};
-  editBalances2Cache.forEach(b=>{ byType[b.leave_type] = b; });
-  const types = Array.from(new Set([...BALANCE_TYPE_ORDER, ...editBalances2Cache.map(b=>b.leave_type)]))
+  editBalancesCache.forEach(b=>{ byType[b.leave_type] = b; });
+  const types = Array.from(new Set([...BALANCE_TYPE_ORDER, ...editBalancesCache.map(b=>b.leave_type)]))
     .filter(ty=>byType[ty] || ['annual','sick','personal'].includes(ty));
-  if(!types.length){ body.innerHTML = `<tr><td colspan="5" class="empty-msg">${escHtml(t('eb2_none'))}</td></tr>`; return; }
+  if(!types.length){ body.innerHTML = `<tr><td colspan="5" class="empty-msg">${escHtml(t('eb_none'))}</td></tr>`; return; }
   body.innerHTML = types.map(ty=>{
     const b = byType[ty];
     const total = b ? Number(b.total_days) : (ty==='annual'?10:ty==='sick'?30:ty==='personal'?3:0);
@@ -2854,95 +2828,45 @@ function renderEditBalances2List(){
       <td class="mono">${total}</td>
       <td class="mono">${used}</td>
       <td class="mono">${remaining}</td>
-      <td><button class="btn btn-sm btn-outline" onclick="openEditOneBalance2Modal('${ty}')">${escHtml(t('c_edit'))}</button></td>
+      <td><button class="btn btn-sm btn-outline" onclick="openEditOneBalanceModal('${ty}')">${escHtml(t('c_edit'))}</button></td>
     </tr>`;
   }).join('');
 }
 
-function openEditOneBalance2Modal(leaveType){
-  const byType = {}; editBalances2Cache.forEach(b=>{ byType[b.leave_type] = b; });
+function openEditOneBalanceModal(leaveType){
+  const byType = {}; editBalancesCache.forEach(b=>{ byType[b.leave_type] = b; });
   const b = byType[leaveType];
   const total = b ? Number(b.total_days) : (leaveType==='annual'?10:leaveType==='sick'?30:leaveType==='personal'?3:0);
   const used = b ? Number(b.used_days) : 0;
-  editingBalance2Type = leaveType;
-  document.getElementById('eb2TypeLabel').value = getLeaveTypeLabel(leaveType);
-  document.getElementById('eb2Total').value = total;
-  document.getElementById('eb2Used').value = `${used} ${t('eb_used_so_far')}`;
-  document.getElementById('eb2Err').textContent = '';
-  openModal('editOneBalance2Modal');
+  editingBalanceType = leaveType;
+  document.getElementById('ebTypeLabel').value = getLeaveTypeLabel(leaveType);
+  document.getElementById('ebTotal').value = total;
+  document.getElementById('ebUsed').value = `${used} ${t('eb_used_so_far')}`;
+  document.getElementById('ebErr').textContent = '';
+  openModal('editOneBalanceModal');
 }
 
-async function submitEditOneBalance2(){
-  const errEl = document.getElementById('eb2Err');
-  const total = Number(document.getElementById('eb2Total').value);
-  if(!Number.isFinite(total) || total < 0){ errEl.textContent = t('eb2_invalid'); return; }
+async function submitEditOneBalance(){
+  const errEl = document.getElementById('ebErr');
+  const total = Number(document.getElementById('ebTotal').value);
+  if(!Number.isFinite(total) || total < 0){ errEl.textContent = t('eb_invalid'); return; }
   try{
-    const res = await callApi('update_balance2', { employee_id: editingEmployeeId, leave_type: editingBalance2Type, total_days: total });
-    closeModal('editOneBalance2Modal');
-    const map = { sent:'eb_mail_sent', setting_off:'eb2_mail_off', no_email:'eb_mail_noemail' };
+    const res = await callApi('update_balance', { employee_id: editingEmployeeId, leave_type: editingBalanceType, total_days: total });
+    closeModal('editOneBalanceModal');
+    const map = { sent:'eb_mail_sent', setting_off:'eb_mail_off', no_email:'eb_mail_noemail' };
     const n = res.notify || {};
-    if(n.status === 'send_failed') showToast(`${t('eb2_updated')} · ${t('eb_mail_failed')}: ${n.detail||''}`, 'err');
-    else if(map[n.status]) showToast(`${t('eb2_updated')} · ${t(map[n.status])}`);
-    else showToast(t('eb2_updated'));
+    if(n.status === 'send_failed') showToast(`${t('eb_updated')} · ${t('eb_mail_failed')}: ${n.detail||''}`, 'err');
+    else if(map[n.status]) showToast(`${t('eb_updated')} · ${t(map[n.status])}`);
+    else showToast(t('eb_updated'));
     const data = await callApi('get_employee_balances', { employee_id: editingEmployeeId });
-    editBalances2Cache = data.balances || [];
-    renderEditBalances2List();
+    editBalancesCache = data.balances || [];
+    renderEditBalancesList();
   }catch(e){ errEl.textContent = e.message; }
 }
 
 // ── ADMIN: EDIT LEAVE BALANCES ──
 const BALANCE_TYPE_ORDER = ['annual','sick','personal','other','maternity','paternity','priesthood'];
 
-async function openEditBalancesModal(){
-  if(!editingEmployeeId) return;
-  const emp = employeesCache.find(e=>e.id===editingEmployeeId);
-  document.getElementById('editBalancesTitle').textContent = `💰 ${t('eb_title')} — ${emp?emp.name:''}`;
-  closeModal('addEmpModal');
-  openModal('editBalancesModal');
-  document.getElementById('editBalancesErr').textContent='';
-  try{
-    const data = await callApi('get_employee_balances', { employee_id: editingEmployeeId });
-    renderEditBalancesFields(data.balances || []);
-  }catch(e){ showToast(e.message,'err'); }
-}
-
-function renderEditBalancesFields(balances){
-  const byType = {};
-  balances.forEach(b=>{ byType[b.leave_type] = b; });
-  const types = Array.from(new Set([...BALANCE_TYPE_ORDER, ...balances.map(b=>b.leave_type)]));
-  const wrap = document.getElementById('editBalancesFields');
-  wrap.innerHTML = types.filter(ty=>byType[ty] || ['annual','sick','personal'].includes(ty)).map(ty=>{
-    const b = byType[ty];
-    const total = b ? b.total_days : (ty==='annual'?10:ty==='sick'?30:ty==='personal'?3:0);
-    const used = b ? b.used_days : 0;
-    return `
-      <div class="field" style="margin-bottom:12px">
-        <label>${getLeaveTypeLabel(ty)} — ${escHtml(t('eb_total_days'))} <span style="color:var(--text-dim);font-weight:400">(${used} ${escHtml(t('eb_used_so_far'))})</span></label>
-        <input type="number" step="0.5" class="editBalInput" data-type="${ty}" data-orig="${total}" value="${total}"/>
-      </div>`;
-  }).join('');
-}
-
-async function submitEditBalances(){
-  const errEl = document.getElementById('editBalancesErr');
-  errEl.textContent = '';
-  // ส่งเฉพาะประเภทที่ค่าเปลี่ยนจริง → พนักงานได้อีเมล "1 ฉบับ" สรุปทุกรายการที่ถูกปรับ
-  const changes = [];
-  document.querySelectorAll('.editBalInput').forEach(inp=>{
-    const now = Number(inp.value) || 0;
-    if(now !== Number(inp.dataset.orig)) changes.push({ leave_type: inp.dataset.type, total_days: now });
-  });
-  if(!changes.length){ errEl.textContent = t('eb_no_change'); return; }
-  try{
-    const res = await callApi('update_balances', { employee_id: editingEmployeeId, changes });
-    closeModal('editBalancesModal');
-    const n = res.notify || {};
-    const map = { sent:'eb_mail_sent', setting_off:'eb_mail_off', no_email:'eb_mail_noemail' };
-    if(n.status === 'send_failed') showToast(`${t('eb_mail_failed')}: ${n.detail||''}`, 'err');
-    else if(map[n.status]) showToast(`${t('eb_updated')} · ${t(map[n.status])}`);
-    else showToast(t('eb_updated'));
-  }catch(e){ errEl.textContent = e.message; }
-}
 
 // ── ADMIN: EXPORT ALL LEAVE REQUESTS TO EXCEL ──
 function onExportScopeChange(){
@@ -3187,8 +3111,7 @@ const SETTING_DEFS = [
   { key: 'no_past_date_leave_except_sick', titleKey: 'set_nopast_title', descKey: 'set_nopast_desc' },
   { key: 'sick_leave_monfri_requires_attachment', titleKey: 'set_attach_title', descKey: 'set_attach_desc' },
   { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
-  { key: 'notify_on_balance_edit', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
-  { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance2_title', descKey: 'set_notifybalance2_desc' },
+  { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
 ];
 
 async function loadSettings(){
@@ -3377,7 +3300,6 @@ function openAddEmployeeModal(){
   document.getElementById('neQuotaFields').style.display='grid';
   document.getElementById('editLeaveTriggerBtn').style.display='none';
   document.getElementById('editBalancesTriggerBtn').style.display='none';
-  document.getElementById('editBalances2TriggerBtn').style.display='none';
   openModal('addEmpModal');
 }
 
@@ -3407,7 +3329,6 @@ function openEditEmployeeModal(id){
   document.getElementById('nePasswordWrap').style.display='none'; // แก้รหัสผ่านใช้ปุ่ม Reset PW แทน
   document.getElementById('editLeaveTriggerBtn').style.display='inline-block';
   document.getElementById('editBalancesTriggerBtn').style.display='inline-block';
-  document.getElementById('editBalances2TriggerBtn').style.display='inline-block';
   document.getElementById('neQuotaFields').style.display='none'; // ปรับโควตาแยกต่างหาก ยังไม่รองรับในหน้านี้
   openModal('addEmpModal');
 }
