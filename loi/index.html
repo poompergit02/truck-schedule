@@ -704,12 +704,12 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub" data-i18n="pg_loginprogress_sub">Who uses LOI the most, and who has never logged in</div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <h3 style="margin:0" data-i18n="lp_chart_title">📊 Most frequent logins</h3>
-          <select id="loginStatsRange" class="exp-select" onchange="loadLoginStats()">
-            <option value="7" data-i18n="lp_range_7">Last 7 days</option>
-            <option value="30" data-i18n="lp_range_30" selected>Last 30 days</option>
-            <option value="all" data-i18n="lp_range_all">All time</option>
-          </select>
+          <h3 style="margin:0" data-i18n="lp_history_title">📈 Login History</h3>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-sm btn-outline" onclick="shiftLoginStatsMonth(-1)" data-i18n="btn_prev">← Prev</button>
+            <div class="mono" id="loginStatsMonthLabel" style="font-weight:600;min-width:120px;text-align:center"></div>
+            <button class="btn btn-sm btn-outline" onclick="shiftLoginStatsMonth(1)" data-i18n="btn_next">Next →</button>
+          </div>
         </div>
         <div class="lp-stats" id="loginStats"></div>
         <div id="loginBars"></div>
@@ -1390,7 +1390,7 @@ function populateCarryoverOption(balances){
     if(remaining <= 0 || today > cutoff) return; // หมดแล้วหรือหมดอายุแล้ว ไม่ต้องโชว์
     const opt = document.createElement('option');
     opt.value = b.leave_type;
-    opt.textContent = `${getLeaveTypeLabel(b.leave_type)} — ${formatDaysNice(remaining)} days left, use by 31 Mar`;
+    opt.textContent = `${getLeaveTypeLabel(b.leave_type)} — ${t('tk_days_left').replace('{n}',formatDaysNice(remaining))}, ${t('tk_use_by_mar')}`;
     opt.setAttribute('data-carryover','1');
     sel.appendChild(opt);
   });
@@ -1471,26 +1471,43 @@ function formatDaysNice(n){
   return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
 }
 
+// ── สีเด่นประจำแต่ละประเภทการลา (ไล่สีสดใสต่างกันให้แยกแยะง่ายกว่าสีม่วงซีดเดียวทั้งหมด) ──
+const TICKET_ACCENTS = {
+  annual:   { a:'#7C3AED', b:'#4C1D95' }, // ม่วงสด
+  sick:     { a:'#0D9488', b:'#115E59' }, // เขียวอมฟ้า
+  personal: { a:'#F59E0B', b:'#B45309' }, // ส้มทอง
+  other:    { a:'#DB2777', b:'#9D174D' }, // ชมพูเข้ม
+  maternity:{ a:'#EC4899', b:'#9D174D' },
+  paternity:{ a:'#2563EB', b:'#1E3A8A' },
+  priesthood:{a:'#B08D57', b:'#6B4F27' },
+};
+function getTicketAccent(leaveType){
+  if(TICKET_ACCENTS[leaveType]) return TICKET_ACCENTS[leaveType];
+  if(/^annual_carry_/.test(leaveType)) return { a:'#4338CA', b:'#312E81' }; // ครามเข้ม — โควตายกยอด
+  return { a:'#6B3FA0', b:'#3B1F63' }; // ค่าเริ่มต้น (ธีมเดิม)
+}
+
 function renderBalances(balances){
   const order=['annual','sick','personal','other'];
   const rank = t => { const i = order.indexOf(t); return i === -1 ? 999 : i; };
   const sorted=[...balances].sort((a,b)=>rank(a.leave_type)-rank(b.leave_type));
   const row=document.getElementById('balanceRow');
-  if(!sorted.length){ row.innerHTML='<div class="empty-msg">No leave balance set up yet. Contact Admin.</div>'; return; }
+  if(!sorted.length){ row.innerHTML=`<div class="empty-msg">${escHtml(t('tk_none'))}</div>`; return; }
   row.innerHTML = sorted.map(b=>{
     const remaining = Math.max(0, Number(b.total_days) - Number(b.used_days));
     const pct = b.total_days>0 ? Math.min(100,(b.used_days/b.total_days)*100) : 0;
+    const acc = getTicketAccent(b.leave_type);
     return `
-      <div class="ticket">
+      <div class="ticket" style="--tk-a:${acc.a};--tk-b:${acc.b}">
         <div class="ticket-main">
           <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)}</div>
-          <div class="ticket-name">${formatDaysNice(remaining)} days left</div>
+          <div class="ticket-name">${t('tk_days_left').replace('{n}',formatDaysNice(remaining))}</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
-          <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} used</span><span>${formatDaysNice(b.total_days)} total</span></div>
+          <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} ${escHtml(t('tk_used'))}</span><span>${formatDaysNice(b.total_days)} ${escHtml(t('tk_total'))}</span></div>
         </div>
         <div class="ticket-stub">
           <div class="num">${formatDaysNice(remaining)}</div>
-          <div class="lbl">left</div>
+          <div class="lbl">${escHtml(t('tk_left'))}</div>
         </div>
       </div>`;
   }).join('');
@@ -1700,6 +1717,8 @@ const I18N = {
     btn_delete_selected:'Delete Selected', confirm_delete_selected:'Delete {n} attachment file(s)? The leave records themselves will be kept.',
     attach_empty:'No attachments stored yet.', attach_deleted_some:'✅ Deleted {n} file(s)',
     lp_history_title:'📈 Login History', lp_chart_sub:'Daily login count over the selected period',
+    tk_days_left:'{n} days left', tk_use_by_mar:'use by 31 Mar', tk_used:'used', tk_total:'total', tk_left:'left',
+    tk_none:'No leave balance set up yet. Contact Admin.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1809,6 +1828,8 @@ const I18N = {
     btn_delete_selected:'ลบไฟล์ที่เลือก', confirm_delete_selected:'ลบไฟล์แนบ {n} ไฟล์? ประวัติใบลายังอยู่ครบ',
     attach_empty:'ยังไม่มีไฟล์แนบในระบบ', attach_deleted_some:'✅ ลบแล้ว {n} ไฟล์',
     lp_history_title:'📈 ประวัติการ Login', lp_chart_sub:'จำนวนการล็อกอินต่อวันในช่วงเวลาที่เลือก',
+    tk_days_left:'เหลือ {n} วัน', tk_use_by_mar:'ใช้ภายใน 31 มี.ค.', tk_used:'ใช้ไป', tk_total:'รวม', tk_left:'คงเหลือ',
+    tk_none:'ยังไม่มีการตั้งโควตาวันลา ติดต่อแอดมิน',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2720,9 +2741,9 @@ async function loadEmployees(){
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
-          <button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">Edit</button>
+          ${e.role!=='admin' ? `<button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">${escHtml(t('c_edit'))}</button>` : ''}
           <button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">Delete</button>
+          ${e.role!=='admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">${escHtml(t('c_delete'))}</button>` : ''}
         </td>
       </tr>`;
     }).join('');
@@ -3270,22 +3291,33 @@ async function loadNeverLoggedIn(){
 }
 
 
-// ── LOGIN HISTORY LINE CHART (จำนวนล็อกอินต่อวัน แนวโน้มขึ้น-ลงแบบกราฟหุ้น) ──
+// ── LOGIN HISTORY LINE CHART (จำนวนล็อกอินต่อวัน รายเดือน เลื่อนดูย้อนหลังได้ แนวโน้มขึ้น-ลงแบบกราฟหุ้น) ──
 let loginNeverTotal = 0;
+const now_ = new Date();
+let loginStatsYear = now_.getFullYear();
+let loginStatsMonth = now_.getMonth() + 1; // 1-12
+
+function shiftLoginStatsMonth(delta){
+  loginStatsMonth += delta;
+  if(loginStatsMonth < 1){ loginStatsMonth = 12; loginStatsYear--; }
+  if(loginStatsMonth > 12){ loginStatsMonth = 1; loginStatsYear++; }
+  loadLoginStats();
+}
+
 async function loadLoginStats(){
-  const range = document.getElementById('loginStatsRange').value;
+  document.getElementById('loginStatsMonthLabel').textContent = `${MONTH_NAMES_EN[loginStatsMonth-1]} ${loginStatsYear}`;
   const statsEl = document.getElementById('loginStats');
   const barsEl = document.getElementById('loginBars');
   barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
   try{
-    const data = await callApi('get_login_stats', { days: range });
+    const data = await callApi('get_login_stats', { year: loginStatsYear, month: loginStatsMonth });
     const users = data.users || [];
     const daily = data.daily || [];
     statsEl.innerHTML =
       `<div class="lp-stat"><b>${data.total_logins||0}</b><span>${escHtml(t('lp_stat_logins'))}</span></div>` +
       `<div class="lp-stat"><b>${users.length}</b><span>${escHtml(t('lp_stat_active'))}</span></div>` +
       `<div class="lp-stat"><b>${neverLoggedInCache.length}</b><span>${escHtml(t('lp_stat_never'))}</span></div>`;
-    if(!daily.length){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
+    if(!daily.some(d=>d.count>0)){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
     barsEl.innerHTML = `<p class="hint" style="margin-bottom:8px">${escHtml(t('lp_chart_sub'))}</p>` + renderLoginLineSvg(daily);
   }catch(e){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
 }
