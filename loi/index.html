@@ -119,6 +119,14 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .photo-preview{display:flex;justify-content:center;margin:6px 0 14px}
 /* ── Export section (premium) ── */
 .exp-card{position:relative;overflow:hidden}
+.btn-manual{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:999px;background:linear-gradient(135deg,#1A9A5B,#117A46);color:#fff;font-family:'Inter',sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;box-shadow:0 3px 10px rgba(17,122,70,.25);transition:.15s}
+.btn-manual:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(17,122,70,.32)}
+.doc-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.doc-row:last-child{border-bottom:none}
+.doc-ico{width:36px;height:36px;border-radius:9px;background:var(--line-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
+.doc-info{flex:1;min-width:0}
+.doc-label{font-weight:600;font-size:.86rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-meta{font-size:.72rem;color:var(--text-dim)}
 .exp-card::before{content:'';position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--plum-600))}
 .exp-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .exp-head h3{margin:0}
@@ -461,6 +469,15 @@ tr:hover td{background:var(--cream)}
         <div id="myCalGrid" class="cal-grid"></div>
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
+
+      <div class="card" id="myDocumentsCard" style="display:none">
+        <h3 data-i18n="h3_mydocs">📄 Documents from the Company</h3>
+        <div id="myDocumentsList"></div>
+      </div>
+
+      <div style="margin:4px 0 24px">
+        <button class="btn-manual" onclick="downloadUserManual()"><span>📖</span><span data-i18n="btn_manual">Guide</span></button>
+      </div>
     </div>
 
     <!-- APPROVALS: my own requests still pending -->
@@ -617,6 +634,20 @@ tr:hover td{background:var(--cream)}
         <div id="attachmentCleanupResults"></div>
       </div>
 
+      <div class="card">
+        <h3 data-i18n="h3_senddoc_cleanup">📤 Documents Sent by Admin</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_cleanup">Documents sent via "Send Document". Tick any to delete, or delete one at a time.</p>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary" onclick="findAllSentDocuments()" data-i18n="btn_view_all_docs">📎 View All Documents</button>
+        </div>
+        <div id="sentDocCleanupToolbar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:var(--line-soft);border-radius:10px">
+          <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="selectAllSentDocs" onchange="toggleSelectAllSentDocs(this)"/> <span data-i18n="lbl_select_all">Select All</span></label>
+          <span class="mono" id="sentDocSelectCount" style="font-size:.78rem;color:var(--text-dim)"></span>
+          <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSelectedSentDocs()" data-i18n="btn_delete_selected">Delete Selected</button>
+        </div>
+        <div id="sentDocCleanupResults"></div>
+      </div>
+
       <div class="danger-card">
         <h3 data-i18n="h3_dangerzone">⚠️ Danger Zone — Testing Only</h3>
         <p class="hint" data-i18n="hint_danger">These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.</p>
@@ -695,6 +726,49 @@ tr:hover td{background:var(--cream)}
           <input type="number" id="holidayYearGlance" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderHolidayYearGlance()"/>
         </div>
         <div id="holidayYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN: SEND DOCUMENT (ส่งไฟล์รูป/PDF ให้พนักงานรายคน ดูได้ในระบบเท่านั้น + แจ้งอีเมล, ตั้งส่งซ้ำทุกเดือนได้) -->
+    <div class="page" id="page-send_document">
+      <div class="section-title" data-i18n="pg_senddoc_title">📤 Send Document</div>
+      <div class="section-sub" data-i18n="pg_senddoc_sub">Send an image or PDF to one employee — viewable in the system only, with an email notification</div>
+
+      <div class="card">
+        <h3 data-i18n="h3_senddoc_new">New Document</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label data-i18n="lbl_emp_code">Employee code</label>
+            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" oninput="lookupSendDocEmployee()"/>
+            <p class="hint" id="sendDocEmpName" style="margin-top:4px"></p>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_doc_label">Label (optional)</label>
+            <input type="text" id="sendDocLabel" placeholder="e.g. Payslip September"/>
+          </div>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label data-i18n="lbl_doc_file">File (image or PDF)</label>
+          <input type="file" id="sendDocFile" accept="image/*,application/pdf"/>
+        </div>
+        <div style="margin:14px 0">
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.86rem">
+            <input type="checkbox" id="sendDocRecurring" onchange="toggleSendDocRecurring()"/>
+            <span data-i18n="lbl_doc_recurring">Repeat every month (e.g. send on day 30 of every month)</span>
+          </label>
+          <div class="field" id="sendDocDayWrap" style="display:none;max-width:160px">
+            <label data-i18n="lbl_doc_day">Day of month</label>
+            <input type="number" id="sendDocDay" min="1" max="31" value="30"/>
+          </div>
+        </div>
+        <div class="err-text" id="sendDocErr"></div>
+        <button class="btn btn-primary" onclick="submitSendDocument()" data-i18n="btn_send_document">📤 Send</button>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="h3_senddoc_schedules">🔁 Monthly Schedules</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_schedules">Documents that resend automatically every month. Requires the cron setup described in loi_documents_migration.sql.</p>
+        <div id="sendDocSchedulesList"></div>
       </div>
     </div>
 
@@ -1244,6 +1318,7 @@ function buildTabs(){
       {id:'settings', label:t('tab_settings')},
     ];
     dropdownTabs = [
+      {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
       {id:'login_progress', label:t('tab_login_progress')},
@@ -1719,6 +1794,18 @@ const I18N = {
     lp_history_title:'📈 Login History', lp_chart_sub:'Daily login count over the selected period',
     tk_days_left:'{n} days left', tk_use_by_mar:'use by 31 Mar', tk_used:'used', tk_total:'total', tk_left:'left',
     tk_none:'No leave balance set up yet. Contact Admin.',
+    tab_send_document:'Send Document', pg_senddoc_title:'Send Document',
+    pg_senddoc_sub:'Send an image or PDF to one employee — viewable in the system only, with an email notification',
+    h3_senddoc_new:'New Document', lbl_emp_code:'Employee code', lbl_doc_label:'Label (optional)', lbl_doc_file:'File (image or PDF)',
+    lbl_doc_recurring:'Repeat every month (e.g. send on day 30 of every month)', lbl_doc_day:'Day of month',
+    btn_send_document:'📤 Send', h3_senddoc_schedules:'🔁 Monthly Schedules',
+    hint_senddoc_schedules:'Documents that resend automatically every month. Requires the cron setup described in loi_documents_migration.sql.',
+    h3_senddoc_cleanup:'📤 Documents Sent by Admin', hint_senddoc_cleanup:'Documents sent via "Send Document". Tick any to delete, or delete one at a time.',
+    h3_mydocs:'📄 Documents from the Company', btn_manual:'Guide', doc_untitled:'Document', c_view:'View',
+    doc_emp_not_found:'Employee not found for that code', doc_no_file:'Please choose a file', doc_bad_type:'File must be an image or PDF',
+    doc_bad_day:'Day of month must be between 1 and 31', doc_sending:'Sending...', doc_sent_ok:'✅ Document sent',
+    doc_scheduled_ok:'✅ Monthly schedule saved', doc_no_schedules:'No monthly schedules yet',
+    doc_confirm_cancel_schedule:'Cancel this monthly schedule? Already-sent documents are not affected.', th_date:'Date',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1830,6 +1917,18 @@ const I18N = {
     lp_history_title:'📈 ประวัติการ Login', lp_chart_sub:'จำนวนการล็อกอินต่อวันในช่วงเวลาที่เลือก',
     tk_days_left:'เหลือ {n} วัน', tk_use_by_mar:'ใช้ภายใน 31 มี.ค.', tk_used:'ใช้ไป', tk_total:'รวม', tk_left:'คงเหลือ',
     tk_none:'ยังไม่มีการตั้งโควตาวันลา ติดต่อแอดมิน',
+    tab_send_document:'ส่งไฟล์เอกสาร', pg_senddoc_title:'ส่งไฟล์เอกสาร',
+    pg_senddoc_sub:'ส่งรูปภาพหรือ PDF ให้พนักงานรายคน — เปิดดูได้ในระบบเท่านั้น พร้อมอีเมลแจ้งเตือน',
+    h3_senddoc_new:'เอกสารใหม่', lbl_emp_code:'รหัสพนักงาน', lbl_doc_label:'ชื่อเอกสาร (ไม่บังคับ)', lbl_doc_file:'ไฟล์ (รูปภาพหรือ PDF)',
+    lbl_doc_recurring:'ส่งซ้ำทุกเดือน (เช่น ส่งวันที่ 30 ของทุกเดือน)', lbl_doc_day:'วันที่ของเดือน',
+    btn_send_document:'📤 ส่ง', h3_senddoc_schedules:'🔁 กำหนดการส่งซ้ำรายเดือน',
+    hint_senddoc_schedules:'เอกสารที่จะถูกส่งซ้ำอัตโนมัติทุกเดือน ต้องตั้งค่า cron ตามที่อธิบายไว้ใน loi_documents_migration.sql ก่อน',
+    h3_senddoc_cleanup:'📤 เอกสารที่ Admin ส่งไป', hint_senddoc_cleanup:'เอกสารที่ส่งผ่านเมนู "ส่งไฟล์เอกสาร" ติ๊กเพื่อลบทีละหลายไฟล์ หรือลบทีละไฟล์ก็ได้',
+    h3_mydocs:'📄 เอกสารจากบริษัท', btn_manual:'คู่มือ', doc_untitled:'เอกสาร', c_view:'ดู',
+    doc_emp_not_found:'ไม่พบพนักงานรหัสนี้', doc_no_file:'กรุณาเลือกไฟล์', doc_bad_type:'ไฟล์ต้องเป็นรูปภาพหรือ PDF เท่านั้น',
+    doc_bad_day:'วันที่ต้องอยู่ระหว่าง 1-31', doc_sending:'กำลังส่ง...', doc_sent_ok:'✅ ส่งเอกสารแล้ว',
+    doc_scheduled_ok:'✅ บันทึกกำหนดการส่งซ้ำแล้ว', doc_no_schedules:'ยังไม่มีกำหนดการส่งซ้ำ',
+    doc_confirm_cancel_schedule:'ยกเลิกกำหนดการส่งซ้ำนี้? เอกสารที่ส่งไปแล้วจะไม่ได้รับผลกระทบ', th_date:'วันที่',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2115,6 +2214,226 @@ async function viewAttachment(requestId){
     const data = await callApi('get_attachment_url', { request_id: requestId });
     window.open(data.url, '_blank');
   }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── EMPLOYEE/MANAGER: documents sent to me by Admin — viewable in-system only ──
+async function loadMyDocuments(){
+  try{
+    const data = await callApi('get_my_documents');
+    const docs = data.documents || [];
+    const card = document.getElementById('myDocumentsCard');
+    const list = document.getElementById('myDocumentsList');
+    if(!docs.length){ card.style.display='none'; return; }
+    card.style.display='block';
+    list.innerHTML = docs.map(d=>`
+      <div class="doc-row">
+        <div class="doc-ico">${(d.mime_type||'').includes('pdf') ? '📄' : '🖼️'}</div>
+        <div class="doc-info">
+          <div class="doc-label">${escHtml(d.label || d.original_name || t('doc_untitled'))}</div>
+          <div class="doc-meta">${formatDMY(d.created_at.slice(0,10))}</div>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="viewMyDocument('${d.id}')">👁 ${escHtml(t('c_view'))}</button>
+      </div>`).join('');
+  }catch(e){ /* ไม่ขึ้น error รบกวนหน้าหลัก ถ้าดึงเอกสารไม่สำเร็จ */ }
+}
+async function viewMyDocument(id){
+  try{
+    const data = await callApi('get_document_view_url', { document_id: id });
+    window.open(data.url, '_blank');
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: SEND DOCUMENT ──
+let sendDocEmpId = null;
+function lookupSendDocEmployee(){
+  const code = document.getElementById('sendDocEmpCode').value.trim();
+  const nameEl = document.getElementById('sendDocEmpName');
+  sendDocEmpId = null;
+  if(!code){ nameEl.textContent=''; return; }
+  const emp = employeesCache.find(e=>e.employee_code===code);
+  if(emp){ sendDocEmpId = emp.id; nameEl.textContent = `✓ ${emp.name}`; }
+  else { nameEl.textContent = t('doc_emp_not_found'); }
+}
+function toggleSendDocRecurring(){
+  document.getElementById('sendDocDayWrap').style.display = document.getElementById('sendDocRecurring').checked ? 'block' : 'none';
+}
+async function submitSendDocument(){
+  const errEl = document.getElementById('sendDocErr');
+  errEl.textContent = '';
+  if(!employeesCache.length) await loadEmployees();
+  lookupSendDocEmployee();
+  if(!sendDocEmpId){ errEl.textContent = t('doc_emp_not_found'); return; }
+  const fileInput = document.getElementById('sendDocFile');
+  const file = fileInput.files && fileInput.files[0];
+  if(!file){ errEl.textContent = t('doc_no_file'); return; }
+  if(!file.type.startsWith('image/') && file.type!=='application/pdf'){ errEl.textContent = t('doc_bad_type'); return; }
+  const label = document.getElementById('sendDocLabel').value.trim();
+  const recurring = document.getElementById('sendDocRecurring').checked;
+  const day = Number(document.getElementById('sendDocDay').value);
+  try{
+    const dataUrl = file.type==='application/pdf' ? await readFileAsDataUrl(file) : await compressImageFile(file);
+    await withLoading(async ()=>{
+      if(recurring){
+        if(!day || day<1 || day>31){ throw new Error(t('doc_bad_day')); }
+        await callApi('admin_schedule_document', { employee_id: sendDocEmpId, file_base64: dataUrl, original_name: file.name, label, day_of_month: day });
+      } else {
+        await callApi('admin_send_document', { employee_id: sendDocEmpId, file_base64: dataUrl, original_name: file.name, label });
+      }
+    }, t('doc_sending'));
+    showToast(recurring ? t('doc_scheduled_ok') : t('doc_sent_ok'));
+    document.getElementById('sendDocEmpCode').value='';
+    document.getElementById('sendDocEmpName').textContent='';
+    document.getElementById('sendDocLabel').value='';
+    fileInput.value='';
+    document.getElementById('sendDocRecurring').checked=false;
+    toggleSendDocRecurring();
+    sendDocEmpId=null;
+    if(recurring) loadSendDocSchedules();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+async function loadSendDocSchedules(){
+  const el = document.getElementById('sendDocSchedulesList');
+  el.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
+  try{
+    const data = await callApi('admin_list_schedules');
+    const rows = data.schedules || [];
+    if(!rows.length){ el.innerHTML = `<div class="empty-msg">${escHtml(t('doc_no_schedules'))}</div>`; return; }
+    el.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="lbl_doc_label">Label</th><th data-i18n="lbl_doc_day">Day of month</th><th data-i18n="th_action">Action</th></tr></thead>
+      <tbody>${rows.map(r=>`
+        <tr>
+          <td class="mono">${escHtml(r.employee?.employee_code||'')}</td>
+          <td>${escHtml(r.employee?.name||'')}</td>
+          <td>${escHtml(r.label || r.original_name || '')}</td>
+          <td class="mono">${r.day_of_month}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="cancelSendDocSchedule('${r.id}')">${escHtml(t('c_delete'))}</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>`;
+    applyTranslations();
+  }catch(e){ el.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
+}
+async function cancelSendDocSchedule(id){
+  const ok = confirm(t('doc_confirm_cancel_schedule'));
+  if(!ok) return;
+  try{ await callApi('admin_cancel_schedule', { schedule_id: id }); loadSendDocSchedules(); }
+  catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: documents sent by admin — shown inside "Clean Up Old Attachments" page ──
+let sentDocsCache = [];
+async function findAllSentDocuments(){
+  const el = document.getElementById('sentDocCleanupResults');
+  el.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
+  document.getElementById('sentDocCleanupToolbar').style.display = 'none';
+  try{
+    const data = await callApi('admin_list_all_documents');
+    sentDocsCache = data.documents || [];
+    renderSentDocs();
+  }catch(e){ showToast(e.message,'err'); el.innerHTML=''; }
+}
+function renderSentDocs(){
+  const el = document.getElementById('sentDocCleanupResults');
+  const toolbar = document.getElementById('sentDocCleanupToolbar');
+  if(!sentDocsCache.length){
+    el.innerHTML = `<div class="empty-msg">${escHtml(t('attach_empty'))}</div>`;
+    toolbar.style.display = 'none';
+    return;
+  }
+  toolbar.style.display = 'flex';
+  document.getElementById('selectAllSentDocs').checked = false;
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th></th><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="lbl_doc_label">Label</th><th data-i18n="th_date">Date</th><th data-i18n="th_action">Action</th></tr></thead>
+    <tbody>${sentDocsCache.map(d=>`
+      <tr id="sentDocRow-${d.id}">
+        <td><input type="checkbox" class="sentDocSelectBox" data-id="${d.id}" onchange="updateSentDocSelectCount()"/></td>
+        <td class="mono">${escHtml(d.employee?.employee_code||'')}</td>
+        <td>${escHtml(d.employee?.name||'')}</td>
+        <td>${escHtml(d.label || d.original_name || '')}</td>
+        <td class="mono">${formatDMY(d.created_at.slice(0,10))}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="viewMyDocument('${d.id}')">📎 ${escHtml(t('c_view'))}</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSentDocument('${d.id}')">${escHtml(t('c_delete'))}</button>
+        </td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+  applyTranslations();
+  updateSentDocSelectCount();
+}
+function toggleSelectAllSentDocs(box){
+  document.querySelectorAll('.sentDocSelectBox').forEach(el=>{ el.checked = box.checked; });
+  updateSentDocSelectCount();
+}
+function updateSentDocSelectCount(){
+  const n = document.querySelectorAll('.sentDocSelectBox:checked').length;
+  document.getElementById('sentDocSelectCount').textContent = n ? `${n} ${t('lbl_select_files')}` : '';
+}
+async function deleteSentDocument(id){
+  const ok = confirm(t('confirm_delete_selected').replace('{n}','1'));
+  if(!ok) return;
+  try{
+    await callApi('admin_delete_document', { document_id: id });
+    sentDocsCache = sentDocsCache.filter(d=>d.id!==id);
+    const row = document.getElementById(`sentDocRow-${id}`);
+    if(row) row.remove();
+    updateSentDocSelectCount();
+    showToast(t('attach_deleted_some').replace('{n}','1'));
+  }catch(e){ showToast(e.message,'err'); }
+}
+async function deleteSelectedSentDocs(){
+  const ids = [...document.querySelectorAll('.sentDocSelectBox:checked')].map(el=>el.dataset.id);
+  if(!ids.length) return;
+  const ok = confirm(t('confirm_delete_selected').replace('{n}', ids.length));
+  if(!ok) return;
+  let done = 0;
+  for(const id of ids){
+    try{ await callApi('admin_delete_document', { document_id: id }); done++; }catch(e){ showToast(e.message,'err'); }
+  }
+  sentDocsCache = sentDocsCache.filter(d=>!ids.includes(d.id));
+  renderSentDocs();
+  if(done) showToast(t('attach_deleted_some').replace('{n}', done));
+}
+
+// ── USER MANUAL — สร้างไฟล์ HTML ดาวน์โหลดตามสิทธิ์ของผู้ใช้ (employee / manager เนื้อหาต่างกัน) ไม่ต้องมีไฟล์แยกบน server ──
+function downloadUserManual(){
+  const isManager = currentUser && currentUser.role==='manager';
+  const th = currentLang==='th';
+  const title = isManager ? (th?'คู่มือการใช้งาน LOI — สำหรับหัวหน้า':'LOI User Guide — Manager')
+                           : (th?'คู่มือการใช้งาน LOI — สำหรับพนักงาน':'LOI User Guide — Employee');
+  const steps = [];
+  steps.push({ h: th?'ดูวันลาคงเหลือของฉัน':'View my remaining leave balance',
+    b: th?'เข้าหน้า "วันลาของฉัน" การ์ดด้านบนจะแสดงวันลาคงเหลือ ใช้ไปแล้ว และวันรวมของแต่ละประเภทการลา':
+          'Open the "My Leave" page — the cards at the top show remaining, used, and total days for each leave type.' });
+  steps.push({ h: th?'ดูปฏิทินการลาของฉัน':'View my leave calendar',
+    b: th?'เลื่อนดูปฏิทินรายเดือนในหน้า "วันลาของฉัน" ใช้ปุ่ม ← ก่อนหน้า / ถัดไป → เพื่อดูเดือนอื่น':
+          'Scroll to the monthly calendar on the "My Leave" page. Use the ← Prev / Next → buttons to browse other months.' });
+  steps.push({ h: th?'วิธีสร้างคำขอลาใหม่':'How to submit a new leave request',
+    b: th?'ในหน้า "วันลาของฉัน" กรอกแบบฟอร์ม "ยื่นคำขอลาใหม่": เลือกประเภทการลา, เลือกแบบเต็มวัน/รายชั่วโมง/หลายวันที่ไม่ติดกัน, เลือกวันที่, ใส่เหตุผล แล้วกด "ยื่นคำขอ"':
+          'On the "My Leave" page, fill in the "New Leave Request" form: pick a leave type, choose full day / hourly / multiple specific dates, pick the date(s), add a reason, then click "Submit Request".' });
+  steps.push({ h: th?'ดูว่าคำขอลาอยู่ในขั้นตอนไหน':'Check where a request is in the approval process',
+    b: th?'ไปที่หน้า "คำขอของฉัน" จะเห็นสถานะของแต่ละคำขอ เช่น รอหัวหน้าอนุมัติ, รอ admin อนุมัติ, อนุมัติแล้ว หรือไม่อนุมัติ':
+          'Go to "My Requests" to see each request\'s status — pending manager, pending admin, approved, or rejected.' });
+  if(isManager){
+    steps.push({ h: th?'วิธีอนุมัติคำขอลา':'How to approve a leave request',
+      b: th?'ไปที่หน้า "คำขอของทีม" จะเห็นรายการที่รอการอนุมัติจากคุณ กดอนุมัติหรือไม่อนุมัติทีละรายการ หรือติ๊กเลือกหลายรายการแล้วกด "ดำเนินการกับรายการที่เลือก" เพื่อทำพร้อมกัน':
+            'Go to "Team Requests" to see what\'s waiting for your review. Approve/reject one at a time, or tick several and click "Apply to Selected" to act on them together.' });
+    steps.push({ h: th?'ดูวันลาของทีม':'View your team\'s leave',
+      b: th?'หน้า "คำขอของทีม" มีปฏิทินวันลาของทีมด้วย แสดงเฉพาะพนักงานที่มีคุณเป็นหัวหน้าในสายอนุมัติ':
+            'The "Team Requests" page also has a team leave calendar, showing only employees who have you in their approval chain.' });
+  }
+  const bodyHtml = steps.map((s,i)=>`<h2>${i+1}. ${escHtml(s.h)}</h2><p>${escHtml(s.b)}</p>`).join('');
+  const html = `<!DOCTYPE html><html lang="${th?'th':'en'}"><head><meta charset="UTF-8"><title>${escHtml(title)}</title>
+<style>body{font-family:'Segoe UI',Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#221935;line-height:1.7}
+h1{font-family:Georgia,serif;color:#3B1F63;border-bottom:3px solid #B08D57;padding-bottom:12px}
+h2{color:#6B3FA0;margin-top:28px;font-size:1.15rem}p{color:#3a3348}</style></head>
+<body><h1>${escHtml(title)}</h1>${bodyHtml}</body></html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = isManager ? 'LOI_Manual_Manager.html' : 'LOI_Manual_Employee.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── ADMIN: ATTACHMENTS — view every stored file, tick to bulk-delete (prevents storage from filling up) ──
