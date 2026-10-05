@@ -470,11 +470,6 @@ tr:hover td{background:var(--cream)}
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
 
-      <div class="card" id="myDocumentsCard" style="display:none">
-        <h3 data-i18n="h3_mydocs">📄 Documents from the Company</h3>
-        <div id="myDocumentsList"></div>
-      </div>
-
       <div style="margin:4px 0 24px">
         <button class="btn-manual" onclick="downloadUserManual()"><span>📖</span><span data-i18n="btn_manual">Guide</span></button>
       </div>
@@ -736,38 +731,38 @@ tr:hover td{background:var(--cream)}
 
       <div class="card">
         <h3 data-i18n="h3_senddoc_new">New Document</h3>
-        <div class="form-grid">
-          <div class="field">
-            <label data-i18n="lbl_emp_code">Employee code</label>
-            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" oninput="lookupSendDocEmployee()"/>
-            <p class="hint" id="sendDocEmpName" style="margin-top:4px"></p>
+        <div class="field">
+          <label data-i18n="lbl_doc_recipients">Recipients</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" onkeydown="if(event.key==='Enter'){event.preventDefault();addSendDocRecipient();}"/>
+            <button class="btn btn-sm btn-outline" onclick="addSendDocRecipient()" data-i18n="btn_add_recipient">+ Add</button>
           </div>
+          <div id="sendDocRecipientChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+        </div>
+        <div class="form-grid" style="margin-top:10px">
           <div class="field">
             <label data-i18n="lbl_doc_label">Label (optional)</label>
             <input type="text" id="sendDocLabel" placeholder="e.g. Payslip September"/>
           </div>
-        </div>
-        <div class="field" style="margin-top:10px">
-          <label data-i18n="lbl_doc_file">File (image or PDF)</label>
-          <input type="file" id="sendDocFile" accept="image/*,application/pdf"/>
-        </div>
-        <div style="margin:14px 0">
-          <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.86rem">
-            <input type="checkbox" id="sendDocRecurring" onchange="toggleSendDocRecurring()"/>
-            <span data-i18n="lbl_doc_recurring">Repeat every month (e.g. send on day 30 of every month)</span>
-          </label>
-          <div class="field" id="sendDocDayWrap" style="display:none;max-width:160px">
-            <label data-i18n="lbl_doc_day">Day of month</label>
-            <input type="number" id="sendDocDay" min="1" max="31" value="30"/>
+          <div class="field">
+            <label data-i18n="lbl_doc_file">File (image or PDF)</label>
+            <input type="file" id="sendDocFile" accept="image/*,application/pdf"/>
           </div>
         </div>
+        <div class="field" style="margin-top:10px;max-width:200px">
+          <label data-i18n="lbl_doc_senddate">Send date (for scheduling)</label>
+          <input type="date" id="sendDocDate"/>
+        </div>
         <div class="err-text" id="sendDocErr"></div>
-        <button class="btn btn-primary" onclick="submitSendDocument()" data-i18n="btn_send_document">📤 Send</button>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn btn-primary" onclick="submitSendDocument(false)" data-i18n="btn_send_document">📤 Send Now</button>
+          <button class="btn btn-outline" onclick="submitSendDocument(true)" data-i18n="btn_schedule_document">🕒 Schedule Send</button>
+        </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="h3_senddoc_schedules">🔁 Monthly Schedules</h3>
-        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_schedules">Documents that resend automatically every month. Requires the cron setup described in loi_documents_migration.sql.</p>
+        <h3 data-i18n="h3_senddoc_pending">📬 Pending Documents</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_pending">Scheduled documents waiting for their send date. Send immediately or delete at any time.</p>
         <div id="sendDocSchedulesList"></div>
       </div>
     </div>
@@ -836,11 +831,21 @@ tr:hover td{background:var(--cream)}
     <div class="page" id="page-reports">
       <div class="section-title" data-i18n="pg_reports_title">My Leave Results</div>
       <div class="section-sub" data-i18n="pg_reports_sub">Outcome of your own past leave requests</div>
-      <div class="card" style="padding:0">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
+          <select id="myReportsYear" class="exp-select" onchange="loadMyResolvedRequests()"></select>
+        </div>
         <div class="table-wrap" style="border:none"><table>
           <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_status">Status</th></tr></thead>
           <tbody id="myReportsBody"></tbody>
         </table></div>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="h3_mydocs">📄 My Documents</h3>
+        <p class="hint" style="margin-bottom:10px" data-i18n="hint_mydocs">Documents sent to you by Admin. They stay here until Admin removes them.</p>
+        <div id="myDocumentsList"></div>
       </div>
     </div>
   </main>
@@ -1431,7 +1436,7 @@ function showPage(id, el){
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); }
   if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); primeRolloverYearInputs(); }
-  if(id==='reports') loadMyResolvedRequests();
+  if(id==='reports'){ initMyReportsYearSelect(); loadMyResolvedRequests(); loadMyDocuments(); }
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
@@ -1548,18 +1553,18 @@ function formatDaysNice(n){
 
 // ── สีเด่นประจำแต่ละประเภทการลา (ไล่สีสดใสต่างกันให้แยกแยะง่ายกว่าสีม่วงซีดเดียวทั้งหมด) ──
 const TICKET_ACCENTS = {
-  annual:   { a:'#7C3AED', b:'#4C1D95' }, // ม่วงสด
-  sick:     { a:'#0D9488', b:'#115E59' }, // เขียวอมฟ้า
-  personal: { a:'#F59E0B', b:'#B45309' }, // ส้มทอง
-  other:    { a:'#DB2777', b:'#9D174D' }, // ชมพูเข้ม
-  maternity:{ a:'#EC4899', b:'#9D174D' },
-  paternity:{ a:'#2563EB', b:'#1E3A8A' },
-  priesthood:{a:'#B08D57', b:'#6B4F27' },
+  annual:   { a:'#60A5FA', b:'#2563EB' }, // ฟ้าอ่อน — พักร้อน
+  sick:     { a:'#4ADE80', b:'#16A34A' }, // เขียวอ่อน — ลาป่วย
+  personal: { a:'#FBBF24', b:'#D97706' }, // ส้มอ่อน — ลากิจ
+  other:    { a:'#F472B6', b:'#DB2777' }, // ชมพูอ่อน
+  maternity:{ a:'#F472B6', b:'#DB2777' },
+  paternity:{ a:'#60A5FA', b:'#2563EB' },
+  priesthood:{a:'#C9A876', b:'#8f6f3f' },
 };
 function getTicketAccent(leaveType){
   if(TICKET_ACCENTS[leaveType]) return TICKET_ACCENTS[leaveType];
-  if(/^annual_carry_/.test(leaveType)) return { a:'#4338CA', b:'#312E81' }; // ครามเข้ม — โควตายกยอด
-  return { a:'#6B3FA0', b:'#3B1F63' }; // ค่าเริ่มต้น (ธีมเดิม)
+  if(/^annual_carry_/.test(leaveType)) return { a:'#818CF8', b:'#4F46E5' }; // ครามอ่อน — โควตายกยอด
+  return { a:'#A78BFA', b:'#7C3AED' }; // ค่าเริ่มต้น (ม่วงอ่อน)
 }
 
 function renderBalances(balances){
@@ -1576,7 +1581,6 @@ function renderBalances(balances){
       <div class="ticket" style="--tk-a:${acc.a};--tk-b:${acc.b}">
         <div class="ticket-main">
           <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)}</div>
-          <div class="ticket-name">${t('tk_days_left').replace('{n}',formatDaysNice(remaining))}</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
           <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} ${escHtml(t('tk_used'))}</span><span>${formatDaysNice(b.total_days)} ${escHtml(t('tk_total'))}</span></div>
         </div>
@@ -1669,9 +1673,18 @@ async function submitEditMyRequest(){
 }
 
 // ── REPORTS: my own resolved requests (approved / rejected) ──
+function initMyReportsYearSelect(){
+  const sel = document.getElementById('myReportsYear');
+  if(sel.options.length) return; // ตั้งครั้งเดียวพอ ไม่ต้องรีสร้างทุกครั้งที่เข้าหน้า
+  const y0 = new Date().getFullYear();
+  let html = '';
+  for(let y=y0-2; y<=y0+1; y++) html += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
+  sel.innerHTML = html;
+}
 async function loadMyResolvedRequests(){
+  const year = Number(document.getElementById('myReportsYear').value) || new Date().getFullYear();
   try{
-    const data = await callApi('get_my_data');
+    const data = await callApi('get_my_data', { requests_year: year });
     const resolved = data.requests.filter(r=>RESOLVED_STATUSES.includes(r.status));
     renderOwnRequestsTable('myReportsBody', resolved);
   }catch(e){ showToast(e.message,'err'); }
@@ -1806,6 +1819,12 @@ const I18N = {
     doc_bad_day:'Day of month must be between 1 and 31', doc_sending:'Sending...', doc_sent_ok:'✅ Document sent',
     doc_scheduled_ok:'✅ Monthly schedule saved', doc_no_schedules:'No monthly schedules yet',
     doc_confirm_cancel_schedule:'Cancel this monthly schedule? Already-sent documents are not affected.', th_date:'Date',
+    lbl_doc_recipients:'Recipients', btn_add_recipient:'+ Add', lbl_doc_senddate:'Send date (for scheduling)',
+    btn_schedule_document:'🕒 Schedule Send', h3_senddoc_pending:'📬 Pending Documents',
+    hint_senddoc_pending:'Scheduled documents waiting for their send date. Send immediately or delete at any time.',
+    btn_send_now:'Send Now', doc_no_recipients:'Please add at least one recipient', doc_no_date:'Please choose a send date',
+    doc_confirm_send_now:'Send this document right now instead of waiting for its scheduled date?',
+    hint_mydocs:'Documents sent to you by Admin. They stay here until Admin removes them.', doc_none_received:'No documents yet.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1929,6 +1948,12 @@ const I18N = {
     doc_bad_day:'วันที่ต้องอยู่ระหว่าง 1-31', doc_sending:'กำลังส่ง...', doc_sent_ok:'✅ ส่งเอกสารแล้ว',
     doc_scheduled_ok:'✅ บันทึกกำหนดการส่งซ้ำแล้ว', doc_no_schedules:'ยังไม่มีกำหนดการส่งซ้ำ',
     doc_confirm_cancel_schedule:'ยกเลิกกำหนดการส่งซ้ำนี้? เอกสารที่ส่งไปแล้วจะไม่ได้รับผลกระทบ', th_date:'วันที่',
+    lbl_doc_recipients:'ผู้รับ', btn_add_recipient:'+ เพิ่ม', lbl_doc_senddate:'วันที่จะส่ง (สำหรับตั้งเวลา)',
+    btn_schedule_document:'🕒 ตั้งเวลาส่ง', h3_senddoc_pending:'📬 เอกสารรอส่ง',
+    hint_senddoc_pending:'เอกสารที่ตั้งเวลาไว้ รอถึงวันที่กำหนด กดส่งทันทีหรือลบได้ตลอดเวลา',
+    btn_send_now:'ส่งเลย', doc_no_recipients:'กรุณาเพิ่มผู้รับอย่างน้อย 1 คน', doc_no_date:'กรุณาเลือกวันที่จะส่ง',
+    doc_confirm_send_now:'ส่งเอกสารนี้ทันทีเลยไหม ไม่ต้องรอถึงวันที่ตั้งไว้?',
+    hint_mydocs:'เอกสารที่ Admin ส่งให้คุณ จะอยู่ที่นี่จนกว่า Admin จะลบออก', doc_none_received:'ยังไม่มีเอกสาร',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2218,13 +2243,13 @@ async function viewAttachment(requestId){
 
 // ── EMPLOYEE/MANAGER: documents sent to me by Admin — viewable in-system only ──
 async function loadMyDocuments(){
+  const list = document.getElementById('myDocumentsList');
+  if(!list) return; // กันพังถ้าหน้ายังไม่ได้ render (เผื่อถูกเรียกจากที่อื่นในอนาคต)
+  list.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
   try{
     const data = await callApi('get_my_documents');
     const docs = data.documents || [];
-    const card = document.getElementById('myDocumentsCard');
-    const list = document.getElementById('myDocumentsList');
-    if(!docs.length){ card.style.display='none'; return; }
-    card.style.display='block';
+    if(!docs.length){ list.innerHTML = `<div class="empty-msg">${escHtml(t('doc_none_received'))}</div>`; return; }
     list.innerHTML = docs.map(d=>`
       <div class="doc-row">
         <div class="doc-ico">${(d.mime_type||'').includes('pdf') ? '📄' : '🖼️'}</div>
@@ -2234,7 +2259,7 @@ async function loadMyDocuments(){
         </div>
         <button class="btn btn-sm btn-outline" onclick="viewMyDocument('${d.id}')">👁 ${escHtml(t('c_view'))}</button>
       </div>`).join('');
-  }catch(e){ /* ไม่ขึ้น error รบกวนหน้าหลัก ถ้าดึงเอกสารไม่สำเร็จ */ }
+  }catch(e){ list.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
 }
 async function viewMyDocument(id){
   try{
@@ -2243,52 +2268,60 @@ async function viewMyDocument(id){
   }catch(e){ showToast(e.message,'err'); }
 }
 
-// ── ADMIN: SEND DOCUMENT ──
-let sendDocEmpId = null;
-function lookupSendDocEmployee(){
-  const code = document.getElementById('sendDocEmpCode').value.trim();
-  const nameEl = document.getElementById('sendDocEmpName');
-  sendDocEmpId = null;
-  if(!code){ nameEl.textContent=''; return; }
+// ── ADMIN: SEND DOCUMENT (ผู้รับได้หลายคน, ส่งทันทีหรือตั้งเวลาส่งวันที่เลือกได้) ──
+let sendDocRecipients = []; // [{id, code, name}]
+function addSendDocRecipient(){
+  const input = document.getElementById('sendDocEmpCode');
+  const code = input.value.trim();
+  if(!code) return;
+  if(!employeesCache.length){ showToast(t('doc_emp_not_found'),'err'); return; }
   const emp = employeesCache.find(e=>e.employee_code===code);
-  if(emp){ sendDocEmpId = emp.id; nameEl.textContent = `✓ ${emp.name}`; }
-  else { nameEl.textContent = t('doc_emp_not_found'); }
+  if(!emp){ showToast(t('doc_emp_not_found'),'err'); return; }
+  if(!sendDocRecipients.some(r=>r.id===emp.id)) sendDocRecipients.push({ id: emp.id, code: emp.employee_code, name: emp.name });
+  input.value = '';
+  renderSendDocRecipientChips();
 }
-function toggleSendDocRecurring(){
-  document.getElementById('sendDocDayWrap').style.display = document.getElementById('sendDocRecurring').checked ? 'block' : 'none';
+function removeSendDocRecipient(id){
+  sendDocRecipients = sendDocRecipients.filter(r=>r.id!==id);
+  renderSendDocRecipientChips();
 }
-async function submitSendDocument(){
+function renderSendDocRecipientChips(){
+  document.getElementById('sendDocRecipientChips').innerHTML = sendDocRecipients.map(r=>
+    `<span class="badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--line-soft);padding:5px 10px;border-radius:999px;font-size:.78rem">
+      ${escHtml(r.name)} (${escHtml(r.code)})
+      <span style="cursor:pointer;font-weight:700" onclick="removeSendDocRecipient('${r.id}')">✕</span>
+    </span>`).join('');
+}
+
+async function submitSendDocument(schedule){
   const errEl = document.getElementById('sendDocErr');
   errEl.textContent = '';
   if(!employeesCache.length) await loadEmployees();
-  lookupSendDocEmployee();
-  if(!sendDocEmpId){ errEl.textContent = t('doc_emp_not_found'); return; }
+  // ถ้ายังพิมพ์รหัสค้างไว้ในช่องแต่ลืมกด "+ Add" ให้เติมเข้ารายชื่อให้อัตโนมัติก่อนส่ง
+  if(document.getElementById('sendDocEmpCode').value.trim()) addSendDocRecipient();
+  if(!sendDocRecipients.length){ errEl.textContent = t('doc_no_recipients'); return; }
   const fileInput = document.getElementById('sendDocFile');
   const file = fileInput.files && fileInput.files[0];
   if(!file){ errEl.textContent = t('doc_no_file'); return; }
   if(!file.type.startsWith('image/') && file.type!=='application/pdf'){ errEl.textContent = t('doc_bad_type'); return; }
   const label = document.getElementById('sendDocLabel').value.trim();
-  const recurring = document.getElementById('sendDocRecurring').checked;
-  const day = Number(document.getElementById('sendDocDay').value);
+  const sendDate = document.getElementById('sendDocDate').value;
+  if(schedule && !sendDate){ errEl.textContent = t('doc_no_date'); return; }
   try{
     const dataUrl = file.type==='application/pdf' ? await readFileAsDataUrl(file) : await compressImageFile(file);
+    const ids = sendDocRecipients.map(r=>r.id);
     await withLoading(async ()=>{
-      if(recurring){
-        if(!day || day<1 || day>31){ throw new Error(t('doc_bad_day')); }
-        await callApi('admin_schedule_document', { employee_id: sendDocEmpId, file_base64: dataUrl, original_name: file.name, label, day_of_month: day });
-      } else {
-        await callApi('admin_send_document', { employee_id: sendDocEmpId, file_base64: dataUrl, original_name: file.name, label });
-      }
+      if(schedule) await callApi('admin_schedule_document', { employee_ids: ids, file_base64: dataUrl, original_name: file.name, label, send_date: sendDate });
+      else await callApi('admin_send_document', { employee_ids: ids, file_base64: dataUrl, original_name: file.name, label });
     }, t('doc_sending'));
-    showToast(recurring ? t('doc_scheduled_ok') : t('doc_sent_ok'));
+    showToast(schedule ? t('doc_scheduled_ok') : t('doc_sent_ok'));
+    sendDocRecipients = [];
+    renderSendDocRecipientChips();
     document.getElementById('sendDocEmpCode').value='';
-    document.getElementById('sendDocEmpName').textContent='';
     document.getElementById('sendDocLabel').value='';
+    document.getElementById('sendDocDate').value='';
     fileInput.value='';
-    document.getElementById('sendDocRecurring').checked=false;
-    toggleSendDocRecurring();
-    sendDocEmpId=null;
-    if(recurring) loadSendDocSchedules();
+    if(schedule) loadSendDocSchedules();
   }catch(e){ errEl.textContent = e.message; }
 }
 
@@ -2300,18 +2333,27 @@ async function loadSendDocSchedules(){
     const rows = data.schedules || [];
     if(!rows.length){ el.innerHTML = `<div class="empty-msg">${escHtml(t('doc_no_schedules'))}</div>`; return; }
     el.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="lbl_doc_label">Label</th><th data-i18n="lbl_doc_day">Day of month</th><th data-i18n="th_action">Action</th></tr></thead>
+      <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="lbl_doc_label">Label</th><th data-i18n="th_date">Send Date</th><th data-i18n="th_action">Action</th></tr></thead>
       <tbody>${rows.map(r=>`
-        <tr>
+        <tr id="sendDocSchedRow-${r.id}">
           <td class="mono">${escHtml(r.employee?.employee_code||'')}</td>
           <td>${escHtml(r.employee?.name||'')}</td>
           <td>${escHtml(r.label || r.original_name || '')}</td>
-          <td class="mono">${r.day_of_month}</td>
-          <td><button class="btn btn-sm btn-danger" onclick="cancelSendDocSchedule('${r.id}')">${escHtml(t('c_delete'))}</button></td>
+          <td class="mono">${formatDMY(r.send_date)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="sendScheduleNow('${r.id}')">${escHtml(t('btn_send_now'))}</button>
+            <button class="btn btn-sm btn-danger" onclick="cancelSendDocSchedule('${r.id}')">${escHtml(t('c_delete'))}</button>
+          </td>
         </tr>`).join('')}</tbody>
     </table></div>`;
     applyTranslations();
   }catch(e){ el.innerHTML = `<div class="empty-msg">${escHtml(e.message)}</div>`; }
+}
+async function sendScheduleNow(id){
+  const ok = confirm(t('doc_confirm_send_now'));
+  if(!ok) return;
+  try{ await callApi('admin_send_schedule_now', { schedule_id: id }); showToast(t('doc_sent_ok')); loadSendDocSchedules(); }
+  catch(e){ showToast(e.message,'err'); }
 }
 async function cancelSendDocSchedule(id){
   const ok = confirm(t('doc_confirm_cancel_schedule'));
@@ -2963,22 +3005,15 @@ function renderSpecialChart(requests){
   const chart = document.getElementById('specialCalChart');
   const xAxis = document.getElementById('specialCalChartX');
   const summary = document.getElementById('specialCalSummary');
+  xAxis.innerHTML = ''; // ป้ายวันที่อยู่ในตัว SVG ของกราฟเส้นแล้ว ไม่ต้องใช้แถวนี้แยกอีกต่อไป
   if(!max){
     chart.innerHTML = `<div class="empty-msg" style="width:100%;align-self:center">${escHtml(t('sc_chart_empty'))}</div>`;
-    xAxis.innerHTML = '';
     summary.innerHTML = '';
     return;
   }
-  let bars = '', xs = '';
-  for(let d=1; d<=daysInMonth; d++){
-    const n = perDay[d].size;
-    const dow = new Date(Date.UTC(specialCalYear, specialCalMonth-1, d)).getUTCDay();
-    const cls = 'sc-bar' + (dow===0||dow===6 ? ' weekend' : '') + (d===peakDay ? ' peak' : '');
-    const h = n ? Math.max(4, Math.round(n/max*100)) : 0;
-    bars += `<div class="sc-bar-col" title="${d}: ${n}"><div class="sc-bar-val">${n||''}</div><div class="${cls}" style="height:${h}%"></div></div>`;
-    xs += `<span>${d}</span>`;
-  }
-  chart.innerHTML = bars; xAxis.innerHTML = xs;
+  const daily = [];
+  for(let d=1; d<=daysInMonth; d++) daily.push({ date: `${specialCalYear}-${pad(specialCalMonth)}-${pad(d)}`, count: perDay[d].size });
+  chart.innerHTML = renderLoginLineSvg(daily);
   summary.innerHTML =
     `<span>${escHtml(t('sc_sum_people'))}: <b>${everyone.size}</b></span>` +
     `<span>${escHtml(t('sc_sum_total'))}: <b>${totalDays}</b></span>` +
@@ -3651,13 +3686,12 @@ function renderLoginLineSvg(daily){
   const pts = daily.map((d,i)=>[x(i), y(d.count)]);
   const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   const areaPath = linePath + ` L${x(n-1).toFixed(1)},${(padT+innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT+innerH).toFixed(1)} Z`;
-  // ป้ายวันที่: โชว์ไม่เกิน ~8 จุด กันชนกัน
-  const labelEvery = Math.max(1, Math.ceil(n/8));
+  // ป้ายวันที่: โชว์ทุกวันเป็นแค่เลขวัน (ไม่เอา mm-dd เต็มๆ) ให้เข้าใจง่ายเหมือนกราฟ "จำนวนคนลาต่อวัน"
   const dots = pts.map((p,i)=>
     `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--plum-700)"><title>${escAttr(formatDMY(daily[i].date))}: ${daily[i].count}</title></circle>`
   ).join('');
-  const labels = pts.map((p,i)=> i%labelEvery===0 || i===n-1 ?
-    `<text x="${p[0].toFixed(1)}" y="${H-8}" font-size="9" text-anchor="middle" fill="var(--text-dim)">${escHtml(daily[i].date.slice(5))}</text>` : ''
+  const labels = pts.map((p,i)=>
+    `<text x="${p[0].toFixed(1)}" y="${H-8}" font-size="8" text-anchor="middle" fill="var(--text-dim)">${Number(daily[i].date.slice(8))}</text>`
   ).join('');
   const yTicks = [0, 0.5, 1].map(f=>{
     const val = Math.round(max*f);
