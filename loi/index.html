@@ -29,17 +29,21 @@ h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
 
 /* ══════════ LOGIN SCREEN ══════════ */
 #loginScreen{
-  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  /* รูปพื้นหลัง: Nadezhda Moryak, Pexels (ฟรี ใช้ได้ตาม Pexels License — https://www.pexels.com/photo/8677191/) */
+  min-height:100vh; display:flex; align-items:flex-end; justify-content:flex-end; padding:24px 40px 48px;
   background:
-    radial-gradient(ellipse 700px 500px at 20% 0%, rgba(176,141,87,.14), transparent),
-    radial-gradient(ellipse 800px 600px at 100% 100%, rgba(107,63,160,.25), transparent),
+    linear-gradient(0deg, rgba(26,13,46,.75), rgba(26,13,46,.15) 55%, rgba(37,17,64,.35)),
+    url('https://images.pexels.com/photos/8677191/pexels-photo-8677191.jpeg?auto=compress&cs=tinysrgb&w=1920') center/cover no-repeat,
     linear-gradient(160deg,var(--plum-900),#251140 65%,#1a0d2e);
 }
 .login-card{
-  width:380px; max-width:100%; background:rgba(255,255,255,.04);
+  width:380px; max-width:100%; background:rgba(26,13,46,.45);
   border:1px solid rgba(231,217,190,.28); border-radius:18px;
-  padding:40px 34px; backdrop-filter:blur(6px);
-  box-shadow:0 30px 80px rgba(0,0,0,.4);
+  padding:40px 34px; backdrop-filter:blur(10px);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+}
+@media(max-width:560px){
+  #loginScreen{ align-items:center; justify-content:center; padding:24px; }
 }
 .login-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.22em;color:var(--gold-light);text-transform:uppercase;text-align:center;margin-bottom:10px}
 .login-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:2rem;color:#fff;text-align:center;line-height:1.15}
@@ -724,36 +728,41 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ADMIN: SEND DOCUMENT (ส่งไฟล์รูป/PDF ให้พนักงานรายคน ดูได้ในระบบเท่านั้น + แจ้งอีเมล, ตั้งส่งซ้ำทุกเดือนได้) -->
+    <!-- ADMIN: SEND DOCUMENT (ส่งไฟล์รูป/PDF ให้พนักงานรายคน ดูได้ในระบบเท่านั้น + แจ้งอีเมล, เพิ่มทีละคนลง list แล้วส่งพร้อมกัน) -->
     <div class="page" id="page-send_document">
       <div class="section-title" data-i18n="pg_senddoc_title">📤 Send Document</div>
       <div class="section-sub" data-i18n="pg_senddoc_sub">Send an image or PDF to one employee — viewable in the system only, with an email notification</div>
 
       <div class="card">
-        <h3 data-i18n="h3_senddoc_new">New Document</h3>
-        <div class="field">
-          <label data-i18n="lbl_doc_recipients">Recipients</label>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" onkeydown="if(event.key==='Enter'){event.preventDefault();addSendDocRecipient();}"/>
-            <button class="btn btn-sm btn-outline" onclick="addSendDocRecipient()" data-i18n="btn_add_recipient">+ Add</button>
+        <h3 data-i18n="h3_senddoc_new">Add a Document</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_new">Each recipient gets their own file — fill this in and click "+ Add to list" as many times as you need, then send the whole list together.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label data-i18n="lbl_emp_code">Employee code</label>
+            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" oninput="lookupSendDocEmployee()"/>
+            <p class="hint" id="sendDocEmpName" style="margin-top:4px"></p>
           </div>
-          <div id="sendDocRecipientChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-        </div>
-        <div class="form-grid" style="margin-top:10px">
           <div class="field">
             <label data-i18n="lbl_doc_label">Label (optional)</label>
             <input type="text" id="sendDocLabel" placeholder="e.g. Payslip September"/>
           </div>
-          <div class="field">
-            <label data-i18n="lbl_doc_file">File (image or PDF)</label>
-            <input type="file" id="sendDocFile" accept="image/*,application/pdf"/>
-          </div>
         </div>
-        <div class="field" style="margin-top:10px;max-width:200px">
+        <div class="field" style="margin-top:10px">
+          <label data-i18n="lbl_doc_file">File (image or PDF)</label>
+          <input type="file" id="sendDocFile" accept="image/*,application/pdf"/>
+        </div>
+        <div class="err-text" id="sendDocErr"></div>
+        <button class="btn btn-outline" style="margin-top:10px" onclick="addSendDocQueueItem()" data-i18n="btn_add_to_list">+ Add to list</button>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="h3_senddoc_queue">📋 Ready to Send</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_queue">Each row below will be sent as its own document to its own recipient.</p>
+        <div id="sendDocQueueList"></div>
+        <div class="field" style="margin-top:14px;max-width:200px">
           <label data-i18n="lbl_doc_senddate">Send date (for scheduling)</label>
           <input type="date" id="sendDocDate"/>
         </div>
-        <div class="err-text" id="sendDocErr"></div>
         <div style="display:flex;gap:10px;margin-top:10px">
           <button class="btn btn-primary" onclick="submitSendDocument(false)" data-i18n="btn_send_document">📤 Send Now</button>
           <button class="btn btn-outline" onclick="submitSendDocument(true)" data-i18n="btn_schedule_document">🕒 Schedule Send</button>
@@ -1442,6 +1451,7 @@ function showPage(id, el){
   if(id==='holidays') loadHolidays();
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
   if(id==='special_calendar') loadSpecialCalendar();
+  if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -1811,8 +1821,7 @@ const I18N = {
     pg_senddoc_sub:'Send an image or PDF to one employee — viewable in the system only, with an email notification',
     h3_senddoc_new:'New Document', lbl_emp_code:'Employee code', lbl_doc_label:'Label (optional)', lbl_doc_file:'File (image or PDF)',
     lbl_doc_recurring:'Repeat every month (e.g. send on day 30 of every month)', lbl_doc_day:'Day of month',
-    btn_send_document:'📤 Send', h3_senddoc_schedules:'🔁 Monthly Schedules',
-    hint_senddoc_schedules:'Documents that resend automatically every month. Requires the cron setup described in loi_documents_migration.sql.',
+    btn_send_document:'📤 Send Now',
     h3_senddoc_cleanup:'📤 Documents Sent by Admin', hint_senddoc_cleanup:'Documents sent via "Send Document". Tick any to delete, or delete one at a time.',
     h3_mydocs:'📄 Documents from the Company', btn_manual:'Guide', doc_untitled:'Document', c_view:'View',
     doc_emp_not_found:'Employee not found for that code', doc_no_file:'Please choose a file', doc_bad_type:'File must be an image or PDF',
@@ -1825,6 +1834,9 @@ const I18N = {
     btn_send_now:'Send Now', doc_no_recipients:'Please add at least one recipient', doc_no_date:'Please choose a send date',
     doc_confirm_send_now:'Send this document right now instead of waiting for its scheduled date?',
     hint_mydocs:'Documents sent to you by Admin. They stay here until Admin removes them.', doc_none_received:'No documents yet.',
+    hint_senddoc_new:'Each recipient gets their own file — fill this in and click "+ Add to list" as many times as you need, then send the whole list together.',
+    btn_add_to_list:'+ Add to list', h3_senddoc_queue:'📋 Ready to Send',
+    hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1940,8 +1952,7 @@ const I18N = {
     pg_senddoc_sub:'ส่งรูปภาพหรือ PDF ให้พนักงานรายคน — เปิดดูได้ในระบบเท่านั้น พร้อมอีเมลแจ้งเตือน',
     h3_senddoc_new:'เอกสารใหม่', lbl_emp_code:'รหัสพนักงาน', lbl_doc_label:'ชื่อเอกสาร (ไม่บังคับ)', lbl_doc_file:'ไฟล์ (รูปภาพหรือ PDF)',
     lbl_doc_recurring:'ส่งซ้ำทุกเดือน (เช่น ส่งวันที่ 30 ของทุกเดือน)', lbl_doc_day:'วันที่ของเดือน',
-    btn_send_document:'📤 ส่ง', h3_senddoc_schedules:'🔁 กำหนดการส่งซ้ำรายเดือน',
-    hint_senddoc_schedules:'เอกสารที่จะถูกส่งซ้ำอัตโนมัติทุกเดือน ต้องตั้งค่า cron ตามที่อธิบายไว้ใน loi_documents_migration.sql ก่อน',
+    btn_send_document:'📤 ส่งทันที',
     h3_senddoc_cleanup:'📤 เอกสารที่ Admin ส่งไป', hint_senddoc_cleanup:'เอกสารที่ส่งผ่านเมนู "ส่งไฟล์เอกสาร" ติ๊กเพื่อลบทีละหลายไฟล์ หรือลบทีละไฟล์ก็ได้',
     h3_mydocs:'📄 เอกสารจากบริษัท', btn_manual:'คู่มือ', doc_untitled:'เอกสาร', c_view:'ดู',
     doc_emp_not_found:'ไม่พบพนักงานรหัสนี้', doc_no_file:'กรุณาเลือกไฟล์', doc_bad_type:'ไฟล์ต้องเป็นรูปภาพหรือ PDF เท่านั้น',
@@ -1954,6 +1965,9 @@ const I18N = {
     btn_send_now:'ส่งเลย', doc_no_recipients:'กรุณาเพิ่มผู้รับอย่างน้อย 1 คน', doc_no_date:'กรุณาเลือกวันที่จะส่ง',
     doc_confirm_send_now:'ส่งเอกสารนี้ทันทีเลยไหม ไม่ต้องรอถึงวันที่ตั้งไว้?',
     hint_mydocs:'เอกสารที่ Admin ส่งให้คุณ จะอยู่ที่นี่จนกว่า Admin จะลบออก', doc_none_received:'ยังไม่มีเอกสาร',
+    hint_senddoc_new:'แต่ละคนได้ไฟล์ของตัวเอง — กรอกแล้วกด "+ เพิ่มลง list" ได้เรื่อยๆ ตามจำนวนคน แล้วค่อยส่งทั้ง list พร้อมกัน',
+    btn_add_to_list:'+ เพิ่มลง list', h3_senddoc_queue:'📋 พร้อมส่ง',
+    hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2268,59 +2282,80 @@ async function viewMyDocument(id){
   }catch(e){ showToast(e.message,'err'); }
 }
 
-// ── ADMIN: SEND DOCUMENT (ผู้รับได้หลายคน, ส่งทันทีหรือตั้งเวลาส่งวันที่เลือกได้) ──
-let sendDocRecipients = []; // [{id, code, name}]
-function addSendDocRecipient(){
-  const input = document.getElementById('sendDocEmpCode');
-  const code = input.value.trim();
-  if(!code) return;
-  if(!employeesCache.length){ showToast(t('doc_emp_not_found'),'err'); return; }
+// ── ADMIN: SEND DOCUMENT — เพิ่มทีละคนลง list (คนละไฟล์ คนละชื่อเอกสารได้) แล้วค่อยส่งทั้ง list พร้อมกัน ──
+let sendDocQueueId = null;
+function lookupSendDocEmployee(){
+  const code = document.getElementById('sendDocEmpCode').value.trim();
+  const nameEl = document.getElementById('sendDocEmpName');
+  sendDocQueueId = null;
+  if(!code){ nameEl.textContent=''; return; }
   const emp = employeesCache.find(e=>e.employee_code===code);
-  if(!emp){ showToast(t('doc_emp_not_found'),'err'); return; }
-  if(!sendDocRecipients.some(r=>r.id===emp.id)) sendDocRecipients.push({ id: emp.id, code: emp.employee_code, name: emp.name });
-  input.value = '';
-  renderSendDocRecipientChips();
-}
-function removeSendDocRecipient(id){
-  sendDocRecipients = sendDocRecipients.filter(r=>r.id!==id);
-  renderSendDocRecipientChips();
-}
-function renderSendDocRecipientChips(){
-  document.getElementById('sendDocRecipientChips').innerHTML = sendDocRecipients.map(r=>
-    `<span class="badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--line-soft);padding:5px 10px;border-radius:999px;font-size:.78rem">
-      ${escHtml(r.name)} (${escHtml(r.code)})
-      <span style="cursor:pointer;font-weight:700" onclick="removeSendDocRecipient('${r.id}')">✕</span>
-    </span>`).join('');
+  if(emp){ sendDocQueueId = emp.id; nameEl.textContent = `✓ ${emp.name}`; }
+  else { nameEl.textContent = t('doc_emp_not_found'); }
 }
 
-async function submitSendDocument(schedule){
+let sendDocQueue = []; // [{localId, employeeId, code, name, label, file}]
+async function addSendDocQueueItem(){
   const errEl = document.getElementById('sendDocErr');
   errEl.textContent = '';
   if(!employeesCache.length) await loadEmployees();
-  // ถ้ายังพิมพ์รหัสค้างไว้ในช่องแต่ลืมกด "+ Add" ให้เติมเข้ารายชื่อให้อัตโนมัติก่อนส่ง
-  if(document.getElementById('sendDocEmpCode').value.trim()) addSendDocRecipient();
-  if(!sendDocRecipients.length){ errEl.textContent = t('doc_no_recipients'); return; }
+  lookupSendDocEmployee();
+  if(!sendDocQueueId){ errEl.textContent = t('doc_emp_not_found'); return; }
+  const emp = employeesCache.find(e=>e.id===sendDocQueueId);
   const fileInput = document.getElementById('sendDocFile');
   const file = fileInput.files && fileInput.files[0];
   if(!file){ errEl.textContent = t('doc_no_file'); return; }
   if(!file.type.startsWith('image/') && file.type!=='application/pdf'){ errEl.textContent = t('doc_bad_type'); return; }
   const label = document.getElementById('sendDocLabel').value.trim();
+  sendDocQueue.push({ localId: 'q'+Date.now()+Math.random(), employeeId: emp.id, code: emp.employee_code, name: emp.name, label, file });
+  document.getElementById('sendDocEmpCode').value='';
+  document.getElementById('sendDocEmpName').textContent='';
+  document.getElementById('sendDocLabel').value='';
+  fileInput.value='';
+  sendDocQueueId = null;
+  renderSendDocQueue();
+}
+function removeSendDocQueueItem(localId){
+  sendDocQueue = sendDocQueue.filter(q=>q.localId!==localId);
+  renderSendDocQueue();
+}
+function renderSendDocQueue(){
+  const el = document.getElementById('sendDocQueueList');
+  if(!sendDocQueue.length){ el.innerHTML = `<div class="empty-msg">${escHtml(t('doc_queue_empty'))}</div>`; return; }
+  el.innerHTML = sendDocQueue.map(q=>`
+    <div class="doc-row">
+      <div class="doc-ico">${q.file.type==='application/pdf' ? '📄' : '🖼️'}</div>
+      <div class="doc-info">
+        <div class="doc-label">${escHtml(q.name)} (${escHtml(q.code)}) — ${escHtml(q.label || q.file.name)}</div>
+        <div class="doc-meta">${escHtml(q.file.name)}</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="removeSendDocQueueItem('${q.localId}')">✕ ${escHtml(t('c_delete'))}</button>
+    </div>`).join('');
+}
+
+async function submitSendDocument(schedule){
+  const errEl = document.getElementById('sendDocErr');
+  errEl.textContent = '';
+  // ถ้ายังกรอกแถวค้างไว้ในฟอร์มแต่ลืมกด "+ Add to list" ให้เติมเข้า list ให้อัตโนมัติก่อนส่ง
+  if(document.getElementById('sendDocEmpCode').value.trim() || (document.getElementById('sendDocFile').files||[]).length){
+    await addSendDocQueueItem();
+    if(errEl.textContent) return; // เติมอัตโนมัติไม่สำเร็จ (เช่น หารหัสไม่เจอ) ให้หยุดตรงนี้
+  }
+  if(!sendDocQueue.length){ errEl.textContent = t('doc_queue_empty'); return; }
   const sendDate = document.getElementById('sendDocDate').value;
   if(schedule && !sendDate){ errEl.textContent = t('doc_no_date'); return; }
   try{
-    const dataUrl = file.type==='application/pdf' ? await readFileAsDataUrl(file) : await compressImageFile(file);
-    const ids = sendDocRecipients.map(r=>r.id);
     await withLoading(async ()=>{
-      if(schedule) await callApi('admin_schedule_document', { employee_ids: ids, file_base64: dataUrl, original_name: file.name, label, send_date: sendDate });
-      else await callApi('admin_send_document', { employee_ids: ids, file_base64: dataUrl, original_name: file.name, label });
+      for(const q of sendDocQueue){
+        const dataUrl = q.file.type==='application/pdf' ? await readFileAsDataUrl(q.file) : await compressImageFile(q.file);
+        if(schedule) await callApi('admin_schedule_document', { employee_ids: [q.employeeId], file_base64: dataUrl, original_name: q.file.name, label: q.label, send_date: sendDate });
+        else await callApi('admin_send_document', { employee_ids: [q.employeeId], file_base64: dataUrl, original_name: q.file.name, label: q.label });
+      }
     }, t('doc_sending'));
     showToast(schedule ? t('doc_scheduled_ok') : t('doc_sent_ok'));
-    sendDocRecipients = [];
-    renderSendDocRecipientChips();
-    document.getElementById('sendDocEmpCode').value='';
-    document.getElementById('sendDocLabel').value='';
+    sendDocQueue = [];
+    renderSendDocQueue();
     document.getElementById('sendDocDate').value='';
-    fileInput.value='';
     if(schedule) loadSendDocSchedules();
   }catch(e){ errEl.textContent = e.message; }
 }
