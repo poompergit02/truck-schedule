@@ -858,6 +858,30 @@ tr:hover td{background:var(--cream)}
         <div id="myDocumentsList"></div>
       </div>
     </div>
+
+    <!-- TEAM LEAVE RESULTS: ใครยื่นคำขอลาก่อน-หลัง (เน้นวันที่/เวลาที่ยื่น) — หัวหน้าเห็นเฉพาะทีมตัวเอง, admin เห็นทั้งองค์กร -->
+    <div class="page" id="page-team_results">
+      <div class="section-title" data-i18n="pg_teamresults_title">Team Leave Results</div>
+      <div class="section-sub" data-i18n="pg_teamresults_sub">See who submitted their leave request first — sorted by the date and time of submission</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
+          <select id="teamResultsYear" class="exp-select" onchange="loadTeamResults()"></select>
+          <label style="margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_sort">Sort</label>
+          <select id="teamResultsSort" class="exp-select" onchange="renderTeamResults()">
+            <option value="asc" data-i18n="opt_sort_first">Earliest submitted first</option>
+            <option value="desc" data-i18n="opt_sort_last">Latest submitted first</option>
+          </select>
+        </div>
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr>
+            <th>#</th><th data-i18n="th_submitted_at">Submitted at</th><th data-i18n="th_name">Name</th><th data-i18n="th_type">Type</th>
+            <th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_status">Status</th>
+          </tr></thead>
+          <tbody id="teamResultsBody"></tbody>
+        </table></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1333,6 +1357,8 @@ function buildTabs(){
       {id:'settings', label:t('tab_settings')},
     ];
     dropdownTabs = [
+      {id:'approvals2', label:t('tab_teamrequests')},
+      {id:'team_results', label:t('tab_team_results')},
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
@@ -1344,6 +1370,7 @@ function buildTabs(){
       {id:'myleave', label:t('tab_myleave')},
       {id:'approvals', label:t('tab_myrequests')},
       {id:'approvals2', label:t('tab_teamrequests')},
+      {id:'team_results', label:t('tab_team_results')},
       {id:'reports', label:t('tab_reports')},
     ];
   } else { // employee — safe default, never falls through to elevated tabs
@@ -1453,6 +1480,7 @@ function showPage(id, el){
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
+  if(id==='team_results'){ initTeamResultsYearSelect(); loadTeamResults(); }
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -1567,8 +1595,10 @@ function formatDaysHoursNice(n){
   let hours = Math.round((Number(n) - days) * 8);
   if(hours >= 8){ days += 1; hours = 0; }
   if(hours <= 0) return { text: String(days), compact: false };
-  if(days <= 0) return { text: `${hours} ${t('tk_unit_hours')}`, compact: true };
-  return { text: `${days} ${t('tk_unit_days')} ${hours} ${t('tk_unit_hours')}`, compact: true };
+  const hUnit = hours===1 ? t('tk_unit_hour') : t('tk_unit_hours');
+  const dUnit = days===1 ? t('tk_unit_day') : t('tk_unit_days');
+  if(days <= 0) return { text: `${hours} ${hUnit}`, compact: true };
+  return { text: `${days} ${dUnit} ${hours} ${hUnit}`, compact: true };
 }
 
 // ── สีเด่นประจำแต่ละประเภทการลา (ไล่สีสดใสต่างกันให้แยกแยะง่ายกว่าสีม่วงซีดเดียวทั้งหมด) ──
@@ -1603,7 +1633,7 @@ function renderBalances(balances){
         <div class="ticket-main">
           <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)}</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
-          <div class="ticket-nums"><span>${formatDaysNice(b.used_days)} ${escHtml(t('tk_used'))}</span><span>${formatDaysNice(b.total_days)} ${escHtml(t('tk_total'))}</span></div>
+          <div class="ticket-nums"><span>${escHtml(formatDaysHoursNice(b.used_days).text)} ${escHtml(t('tk_used'))}</span><span>${escHtml(formatDaysHoursNice(b.total_days).text)} ${escHtml(t('tk_total'))}</span></div>
         </div>
         <div class="ticket-stub">
           <div class="num${remFmt.compact?' compact':''}">${escHtml(remFmt.text)}</div>
@@ -1702,6 +1732,52 @@ function initMyReportsYearSelect(){
   for(let y=y0-2; y<=y0+1; y++) html += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
   sel.innerHTML = html;
 }
+// ── TEAM LEAVE RESULTS (เรียงตามเวลาที่ยื่นคำขอ ดูได้ว่าใครขอก่อน-หลัง) ──
+let teamResultsCache = [];
+function initTeamResultsYearSelect(){
+  const sel = document.getElementById('teamResultsYear');
+  if(sel.options.length) return;
+  const y0 = new Date().getFullYear();
+  let html = '';
+  for(let y=y0-2; y<=y0+1; y++) html += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
+  sel.innerHTML = html;
+}
+function formatDateTimeBkk(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Bangkok', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(d);
+  const g = k => (parts.find(p=>p.type===k)||{}).value || '';
+  return `${g('day')}/${g('month')}/${g('year')} ${g('hour')}:${g('minute')}`;
+}
+async function loadTeamResults(){
+  const year = Number(document.getElementById('teamResultsYear').value) || new Date().getFullYear();
+  try{
+    const data = await callApi('get_team_resolved_requests', { year });
+    teamResultsCache = data.requests || [];
+    renderTeamResults();
+  }catch(e){ showToast(e.message,'err'); }
+}
+function renderTeamResults(){
+  const body = document.getElementById('teamResultsBody');
+  const dir = document.getElementById('teamResultsSort').value;
+  const rows = [...teamResultsCache].sort((a,b)=> dir==='asc'
+    ? new Date(a.created_at) - new Date(b.created_at)
+    : new Date(b.created_at) - new Date(a.created_at));
+  if(!rows.length){ body.innerHTML = `<tr><td colspan="7" class="empty-msg">${escHtml(t('tr_none'))}</td></tr>`; return; }
+  body.innerHTML = rows.map((r,i)=>{
+    const st = STATUS_LABEL[r.status] || {label:r.status, cls:'badge-pending'};
+    return `<tr>
+      <td class="mono">${i+1}</td>
+      <td class="mono" style="font-weight:600;color:var(--plum-700)">${escHtml(formatDateTimeBkk(r.created_at))}</td>
+      <td>${escHtml(r.employee?.name||'—')}<br><span class="mono" style="font-size:.72rem;color:var(--text-dim)">${escHtml(r.employee?.employee_code||'')}${r.employee?.department?' · '+escHtml(r.employee.department):''}</span></td>
+      <td>${getLeaveTypeLabel(r.leave_type)}</td>
+      <td class="mono">${formatDuration(r)}</td>
+      <td>${formatAmount(r)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
 async function loadMyResolvedRequests(){
   const year = Number(document.getElementById('myReportsYear').value) || new Date().getFullYear();
   try{
@@ -1848,7 +1924,13 @@ const I18N = {
     hint_senddoc_new:'Each recipient gets their own file — fill this in and click "+ Add to list" as many times as you need, then send the whole list together.',
     btn_add_to_list:'+ Add to list', h3_senddoc_queue:'📋 Ready to Send',
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
-    tk_unit_days:'days', tk_unit_hours:'hours',
+    tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
+    tab_team_results:'Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
+    lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
+    th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
+    set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
+    set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -1980,7 +2062,13 @@ const I18N = {
     hint_senddoc_new:'แต่ละคนได้ไฟล์ของตัวเอง — กรอกแล้วกด "+ เพิ่มลง list" ได้เรื่อยๆ ตามจำนวนคน แล้วค่อยส่งทั้ง list พร้อมกัน',
     btn_add_to_list:'+ เพิ่มลง list', h3_senddoc_queue:'📋 พร้อมส่ง',
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
-    tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง',
+    tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
+    tab_team_results:'ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
+    lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
+    th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
+    set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
+    set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2094,7 +2182,7 @@ function formatDuration(r){
   return `${formatDMY(r.start_date)} → ${formatDMY(r.end_date)}`;
 }
 function formatAmount(r){
-  return r.leave_unit==='hour' ? `${r.hours_count} ชม.` : `${r.days_count} วัน`;
+  return r.leave_unit==='hour' ? `${r.hours_count} ${t('unit_hr_short')}` : `${r.days_count} ${t('unit_day_short')}`;
 }
 
 function renderOwnRequestsTable(bodyId, requests, showActions){
@@ -3428,7 +3516,7 @@ function renderCarryoverCandidates(){
         <td class="mono">${escHtml(c.employee_code)}</td>
         <td>${escHtml(c.name)}</td>
         <td>${c.department?escHtml(c.department):'—'}</td>
-        <td>${formatDaysNice(c.remaining_days)}</td>
+        <td>${escHtml(formatDaysHoursNice(c.remaining_days).text)}</td>
         <td>${c.already_granted?'<span class="badge badge-approved">Already granted</span>':'<span class="badge badge-pending">Not yet</span>'}</td>
         <td><button class="btn btn-sm btn-primary" ${c.already_granted?'disabled':''} onclick="grantAndNotifyCarryover('${c.employee_id}')">📧 Notify &amp; Grant 3 Days</button></td>
       </tr>`).join('')}</tbody>
@@ -3596,6 +3684,7 @@ const SETTING_DEFS = [
   { key: 'sick_leave_monfri_requires_attachment', titleKey: 'set_attach_title', descKey: 'set_attach_desc' },
   { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
   { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
+  { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
 ];
 
 async function loadSettings(){
