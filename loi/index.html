@@ -100,6 +100,11 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .tab-btn:hover:not(.active){color:var(--ink)}
 .tab-dropdown{position:relative}
 .tab-dropdown-trigger{display:flex;align-items:center;gap:4px}
+.tab-btn,.tab-dropdown-item{position:relative}
+.tab-dot{position:absolute;top:9px;right:5px;width:9px;height:9px;border-radius:50%;background:#E5484D;box-shadow:0 0 0 2px #fff;pointer-events:none}
+.t24{display:inline-flex;align-items:center;gap:4px;width:100%}
+.t24 select{flex:1;min-width:0;padding:9px 8px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.9rem;background:var(--cream)}
+.t24-sep{font-weight:700;color:var(--text-dim)}
 .tab-dropdown-menu{
   display:none;position:absolute;top:100%;left:0;min-width:200px;
   background:var(--white);border:1px solid var(--line);border-radius:10px;
@@ -279,6 +284,8 @@ tr:hover td{background:var(--cream)}
 .cal-dot-maternity{background:#E0679A}
 .cal-dot-paternity{background:#3B82C4}
 .cal-dot-priesthood{background:#C9A227}
+.cal-dot-personal_unpaid{background:#E58F2A}
+.cal-dot-wfh{background:#6366F1}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
   background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
@@ -420,7 +427,7 @@ tr:hover td{background:var(--cream)}
         <div class="form-grid">
           <div class="field">
             <label data-i18n="lbl_leave_type">Leave Type</label>
-            <select id="reqType" onchange="checkAttachmentRequirement()">
+            <select id="reqType" onchange="onLeaveTypeChange()">
               <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
               <option value="sick" data-i18n="leave_sick">Sick Leave</option>
               <option value="personal" data-i18n="leave_personal">Personal Leave</option>
@@ -428,6 +435,8 @@ tr:hover td{background:var(--cream)}
               <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
               <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
               <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
             </select>
           </div>
           <div class="field">
@@ -445,8 +454,16 @@ tr:hover td{background:var(--cream)}
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
           <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
-          <div class="field"><label data-i18n="eo_start_time">Start Time</label><input type="time" id="reqStartTime"/></div>
-          <div class="field"><label data-i18n="eo_end_time">End Time</label><input type="time" id="reqEndTime"/></div>
+          <div class="field"><label data-i18n="eo_start_time">Start Time</label><span class="t24" id="reqStartTime"></span></div>
+          <div class="field"><label data-i18n="eo_end_time">End Time</label><span class="t24" id="reqEndTime"></span></div>
+        </div>
+        <div class="form-grid" id="halfFields" style="display:none">
+          <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="reqHalfDate" oninput="updateDateConfirm('reqHalfDate','reqHalfDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHalfDateConfirm"></div></div>
+          <div class="field"><label data-i18n="lbl_half_session">Session</label>
+            <select id="reqHalfSlot">
+              <option value="am" data-i18n="opt_half_am">Morning (3.5 hrs)</option>
+              <option value="pm" data-i18n="opt_half_pm">Afternoon (4.5 hrs)</option>
+            </select></div>
         </div>
         <div id="multiFields" style="display:none;margin-bottom:14px">
           <label style="display:block;font-size:.74rem;font-weight:600;color:var(--plum-700);margin-bottom:8px" data-i18n="lbl_specific_dates">Specific Dates (same leave type applies to all)</label>
@@ -454,7 +471,7 @@ tr:hover td{background:var(--cream)}
           <button type="button" class="btn btn-sm btn-outline" style="margin-top:6px" onclick="addMultiDateRow()" data-i18n="btn_add_date">+ Add Date</button>
         </div>
         <div class="field" style="margin-bottom:14px;display:none" id="reqAttachmentWrap">
-          <label data-i18n="lbl_medcert">🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
+          <label id="reqAttachmentLabel" data-i18n="lbl_medcert">🩺 Medical Certificate (photo required — Sick Leave on Mon/Fri)</label>
           <input type="file" id="reqAttachment" accept="image/*,application/pdf"/>
         </div>
         <div class="field" style="margin-bottom:14px">
@@ -522,6 +539,27 @@ tr:hover td{background:var(--cream)}
         </div>
         <div id="calendarGrid" class="cal-grid"></div>
         <div id="calendarLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
+
+      <div class="card" id="teamResultsCard">
+        <h3 data-i18n="pg_teamresults_title">Team Leave Results</h3>
+        <p class="hint" style="margin-bottom:14px" data-i18n="pg_teamresults_sub">See who submitted their leave request first — sorted by the date and time of submission</p>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
+          <select id="teamResultsYear" class="exp-select" onchange="loadTeamResults()"></select>
+          <label style="margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_sort">Sort</label>
+          <select id="teamResultsSort" class="exp-select" onchange="renderTeamResults()">
+            <option value="asc" data-i18n="opt_sort_first">Earliest submitted first</option>
+            <option value="desc" data-i18n="opt_sort_last">Latest submitted first</option>
+          </select>
+        </div>
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr>
+            <th>#</th><th data-i18n="th_submitted_at">Submitted at</th><th data-i18n="th_name">Name</th><th data-i18n="th_type">Type</th>
+            <th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_status">Status</th>
+          </tr></thead>
+          <tbody id="teamResultsBody"></tbody>
+        </table></div>
       </div>
     </div>
 
@@ -859,29 +897,6 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- TEAM LEAVE RESULTS: ใครยื่นคำขอลาก่อน-หลัง (เน้นวันที่/เวลาที่ยื่น) — หัวหน้าเห็นเฉพาะทีมตัวเอง, admin เห็นทั้งองค์กร -->
-    <div class="page" id="page-team_results">
-      <div class="section-title" data-i18n="pg_teamresults_title">Team Leave Results</div>
-      <div class="section-sub" data-i18n="pg_teamresults_sub">See who submitted their leave request first — sorted by the date and time of submission</div>
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
-          <select id="teamResultsYear" class="exp-select" onchange="loadTeamResults()"></select>
-          <label style="margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_sort">Sort</label>
-          <select id="teamResultsSort" class="exp-select" onchange="renderTeamResults()">
-            <option value="asc" data-i18n="opt_sort_first">Earliest submitted first</option>
-            <option value="desc" data-i18n="opt_sort_last">Latest submitted first</option>
-          </select>
-        </div>
-        <div class="table-wrap" style="border:none"><table>
-          <thead><tr>
-            <th>#</th><th data-i18n="th_submitted_at">Submitted at</th><th data-i18n="th_name">Name</th><th data-i18n="th_type">Type</th>
-            <th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_status">Status</th>
-          </tr></thead>
-          <tbody id="teamResultsBody"></tbody>
-        </table></div>
-      </div>
-    </div>
   </main>
 </div>
 
@@ -1005,6 +1020,8 @@ tr:hover td{background:var(--cream)}
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
       <div class="field">
@@ -1030,8 +1047,8 @@ tr:hover td{background:var(--cream)}
     </div>
     <div class="form-grid" id="erHourFields" style="display:none">
       <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="erHourDate"/></div>
-      <div class="field"><label data-i18n="eo_start_time">Start Time</label><input type="time" id="erStartTime"/></div>
-      <div class="field"><label data-i18n="eo_end_time">End Time</label><input type="time" id="erEndTime"/></div>
+      <div class="field"><label data-i18n="eo_start_time">Start Time</label><span class="t24" id="erStartTime"></span></div>
+      <div class="field"><label data-i18n="eo_end_time">End Time</label><span class="t24" id="erEndTime"></span></div>
     </div>
     <div class="field" style="margin-bottom:14px"><label data-i18n="eo_reason">Reason</label><textarea id="erReason"></textarea></div>
     <div class="err-text" id="erErr"></div>
@@ -1095,6 +1112,8 @@ tr:hover td{background:var(--cream)}
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
       <div class="field"><label>Unit</label>
@@ -1110,8 +1129,8 @@ tr:hover td{background:var(--cream)}
     </div>
     <div class="form-grid" id="emrHourFields" style="display:none">
       <div class="field"><label>Date</label><input type="date" id="emrHourDate"/></div>
-      <div class="field"><label>Start Time</label><input type="time" id="emrStartTime"/></div>
-      <div class="field"><label>End Time</label><input type="time" id="emrEndTime"/></div>
+      <div class="field"><label>Start Time</label><span class="t24" id="emrStartTime"></span></div>
+      <div class="field"><label>End Time</label><span class="t24" id="emrEndTime"></span></div>
     </div>
     <div class="field" style="margin-bottom:14px"><label>Reason</label><textarea id="emrReason"></textarea></div>
     <div class="err-text" id="emrErr"></div>
@@ -1196,6 +1215,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
 const LEAVE_TYPE_LABEL = {
   annual:'Annual / Vacation', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
+  personal_unpaid:'Unpaid Personal Leave', wfh:'🏠 Work From Home',
 };
 // ── โควตาพักร้อนยกยอด (carryover) มี leave_type เป็น "annual_carry_YYYY" แบบไดนามิก ──
 function getLeaveTypeLabel(type){
@@ -1216,6 +1236,131 @@ let importRows = [];
 let pendingDecision = null; // { requestId }
 
 // ── API helper ──
+// ── แปลข้อความแจ้งเตือน (toast / confirm / prompt / loading / error จาก server) ให้ตรงกับภาษาที่เลือก ──
+// ข้อความฝั่งหน้าเว็บเขียนเป็นอังกฤษ → แปลเป็นไทยเมื่อเลือก TH | ข้อความ error จาก backend เป็นไทย → แปลเป็นอังกฤษเมื่อเลือก EN
+const _TH_MONTH = (m)=>{ const i=I18N.en.months.indexOf(m); return i>=0 ? I18N.th.months[i] : m; };
+const MSG_EN_TO_TH = [
+  [/^✅ Password updated$/, '✅ เปลี่ยนรหัสผ่านแล้ว'],
+  [/^Cancel this leave request\? This cannot be undone\.$/, 'ยกเลิกคำขอลานี้? ไม่สามารถย้อนกลับได้'],
+  [/^✅ Request cancelled$/, '✅ ยกเลิกคำขอแล้ว'],
+  [/^✅ Request updated — approval restarted from the beginning$/, '✅ แก้ไขคำขอแล้ว — เริ่มขั้นตอนอนุมัติใหม่ตั้งแต่ต้น'],
+  [/^⚠️ Select at least one request first$/, '⚠️ กรุณาเลือกอย่างน้อย 1 คำขอก่อน'],
+  [/^(Approve|Reject) (\d+) selected request\(s\)\?$/, (_,a,n)=>`${a==='Approve'?'อนุมัติ':'ไม่อนุมัติ'}คำขอที่เลือก ${n} รายการ?`],
+  [/^✅ (Approved|Rejected) (\d+) request\(s\)(?: — (\d+) failed)?$/, (_,a,n,f)=>`✅ ${a==='Approved'?'อนุมัติ':'ไม่อนุมัติ'}แล้ว ${n} คำขอ${f?` — ล้มเหลว ${f}`:''}`],
+  [/^⚠️ Please fill in both date and label$/, '⚠️ กรุณากรอกทั้งวันที่และชื่อวันหยุด'],
+  [/^✅ Holiday added$/, '✅ เพิ่มวันหยุดแล้ว'],
+  [/^Delete holiday "(.*)"\?$/s, 'ลบวันหยุด "$1" ?'],
+  [/^✅ Holiday deleted$/, '✅ ลบวันหยุดแล้ว'],
+  [/^✅ Imported (\d+) holiday\(s\)$/, '✅ นำเข้าวันหยุด $1 วัน'],
+  [/^⚠️ Enter an employee code$/, '⚠️ กรุณากรอกรหัสพนักงาน'],
+  [/^✅ Access granted$/, '✅ ให้สิทธิ์แล้ว'],
+  [/^✅ Access revoked$/, '✅ ยกเลิกสิทธิ์แล้ว'],
+  [/^Employee not found$/, 'ไม่พบพนักงาน'],
+  [/^New temporary password for (.*):$/s, 'รหัสผ่านชั่วคราวใหม่ของ $1:'],
+  [/^✅ Password reset$/, '✅ รีเซ็ตรหัสผ่านแล้ว'],
+  [/^Permanently delete (.*)\? This removes their account and leave history entirely, signs them out, and removes them from any manager chains\. This cannot be undone\.$/s, 'ลบ $1 ถาวร? จะลบบัญชีและประวัติการลาทั้งหมด ออกจากระบบ และถอดออกจากสายหัวหน้าทุกสาย ไม่สามารถย้อนกลับได้'],
+  [/^✅ Employee deleted$/, '✅ ลบพนักงานแล้ว'],
+  [/^✅ Leave request updated$/, '✅ แก้ไขใบลาแล้ว'],
+  [/^Cancel this leave request\? If it was already approved, the deducted balance will be restored\. This cannot be undone\.$/, 'ยกเลิกคำขอลานี้? ถ้าอนุมัติไปแล้ว โควตาที่หักไปจะถูกคืนให้ ไม่สามารถย้อนกลับได้'],
+  [/^✅ Leave request cancelled$/, '✅ ยกเลิกใบลาแล้ว'],
+  [/^No employees to export$/, 'ไม่มีพนักงานให้ export'],
+  [/^Grant a 3-day carryover to (.*) and email them now\?$/s, 'ให้สิทธิ์ยกยอด 3 วันแก่ $1 และส่งอีเมลแจ้งตอนนี้เลย?'],
+  [/^Nothing to export$/, 'ไม่มีข้อมูลให้ export'],
+  [/^No requests to export for this range$/, 'ไม่มีคำขอให้ export ในช่วงนี้'],
+  [/^No logs to export$/, 'ไม่มี log ให้ export'],
+  [/^⚠️ Enter your admin password first$/, '⚠️ กรุณากรอกรหัสผ่านแอดมินก่อน'],
+  [/^This deletes ALL leave requests, balances, manager chains, and every non-admin employee\. This cannot be undone\. Continue\?$/, 'จะลบคำขอลา โควตา สายหัวหน้า และพนักงานที่ไม่ใช่แอดมินทั้งหมด ไม่สามารถย้อนกลับได้ ดำเนินการต่อ?'],
+  [/^✅ All data deleted$/, '✅ ลบข้อมูลทั้งหมดแล้ว'],
+  [/^Delete all leave requests starting in (\w+) (\d+)\? This cannot be undone\.$/, (_,mo,y)=>`ลบคำขอลาทั้งหมดที่เริ่มในเดือน ${_TH_MONTH(mo)} ${y} ? ไม่สามารถย้อนกลับได้`],
+  [/^✅ Deleted (\d+) request\(s\)$/, '✅ ลบแล้ว $1 คำขอ'],
+  [/^✅ Employee updated$/, '✅ แก้ไขข้อมูลพนักงานแล้ว'],
+  [/^⚠️ Manager code\(s\) not found, skipped: (.*)$/s, '⚠️ ไม่พบรหัสหัวหน้า ข้ามไป: $1'],
+  [/^✅ Employee added$/, '✅ เพิ่มพนักงานแล้ว'],
+  [/^⚠️ Imported with (\d+) error\(s\)\. Check console for details\.$/, '⚠️ นำเข้าพร้อมข้อผิดพลาด $1 รายการ ดูรายละเอียดใน console'],
+  [/^✅ Imported (\d+) employees successfully$/, '✅ นำเข้าพนักงาน $1 คนสำเร็จ'],
+  [/^⚠️ Manager code\(s\) not found for: (.*)$/s, '⚠️ ไม่พบรหัสหัวหน้าของ: $1'],
+  [/^Saving\.\.\.$/, 'กำลังบันทึก...'],
+  [/^Loading\.\.\.$/, 'กำลังโหลด...'],
+  [/^Something went wrong$/, 'เกิดข้อผิดพลาด'],
+  [/^Login failed$/, 'เข้าสู่ระบบไม่สำเร็จ'],
+];
+const MSG_TH_TO_EN_EXACT = {
+  'กรุณากรอกรหัสพนักงานและรหัสผ่าน':'Please enter your employee code and password',
+  'ไม่พบรหัสพนักงานนี้ในระบบ':'Employee code not found in the system',
+  'รหัสผ่านไม่ถูกต้อง':'Incorrect password',
+  'เซสชันหมดอายุ กรุณาล็อกอินใหม่':'Session expired. Please log in again',
+  'รหัสผ่านเดิมไม่ถูกต้อง':'Current password is incorrect',
+  'รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร':'New password must be at least 4 characters',
+  'รูปไม่ถูกต้องหรือไฟล์ใหญ่เกินไป':'Invalid image or file too large',
+  'ไม่มีสิทธิ์เข้าถึง':'You do not have permission',
+  'ข้อมูลไม่ครบถ้วน':'Incomplete information',
+  'ไฟล์ต้องเป็นรูปภาพหรือ PDF และขนาดไม่เกิน 8MB':'File must be an image or PDF, max 8MB',
+  'ไม่ระบุเอกสาร':'No document specified',
+  'ไม่พบเอกสารนี้':'Document not found',
+  'รูปแบบวันที่ไม่ถูกต้อง':'Invalid date format',
+  'ไม่ระบุกำหนดการ':'No schedule specified',
+  'ไม่พบกำหนดการนี้':'Schedule not found',
+  'ไม่ระบุพนักงาน':'No employee specified',
+  'ไม่พบพนักงานคนนี้':'Employee not found',
+  'ไม่สามารถเลือกวันเสาร์หรืออาทิตย์เป็นวันลาได้':'Saturday or Sunday cannot be chosen as a leave day',
+  'กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด':'Please specify start and end time',
+  'ช่วงเวลาไม่ถูกต้อง (หรือเป็นช่วงพักเที่ยงล้วนๆ)':'Invalid time range (or it falls entirely within the lunch break)',
+  'ไม่สามารถเลือกวันเสาร์หรืออาทิตย์เป็นวันเริ่มหรือวันสิ้นสุดการลาได้':'Saturday or Sunday cannot be the start or end date of leave',
+  'ช่วงวันที่นี้ไม่มีวันทำงานเลย (ตกวันหยุดหมด) กรุณาเลือกช่วงอื่น':'This date range has no working days (all holidays). Please choose another range',
+  'ไม่สามารถขอลาวันปัจจุบันได้ ยกเว้นลาป่วย กรุณาเลือกวันอื่น หรือเปลี่ยนประเภทเป็นลาป่วย':'Leave cannot be requested for today except sick leave. Please choose another day or switch to sick leave',
+  'ไม่สามารถขอลาย้อนหลังได้ ยกเว้นลาป่วย':'Backdated leave is not allowed except sick leave',
+  'ลาป่วยวันจันทร์หรือวันศุกร์ต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave on Monday or Friday requires a medical certificate attachment',
+  'อัปโหลดไฟล์แนบไม่สำเร็จ กรุณาลองใหม่':'Attachment upload failed. Please try again',
+  'ลา Work From Home ต้องแนบรูปภาพ':'Work From Home requires a photo attachment',
+  'ไม่พบคำขอนี้':'Request not found',
+  'คำขอนี้ไม่ได้รออนุมัติจากคุณ':'This request is not waiting for your approval',
+  'คำขอนี้ไม่ได้รออนุมัติขั้นสุดท้าย':'This request is not waiting for final approval',
+  'ไม่ระบุคำขอ':'No request specified',
+  'ยกเลิกได้เฉพาะคำขอที่ยังรออนุมัติอยู่เท่านั้น':'Only requests that are still pending can be cancelled',
+  'แก้ไขได้เฉพาะคำขอที่ยังรออนุมัติอยู่เท่านั้น':'Only requests that are still pending can be edited',
+  'ช่วงเวลาไม่ถูกต้อง':'Invalid time range',
+  'ช่วงวันที่นี้ไม่มีวันทำงานเลย กรุณาเลือกช่วงอื่น':'This date range has no working days. Please choose another range',
+  'ไม่สามารถขอลาวันปัจจุบันได้ ยกเว้นลาป่วย':'Leave cannot be requested for today except sick leave',
+  'ไม่พบไฟล์แนบ':'Attachment not found',
+  'ไม่มีข้อมูลพนักงานให้ import':'No employee data to import',
+  'ข้อมูลไม่ครบ (ต้องมี employee_code, name, password)':'Incomplete data (employee_code, name, password required)',
+  'จำนวนวันไม่ถูกต้อง':'Invalid number of days',
+  'เกิดข้อผิดพลาดในการค้นหา':'Search error',
+  'พนักงานคนนี้มีวันลาคงเหลือไม่เกิน 3 วัน ไม่เข้าเงื่อนไขยกยอด':'This employee has 3 days or less remaining — not eligible for carryover',
+  'ไม่ระบุรหัสพนักงาน':'No employee code specified',
+  'ไม่พบรหัสพนักงานนี้':'Employee code not found',
+  'ไม่สามารถลบบัญชีตัวเองได้':'You cannot delete your own account',
+  'ไม่มีข้อมูลวันหยุดให้ import':'No holiday data to import',
+  'ไม่ระบุวันหยุด':'No holiday specified',
+  'กรุณากรอกรหัสผ่านเพื่อยืนยัน':'Please enter your password to confirm',
+  'กรุณาระบุเดือนและปี':'Please specify month and year',
+  'ลาประเภทนี้เลือกได้เฉพาะครึ่งวันเช้า (3.5 ชม.) หรือบ่าย (4.5 ชม.)':'This leave type allows only a half day: morning (3.5 hrs) or afternoon (4.5 hrs)',
+  'ลาประเภทนี้ไม่สามารถลารายชั่วโมงได้':'This leave type cannot be taken by the hour',
+};
+const MSG_TH_TO_EN_RULES = [
+  [/^ไม่พบข้อมูลโควตา Annual\/Vacation ของปี (\d+) สำหรับพนักงานคนนี้$/, 'No Annual/Vacation balance found for $1 for this employee'],
+  [/^โควตาพักร้อนยกยอดนี้ใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น หมดอายุแล้ว$/, 'This carryover annual leave was valid only until 31 March $1 and has expired'],
+  [/^ลบไม่สำเร็จบางส่วน: (.*)$/s, 'Delete partially failed: $1'],
+  [/^ลบไม่สำเร็จ: (.*)$/s, 'Delete failed: $1'],
+  [/^ไม่รู้จัก action นี้: (.*)$/s, 'Unknown action: $1'],
+];
+function localizeMsg(msg){
+  if(typeof msg!=='string' || !msg) return msg;
+  if(currentLang==='th'){
+    for(const [re,out] of MSG_EN_TO_TH){ if(re.test(msg)) return msg.replace(re,out); }
+    return msg;
+  }
+  if(Object.prototype.hasOwnProperty.call(MSG_TH_TO_EN_EXACT, msg)) return MSG_TH_TO_EN_EXACT[msg];
+  for(const [re,out] of MSG_TH_TO_EN_RULES){ if(re.test(msg)) return msg.replace(re,out); }
+  return msg;
+}
+// confirm / prompt / alert ของเบราว์เซอร์ ก็แปลตามภาษาที่เลือกด้วย
+(function(){
+  if(typeof window.confirm==='function'){ const o=window.confirm.bind(window); window.confirm = m => o(localizeMsg(m)); }
+  if(typeof window.prompt==='function'){ const o=window.prompt.bind(window); window.prompt = (m,d) => o(localizeMsg(m), d); }
+  if(typeof window.alert==='function'){ const o=window.alert.bind(window); window.alert = m => o(localizeMsg(m)); }
+})();
+
 async function callApi(action, params={}){
   const token = localStorage.getItem('loi_token') || '';
   const res = await fetch(API_URL, {
@@ -1224,12 +1369,12 @@ async function callApi(action, params={}){
     body: JSON.stringify({ action, token, ...params }),
   });
   const data = await res.json();
-  if(!res.ok) throw new Error(data.error || 'Something went wrong');
+  if(!res.ok) throw Object.assign(new Error(localizeMsg(data.error || 'Something went wrong')), { raw: data.error || '' });
   return data;
 }
 
 function showLoading(msg){
-  document.getElementById('loadingText').textContent = msg || 'Loading...';
+  document.getElementById('loadingText').textContent = localizeMsg(msg || 'Loading...');
   document.getElementById('loadingOverlay').classList.add('open');
 }
 function hideLoading(){
@@ -1253,7 +1398,7 @@ function showToast(msg, type='ok'){
   const wrap=document.getElementById('toastWrap');
   const t=document.createElement('div');
   t.className='toast'+(type==='err'?' err':'');
-  t.textContent=msg;
+  t.textContent=localizeMsg(msg);
   wrap.appendChild(t);
   setTimeout(()=>t.remove(),4500);
 }
@@ -1286,11 +1431,12 @@ async function callApi_noToken(action, params){
     body: JSON.stringify({ action, ...params }),
   });
   const data = await res.json();
-  if(!res.ok) throw new Error(data.error || 'Login failed');
+  if(!res.ok) throw Object.assign(new Error(localizeMsg(data.error || 'Login failed')), { raw: data.error || '' });
   return data;
 }
 
 function doLogout(){
+  if(pendingDotTimer){ clearInterval(pendingDotTimer); pendingDotTimer=null; }
   localStorage.removeItem('loi_token');
   currentUser=null;
   document.getElementById('app').style.display='none';
@@ -1358,7 +1504,6 @@ function buildTabs(){
     ];
     dropdownTabs = [
       {id:'approvals2', label:t('tab_teamrequests')},
-      {id:'team_results', label:t('tab_team_results')},
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
@@ -1370,7 +1515,6 @@ function buildTabs(){
       {id:'myleave', label:t('tab_myleave')},
       {id:'approvals', label:t('tab_myrequests')},
       {id:'approvals2', label:t('tab_teamrequests')},
-      {id:'team_results', label:t('tab_team_results')},
       {id:'reports', label:t('tab_reports')},
     ];
   } else { // employee — safe default, never falls through to elevated tabs
@@ -1396,6 +1540,7 @@ function buildTabs(){
     </div>`;
   }
   bar.innerHTML = mainHtml + dropdownHtml;
+  refreshPendingDot();
 }
 
 // ── เปิด/ปิด dropdown "IIDA Control" ด้วยการคลิก/แตะ (มือถือไม่รองรับ :hover) ──
@@ -1471,7 +1616,7 @@ function showPage(id, el){
   }
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
-  if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); }
+  if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); initTeamResultsYearSelect(); loadTeamResults(); }
   if(id==='employees'){ loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); primeRolloverYearInputs(); }
   if(id==='reports'){ initMyReportsYearSelect(); loadMyResolvedRequests(); loadMyDocuments(); }
   if(id==='settings') loadSettings();
@@ -1480,7 +1625,6 @@ function showPage(id, el){
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
-  if(id==='team_results'){ initTeamResultsYearSelect(); loadTeamResults(); }
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -1492,7 +1636,7 @@ async function loadMyLeave(){
     await fetchHolidaysCache();
     renderMyCalendar();
     populateCarryoverOption(data.balances);
-  }catch(e){ showToast(e.message,'err'); if(e.message.includes('เซสชัน')) doLogout(); }
+  }catch(e){ showToast(e.message,'err'); if((e.raw||e.message).includes('เซสชัน')) doLogout(); }
 }
 
 // ── ถ้ามีโควตาพักร้อนยกยอด (annual_carry_YYYY) เหลืออยู่และยังไม่หมดอายุ ให้เพิ่มเป็นตัวเลือกในฟอร์มขอลา ──
@@ -1610,6 +1754,8 @@ const TICKET_ACCENTS = {
   maternity:{ a:'#F472B6', b:'#DB2777' },
   paternity:{ a:'#60A5FA', b:'#2563EB' },
   priesthood:{a:'#C9A876', b:'#8f6f3f' },
+  personal_unpaid:{a:'#FB923C', b:'#C2410C' },
+  wfh:{a:'#818CF8', b:'#4F46E5' },
 };
 function getTicketAccent(leaveType){
   if(TICKET_ACCENTS[leaveType]) return TICKET_ACCENTS[leaveType];
@@ -1684,8 +1830,8 @@ function openEditMyRequestModal(requestId){
   document.getElementById('emrReason').value = r.reason || '';
   if(r.leave_unit==='hour'){
     document.getElementById('emrHourDate').value = r.start_date;
-    document.getElementById('emrStartTime').value = r.start_time ? r.start_time.slice(0,5) : '';
-    document.getElementById('emrEndTime').value = r.end_time ? r.end_time.slice(0,5) : '';
+    setT24('emrStartTime', r.start_time ? r.start_time.slice(0,5) : '');
+    setT24('emrEndTime', r.end_time ? r.end_time.slice(0,5) : '');
   } else {
     document.getElementById('emrStart').value = r.start_date;
     document.getElementById('emrEnd').value = r.end_date;
@@ -1707,8 +1853,8 @@ async function submitEditMyRequest(){
   if(unit==='hour'){
     const date = document.getElementById('emrHourDate').value;
     payload.start_date = date;
-    payload.start_time = document.getElementById('emrStartTime').value;
-    payload.end_time = document.getElementById('emrEndTime').value;
+    payload.start_time = getT24('emrStartTime');
+    payload.end_time = getT24('emrEndTime');
     if(!date || !payload.start_time || !payload.end_time){ errEl.textContent='Please fill in date and both times'; return; }
   } else {
     payload.start_date = document.getElementById('emrStart').value;
@@ -1931,6 +2077,16 @@ const I18N = {
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
+    leave_personal_unpaid:'Unpaid Personal Leave', leave_wfh:'🏠 Work From Home',
+    lbl_unit_half:'Half day (morning / afternoon)', lbl_half_session:'Session', opt_half_am:'Morning (3.5 hrs)', opt_half_pm:'Afternoon (4.5 hrs)',
+    lbl_wfh_photo:'📷 Photo (required for Work From Home)', btn_attachment:'Attachment',
+    set_wfhphoto_title:'Work From Home requires a photo', set_wfhphoto_desc:'When ON, a Work From Home request cannot be submitted without attaching a photo.',
+    dot_pending:'{n} request(s) waiting for your approval',
+    msg_pick_one_date:'⚠️ Please pick at least one date', msg_multi_ok:'✅ Submitted {ok} of {total} date(s)', msg_multi_fail:'⚠️ {n} failed: {err}',
+    msg_fill_hour:'⚠️ Please fill in date, start time, and end time', msg_end_after_start_time:'⚠️ End time must be after start time',
+    msg_pick_date:'⚠️ Please select a date', msg_pick_dates:'⚠️ Please select start and end dates', msg_end_after_start_date:'⚠️ End date must be after start date',
+    msg_attach_medcert:'⚠️ Please attach a photo of your medical certificate', msg_attach_wfh:'⚠️ Please attach a photo for Work From Home',
+    msg_file_too_big:'⚠️ File is too large (max 8MB before compression)', msg_file_unreadable:'⚠️ Could not read the attached file', msg_submitted:'✅ Leave request submitted',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -2069,6 +2225,16 @@ const I18N = {
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
+    leave_personal_unpaid:'ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'🏠 ทำงานที่บ้าน (Work From Home)',
+    lbl_unit_half:'ครึ่งวัน (เช้า / บ่าย)', lbl_half_session:'ช่วงเวลา', opt_half_am:'เช้า (3.5 ชม.)', opt_half_pm:'บ่าย (4.5 ชม.)',
+    lbl_wfh_photo:'📷 รูปภาพ (ต้องแนบสำหรับ Work From Home)', btn_attachment:'ไฟล์แนบ',
+    set_wfhphoto_title:'Work From Home ต้องแนบรูปภาพ', set_wfhphoto_desc:'เมื่อเปิด จะส่งคำขอ Work From Home ไม่ได้ถ้าไม่แนบรูปภาพ',
+    dot_pending:'มี {n} คำขอรอการอนุมัติจากคุณ',
+    msg_pick_one_date:'⚠️ กรุณาเลือกอย่างน้อย 1 วัน', msg_multi_ok:'✅ ยื่นสำเร็จ {ok} จาก {total} วัน', msg_multi_fail:'⚠️ ล้มเหลว {n} รายการ: {err}',
+    msg_fill_hour:'⚠️ กรุณากรอกวันที่ เวลาเริ่ม และเวลาสิ้นสุดให้ครบ', msg_end_after_start_time:'⚠️ เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
+    msg_pick_date:'⚠️ กรุณาเลือกวันที่', msg_pick_dates:'⚠️ กรุณาเลือกวันเริ่มและวันสิ้นสุด', msg_end_after_start_date:'⚠️ วันสิ้นสุดต้องไม่ก่อนวันเริ่ม',
+    msg_attach_medcert:'⚠️ กรุณาแนบรูปใบรับรองแพทย์', msg_attach_wfh:'⚠️ กรุณาแนบรูปภาพสำหรับ Work From Home',
+    msg_file_too_big:'⚠️ ไฟล์ใหญ่เกินไป (ไม่เกิน 8MB ก่อนบีบอัด)', msg_file_unreadable:'⚠️ อ่านไฟล์ที่แนบไม่ได้', msg_submitted:'✅ ยื่นคำขอลาแล้ว',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -2127,6 +2293,8 @@ function refreshLangDependentConstants(){
     LEAVE_TYPE_LABEL.maternity = d.leave_maternity;
     LEAVE_TYPE_LABEL.paternity = d.leave_paternity;
     LEAVE_TYPE_LABEL.priesthood = d.leave_priesthood;
+    LEAVE_TYPE_LABEL.personal_unpaid = d.leave_personal_unpaid;
+    LEAVE_TYPE_LABEL.wfh = d.leave_wfh;
   }
   if(typeof STATUS_LABEL !== 'undefined'){
     STATUS_LABEL.pending_manager.label = d.st_pending_manager;
@@ -2206,10 +2374,30 @@ function renderOwnRequestsTable(bodyId, requests, showActions){
   }).join('');
 }
 
+// ลารายชั่วโมงอิสระ: เฉพาะลาพักร้อน | ลาป่วย/ลากิจ/ลากิจไม่รับค่าจ้าง: เลือกครึ่งวันเช้า(3.5 ชม.)/บ่าย(4.5 ชม.) | ประเภทอื่น: เต็มวัน/หลายวันเท่านั้น
+// เวลาครึ่งวันต้องตรงกับ HALF_DAY_SLOTS ใน backend (loi-api)
+const HALF_DAY_TYPES = ['sick','personal','personal_unpaid'];
+const HALF_DAY_SLOTS = { am:{start:'08:30',end:'12:00'}, pm:{start:'13:00',end:'17:30'} };
+function rebuildUnitOptions(){
+  const type = document.getElementById('reqType').value;
+  const sel = document.getElementById('reqUnit');
+  const prev = sel.value;
+  const opts = [['day','eo_unit_day']];
+  if(type==='annual') opts.push(['hour','eo_unit_hour']);
+  else if(HALF_DAY_TYPES.includes(type)) opts.push(['half','lbl_unit_half']);
+  opts.push(['multi','lbl_unit_multi']);
+  sel.innerHTML = opts.map(([v,k])=>`<option value="${v}" data-i18n="${k}">${escHtml(t(k))}</option>`).join('');
+  sel.value = opts.some(o=>o[0]===prev) ? prev : 'day';
+}
+function onLeaveTypeChange(){
+  rebuildUnitOptions();
+  toggleLeaveUnit();
+}
 function toggleLeaveUnit(){
   const unit = document.getElementById('reqUnit').value;
   document.getElementById('dayFields').style.display = unit==='day' ? 'grid' : 'none';
   document.getElementById('hourFields').style.display = unit==='hour' ? 'grid' : 'none';
+  document.getElementById('halfFields').style.display = unit==='half' ? 'grid' : 'none';
   document.getElementById('multiFields').style.display = unit==='multi' ? 'block' : 'none';
   if(unit==='multi' && !document.getElementById('multiDateRows').children.length){
     addMultiDateRow();
@@ -2231,8 +2419,22 @@ function addMultiDateRow(){
 function checkAttachmentRequirement(){
   const leaveType = document.getElementById('reqType').value;
   const unit = document.getElementById('reqUnit').value;
-  const dateVal = unit==='hour' ? document.getElementById('reqHourDate').value : document.getElementById('reqStart').value;
   const wrap = document.getElementById('reqAttachmentWrap');
+  const label = document.getElementById('reqAttachmentLabel');
+  const input = document.getElementById('reqAttachment');
+  // Work From Home: ต้องแนบรูปถ้า admin เปิดสวิตช์ไว้ (แสดงตลอด ไม่ขึ้นกับวันที่)
+  if(leaveType==='wfh'){
+    const need = appSettingsCache['wfh_requires_photo']==='true';
+    wrap.style.display = need ? 'block' : 'none';
+    label.setAttribute('data-i18n','lbl_wfh_photo'); label.textContent = t('lbl_wfh_photo');
+    input.accept = 'image/*';
+    return;
+  }
+  label.setAttribute('data-i18n','lbl_medcert'); label.textContent = t('lbl_medcert');
+  input.accept = 'image/*,application/pdf';
+  const dateVal = unit==='hour' ? document.getElementById('reqHourDate').value
+                : unit==='half' ? document.getElementById('reqHalfDate').value
+                : document.getElementById('reqStart').value;
   if(!dateVal || leaveType!=='sick' || appSettingsCache['sick_leave_monfri_requires_attachment']!=='true'){
     wrap.style.display='none';
     return;
@@ -2280,25 +2482,41 @@ async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
   const unit=document.getElementById('reqUnit').value;
   const reason=document.getElementById('reqReason').value.trim();
+  const attachWrap = document.getElementById('reqAttachmentWrap');
+  const attachInput = document.getElementById('reqAttachment');
+
+  // แนบไฟล์: ถ้าช่องแนบไฟล์แสดงอยู่ แปลว่าจำเป็นต้องแนบ (ใบรับรองแพทย์ หรือ รูป WFH) — ถ้าไม่แนบจะส่งไม่ได้
+  async function readRequiredAttachment(){
+    if(attachWrap.style.display==='none') return { ok:true, dataUrl:null };
+    if(!attachInput.files.length){ showToast(t(leave_type==='wfh' ? 'msg_attach_wfh' : 'msg_attach_medcert'),'err'); return { ok:false }; }
+    const file = attachInput.files[0];
+    if(file.size > 8*1024*1024){ showToast(t('msg_file_too_big'),'err'); return { ok:false }; }
+    try{ return { ok:true, dataUrl: await compressImageFile(file) }; }
+    catch(e){ showToast(t('msg_file_unreadable'),'err'); return { ok:false }; }
+  }
 
   // ── โหมด "หลายวันที่ไม่ติดกัน" — ยื่นแยกทีละวันเป็นคำขอวันเดียวหลายใบ ──
   if(unit==='multi'){
     const dateInputs = [...document.querySelectorAll('.multiDateInput')].map(el=>el.value).filter(Boolean);
     const uniqueDates = [...new Set(dateInputs)].sort();
-    if(!uniqueDates.length){ showToast('⚠️ Please pick at least one date','err'); return; }
+    if(!uniqueDates.length){ showToast(t('msg_pick_one_date'),'err'); return; }
+    const att = await readRequiredAttachment(); if(!att.ok) return;
 
     let okCount=0, failCount=0, firstError='';
     for(const d of uniqueDates){
       try{
-        await callApi('submit_leave_request', { leave_type, reason, leave_unit:'day', start_date:d, end_date:d });
+        const p = { leave_type, reason, leave_unit:'day', start_date:d, end_date:d };
+        if(att.dataUrl) p.attachment_base64 = att.dataUrl;
+        await callApi('submit_leave_request', p);
         okCount++;
       }catch(e){ failCount++; if(!firstError) firstError = e.message; }
     }
-    if(okCount) showToast(`✅ Submitted ${okCount} of ${uniqueDates.length} date(s)`);
-    if(failCount) showToast(`⚠️ ${failCount} failed: ${firstError}`,'err');
+    if(okCount) showToast(t('msg_multi_ok').replace('{ok}',okCount).replace('{total}',uniqueDates.length));
+    if(failCount) showToast(t('msg_multi_fail').replace('{n}',failCount).replace('{err}',firstError),'err');
     document.getElementById('multiDateRows').innerHTML='';
     addMultiDateRow();
     document.getElementById('reqReason').value='';
+    attachInput.value='';
     loadMyLeave();
     return;
   }
@@ -2307,43 +2525,41 @@ async function submitLeaveRequest(){
 
   if(unit==='hour'){
     const date=document.getElementById('reqHourDate').value;
-    const start_time=document.getElementById('reqStartTime').value;
-    const end_time=document.getElementById('reqEndTime').value;
-    if(!date||!start_time||!end_time){ showToast('⚠️ Please fill in date, start time, and end time','err'); return; }
-    if(end_time<=start_time){ showToast('⚠️ End time must be after start time','err'); return; }
+    const start_time=getT24('reqStartTime');
+    const end_time=getT24('reqEndTime');
+    if(!date||!start_time||!end_time){ showToast(t('msg_fill_hour'),'err'); return; }
+    if(end_time<=start_time){ showToast(t('msg_end_after_start_time'),'err'); return; }
     payload.start_date = date; payload.end_date = date; payload.start_time = start_time; payload.end_time = end_time;
+  } else if(unit==='half'){
+    const date=document.getElementById('reqHalfDate').value;
+    if(!date){ showToast(t('msg_pick_date'),'err'); return; }
+    const slot = HALF_DAY_SLOTS[document.getElementById('reqHalfSlot').value] || HALF_DAY_SLOTS.am;
+    payload.leave_unit = 'hour'; // เก็บเป็นคำขอรายชั่วโมงเวลาเช้า/บ่ายตายตัว (3.5 / 4.5 ชม.)
+    payload.start_date = date; payload.end_date = date; payload.start_time = slot.start; payload.end_time = slot.end;
   } else {
     const start_date=document.getElementById('reqStart').value;
     const end_date=document.getElementById('reqEnd').value;
-    if(!start_date||!end_date){ showToast('⚠️ Please select start and end dates','err'); return; }
-    if(end_date<start_date){ showToast('⚠️ End date must be after start date','err'); return; }
+    if(!start_date||!end_date){ showToast(t('msg_pick_dates'),'err'); return; }
+    if(end_date<start_date){ showToast(t('msg_end_after_start_date'),'err'); return; }
     payload.start_date = start_date; payload.end_date = end_date;
   }
 
-  // แนบไฟล์ (ถ้าช่องแนบไฟล์กำลังแสดงอยู่ แปลว่าจำเป็นต้องแนบ)
-  const attachWrap = document.getElementById('reqAttachmentWrap');
-  const attachInput = document.getElementById('reqAttachment');
-  if(attachWrap.style.display!=='none'){
-    if(!attachInput.files.length){ showToast('⚠️ Please attach a photo of your medical certificate','err'); return; }
-    const file = attachInput.files[0];
-    if(file.size > 8*1024*1024){ showToast('⚠️ File is too large (max 8MB before compression)','err'); return; }
-    try{
-      payload.attachment_base64 = await compressImageFile(file);
-    }catch(e){ showToast('⚠️ Could not read the attached file','err'); return; }
-  }
+  const att = await readRequiredAttachment(); if(!att.ok) return;
+  if(att.dataUrl) payload.attachment_base64 = att.dataUrl;
 
   try{
     await callApi('submit_leave_request', payload);
-    showToast('✅ Leave request submitted');
+    showToast(t('msg_submitted'));
     document.getElementById('reqStart').value='';
     document.getElementById('reqEnd').value='';
     document.getElementById('reqHourDate').value='';
-    document.getElementById('reqStartTime').value='';
-    document.getElementById('reqEndTime').value='';
+    document.getElementById('reqHalfDate').value='';
+    setT24('reqStartTime','');
+    setT24('reqEndTime','');
     document.getElementById('reqReason').value='';
     attachInput.value='';
-    attachWrap.style.display='none';
-    ['reqStartConfirm','reqEndConfirm','reqHourDateConfirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=''; });
+    checkAttachmentRequirement();
+    ['reqStartConfirm','reqEndConfirm','reqHourDateConfirm','reqHalfDateConfirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=''; });
     loadMyLeave();
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -2693,6 +2909,25 @@ async function deleteSelectedAttachments(){
   if(done) showToast(t('attach_deleted_some').replace('{n}', done));
 }
 
+// ── จุดแดงบนเมนู "คำขอของทีม" (และปุ่ม IIDA Control ของ admin) เมื่อมีคำขอรออนุมัติจากคุณ ──
+let pendingDotTimer = null;
+function setPendingDot(count){
+  document.querySelectorAll('.tab-dot').forEach(el=>el.remove());
+  if(!count) return;
+  const make = () => { const d=document.createElement('span'); d.className='tab-dot'; d.title=t('dot_pending').replace('{n}',count); return d; };
+  document.querySelectorAll('[data-page="approvals2"]').forEach(b=>b.appendChild(make()));
+  const trig = document.querySelector('.tab-dropdown-trigger');
+  if(trig) trig.appendChild(make());
+}
+async function refreshPendingDot(){
+  if(!currentUser || (currentUser.role!=='manager' && currentUser.role!=='admin')) return;
+  if(!pendingDotTimer) pendingDotTimer = setInterval(refreshPendingDot, 60000);
+  try{
+    const data = await callApi('get_pending_approvals');
+    setPendingDot((data.requests||[]).length);
+  }catch(e){ /* เงียบไว้ ไม่รบกวนผู้ใช้ */ }
+}
+
 async function loadApprovals(){
   document.getElementById('approvalsSub').textContent =
     currentUser.role==='manager' ? t('approvalsub_mgr') : t('approvalsub_admin');
@@ -2700,6 +2935,7 @@ async function loadApprovals(){
   document.getElementById('bulkComment').value='';
   try{
     const data = await callApi('get_pending_approvals');
+    setPendingDot(data.requests.length);
     const body=document.getElementById('approvalsBody');
     if(!data.requests.length){ body.innerHTML='<tr><td colspan="7" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
     body.innerHTML = data.requests.map(r=>`
@@ -2712,7 +2948,7 @@ async function loadApprovals(){
         <td>${r.reason?escHtml(r.reason):'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button>
-          ${r.attachment_path?`<button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎 Certificate</button>`:''}
+          ${r.attachment_path?`<button class="btn btn-sm btn-outline" onclick="viewAttachment('${r.id}')">📎 ${escHtml(t('btn_attachment'))}</button>`:''}
         </td>
       </tr>`).join('');
   }catch(e){ showToast(e.message,'err'); }
@@ -3311,8 +3547,8 @@ function openEditOneRequestModal(requestId){
   document.getElementById('erReason').value = r.reason || '';
   if(r.leave_unit==='hour'){
     document.getElementById('erHourDate').value = r.start_date;
-    document.getElementById('erStartTime').value = r.start_time ? r.start_time.slice(0,5) : '';
-    document.getElementById('erEndTime').value = r.end_time ? r.end_time.slice(0,5) : '';
+    setT24('erStartTime', r.start_time ? r.start_time.slice(0,5) : '');
+    setT24('erEndTime', r.end_time ? r.end_time.slice(0,5) : '');
   } else {
     document.getElementById('erStart').value = r.start_date;
     document.getElementById('erEnd').value = r.end_date;
@@ -3335,8 +3571,8 @@ async function submitEditOneRequest(){
   if(unit==='hour'){
     const date = document.getElementById('erHourDate').value;
     payload.start_date = date;
-    payload.start_time = document.getElementById('erStartTime').value;
-    payload.end_time = document.getElementById('erEndTime').value;
+    payload.start_time = getT24('erStartTime');
+    payload.end_time = getT24('erEndTime');
     if(!date || !payload.start_time || !payload.end_time){ errEl.textContent='Please fill in date and both times'; return; }
   } else {
     payload.start_date = document.getElementById('erStart').value;
@@ -3685,6 +3921,7 @@ const SETTING_DEFS = [
   { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
   { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
+  { key: 'wfh_requires_photo', titleKey: 'set_wfhphoto_title', descKey: 'set_wfhphoto_desc' },
 ];
 
 async function loadSettings(){
@@ -4184,9 +4421,30 @@ window.addEventListener('load', async ()=>{
 });
 
 // ตอนนี้ทุก const/let ในไฟล์ถูกประกาศครบแล้ว (อยู่ท้ายสุดของสคริปต์) เรียกได้อย่างปลอดภัย ไม่ชน TDZ
+// ── ช่องเวลาแบบ 24 ชั่วโมง 00:00–23:59 (ไม่ใช้ <input type=time> เพราะบางเครื่องแสดง AM/PM ตามภาษาของเบราว์เซอร์) ──
+function initTime24(){
+  document.querySelectorAll('.t24').forEach(el=>{
+    if(el.dataset.ready) return;
+    const pad = n => String(n).padStart(2,'0');
+    const opts = (count) => '<option value="">--</option>' + Array.from({length:count},(_,i)=>`<option value="${pad(i)}">${pad(i)}</option>`).join('');
+    el.innerHTML = `<select id="${el.id}_h" aria-label="hour">${opts(24)}</select><span class="t24-sep">:</span><select id="${el.id}_m" aria-label="minute">${opts(60)}</select>`;
+    el.dataset.ready = '1';
+  });
+}
+function getT24(id){
+  const h = document.getElementById(id+'_h').value, m = document.getElementById(id+'_m').value;
+  return (h==='' || m==='') ? '' : `${h}:${m}`;
+}
+function setT24(id, val){
+  const parts = val ? String(val).slice(0,5).split(':') : ['',''];
+  document.getElementById(id+'_h').value = parts[0] || '';
+  document.getElementById(id+'_m').value = parts[1] || '';
+}
+
 applyTranslations();
 updateLangButtons();
 refreshLangDependentConstants();
+initTime24();
 </script>
 </body>
 </html>
