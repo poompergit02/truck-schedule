@@ -264,8 +264,12 @@ tr:hover td{background:var(--cream)}
 .cal-dow{font-size:.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;text-align:center;padding-bottom:4px}
 .cal-cell{min-height:64px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--cream);position:relative}
 .cal-cell.empty{background:transparent;border:none}
-.cal-cell-holiday{background:var(--danger-bg);border-color:var(--danger)}
-.cal-cell-holiday .cal-daynum{color:var(--danger);font-weight:700}
+.cal-cell-holiday{background:var(--danger-bg);border-color:var(--hc,var(--danger))}
+.cal-cell-holiday .cal-daynum{color:var(--hc,var(--danger));font-weight:700}
+@supports (background:color-mix(in srgb,red 10%,white)){
+  .cal-cell-holiday{background:color-mix(in srgb,var(--hc,var(--danger)) 14%,#fff)}
+  .cal-cell-holiday .cal-daynum{color:color-mix(in srgb,var(--hc,var(--danger)) 70%,#000)}
+}
 
 /* ══════════ MINI CALENDAR (Year at a Glance) ══════════ */
 .mini-cal-block{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:10px}
@@ -273,7 +277,13 @@ tr:hover td{background:var(--cream)}
 .mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .mini-cal-dow{font-size:.56rem;color:var(--text-faint);text-align:center;font-weight:600}
 .mini-cal-cell{font-size:.62rem;text-align:center;padding:3px 0;border-radius:3px;color:var(--text-dim)}
-.mini-cal-cell.mini-cal-holiday{background:var(--danger);color:#fff;font-weight:700;cursor:default}
+.mini-cal-cell.mini-cal-holiday{background:var(--hc,var(--danger));color:#fff;font-weight:700;cursor:default}
+.hol-swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.hol-swatch.sel{box-shadow:0 0 0 3px var(--plum-700)}
+.hol-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:8px}
+.hol-color-input{width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;vertical-align:middle}
+.yg-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
+.yg-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
@@ -490,6 +500,22 @@ tr:hover td{background:var(--cream)}
         </div>
         <div id="myCalGrid" class="cal-grid"></div>
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
+
+      <div class="card" id="myYearGlanceCard">
+        <div class="yg-head" onclick="toggleMyYearGlance()">
+          <h3 style="margin:0" data-i18n="h3_year_glance">📅 Year at a Glance</h3>
+          <button type="button" class="btn btn-sm btn-outline" id="myYearGlanceBtn" aria-expanded="false" aria-label="toggle">▼</button>
+        </div>
+        <div id="myYearGlanceBody" style="display:none;margin-top:14px">
+          <p class="hint" style="margin-bottom:14px" data-i18n="hint_year_glance_emp">Company holidays for the whole year. Colored days are holidays.</p>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
+            <input type="number" id="myYearGlanceYear" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderMyYearGlance()"/>
+          </div>
+          <div id="myYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
+          <div id="myYearGlanceList" class="yg-list"></div>
+        </div>
       </div>
 
       <div style="margin:4px 0 24px">
@@ -731,13 +757,17 @@ tr:hover td{background:var(--cream)}
     <!-- ADMIN: COMPANY HOLIDAYS -->
     <div class="page" id="page-holidays">
       <div class="section-title" data-i18n="pg_holidays_title">🏖️ Company Holidays</div>
-      <div class="section-sub" data-i18n="pg_holidays_sub">Shown as red days on everyone's leave calendar</div>
+      <div class="section-sub" data-i18n="pg_holidays_sub">Shown as colored days on everyone's leave calendar — pick a color for each holiday</div>
 
       <div class="card">
         <h3 data-i18n="h3_add_holiday">➕ Add a Holiday</h3>
         <div class="form-grid">
           <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="holDate"/></div>
           <div class="field"><label data-i18n="th_label">Label</label><input type="text" id="holLabel" data-i18n-ph="ph_holiday_label" placeholder="e.g. Company Party"/></div>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label data-i18n="lbl_holiday_color">Color</label>
+          <div id="holColorSwatches" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
         </div>
         <button class="btn btn-primary" onclick="submitAddHoliday()" data-i18n="btn_add_holiday">Add Holiday</button>
       </div>
@@ -751,7 +781,7 @@ tr:hover td{background:var(--cream)}
 
       <div class="card" style="padding:0">
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th data-i18n="th_date">Date</th><th data-i18n="th_label">Label</th><th data-i18n="th_action">Action</th></tr></thead>
+          <thead><tr><th data-i18n="th_date">Date</th><th data-i18n="th_label">Label</th><th data-i18n="lbl_holiday_color">Color</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="holidaysBody"></tbody>
         </table></div>
       </div>
@@ -1269,7 +1299,8 @@ const MSG_EN_TO_TH = [
   [/^No requests to export for this range$/, 'ไม่มีคำขอให้ export ในช่วงนี้'],
   [/^No logs to export$/, 'ไม่มี log ให้ export'],
   [/^⚠️ Enter your admin password first$/, '⚠️ กรุณากรอกรหัสผ่านแอดมินก่อน'],
-  [/^This deletes ALL leave requests, balances, manager chains, and every non-admin employee\. This cannot be undone\. Continue\?$/, 'จะลบคำขอลา โควตา สายหัวหน้า และพนักงานที่ไม่ใช่แอดมินทั้งหมด ไม่สามารถย้อนกลับได้ ดำเนินการต่อ?'],
+  [/^This deletes ALL leave requests, balances, manager chains, company holidays, attachments, sent documents, and every non-admin employee \(including their photos\)\. Admin accounts, Settings and Logs are kept\. This cannot be undone\. Continue\?$/, 'จะลบคำขอลา โควตา สายหัวหน้า วันหยุดบริษัท ไฟล์แนบ เอกสารที่ส่งแล้ว และพนักงานที่ไม่ใช่แอดมินทั้งหมด (รวมรูปโปรไฟล์ของพวกเขา) ส่วนบัญชีแอดมิน การตั้งค่า และ Logs จะยังอยู่ ไม่สามารถย้อนกลับได้ ดำเนินการต่อ?'],
+  [/^Clearing data\.\.\.$/, 'กำลังล้างข้อมูล...'],
   [/^✅ All data deleted$/, '✅ ลบข้อมูลทั้งหมดแล้ว'],
   [/^Delete all leave requests starting in (\w+) (\d+)\? This cannot be undone\.$/, (_,mo,y)=>`ลบคำขอลาทั้งหมดที่เริ่มในเดือน ${_TH_MONTH(mo)} ${y} ? ไม่สามารถย้อนกลับได้`],
   [/^✅ Deleted (\d+) request\(s\)$/, '✅ ลบแล้ว $1 คำขอ'],
@@ -1653,7 +1684,9 @@ function populateCarryoverOption(balances){
     if(remaining <= 0 || today > cutoff) return; // หมดแล้วหรือหมดอายุแล้ว ไม่ต้องโชว์
     const opt = document.createElement('option');
     opt.value = b.leave_type;
-    opt.textContent = `${getLeaveTypeLabel(b.leave_type)} — ${t('tk_days_left').replace('{n}',formatDaysHoursNice(remaining).text)}, ${t('tk_use_by_mar')}`;
+    const remFmt2 = formatDaysHoursNice(remaining);
+    const remTxt = remFmt2.compact ? remFmt2.text : `${remFmt2.text} ${t(remFmt2.text==='1' ? 'tk_unit_day' : 'tk_unit_days')}`;
+    opt.textContent = `${getLeaveTypeLabel(b.leave_type)} — ${t('tk_remaining_fmt').replace('{v}', remTxt)}, ${t('tk_use_by_mar')}`;
     opt.setAttribute('data-carryover','1');
     sel.appendChild(opt);
   });
@@ -1716,7 +1749,7 @@ function renderMyCalendar(){
     });
     const allNames = holiday ? [`🏖️ ${holiday.label}`, ...entryNames] : entryNames;
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
+    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -1779,7 +1812,7 @@ function renderBalances(balances){
         <div class="ticket-main">
           <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)}</div>
           <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
-          <div class="ticket-nums"><span>${escHtml(formatDaysHoursNice(b.used_days).text)} ${escHtml(t('tk_used'))}</span><span>${escHtml(formatDaysHoursNice(b.total_days).text)} ${escHtml(t('tk_total'))}</span></div>
+          <div class="ticket-nums"><span>${escHtml(t('tk_used_fmt').replace('{v}', formatDaysHoursNice(b.used_days).text))}</span><span>${escHtml(t('tk_total_fmt').replace('{v}', formatDaysHoursNice(b.total_days).text))}</span></div>
         </div>
         <div class="ticket-stub">
           <div class="num${remFmt.compact?' compact':''}">${escHtml(remFmt.text)}</div>
@@ -1955,7 +1988,7 @@ const I18N = {
     hint_specialaccess:'Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.',
     hint_attachcleanup:'Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.',
     hint_attachcleanup_note:'Note: "Older than (days)" only finds attachments older than that many days — a certificate you uploaded recently won\'t show up unless you lower the number. Use 0 to list every attachment currently stored, e.g. to double-check nothing is missing.',
-    hint_danger:'These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" keeps every admin account but wipes everyone else plus all leave data.',
+    hint_danger:'These actions permanently delete data. You must re-enter your own admin password to confirm. "Delete ALL" wipes everything — all leave requests and balances, non-admin employees and their photos, company holidays, attachments and sent documents — but keeps every admin account, Settings and Logs.',
     lbl_year:'Year', lbl_older_than:'Older than (days)', btn_grant_access:'Grant Access', btn_show_all_attach:'Show all attachments (0 days)',
     ph_emp_code:'Employee code, e.g. 2410', ph_admin_pw:'Your admin password',
     photo_title:'📷 Profile Photo', photo_choose:'Choose photo', photo_remove:'Remove photo', photo_save:'Save', photo_cancel:'Cancel',
@@ -2011,7 +2044,7 @@ const I18N = {
     pg_employees_title:'Employee Management', pg_employees_sub:'Add employees individually or import from Excel',
     pg_settings_title:'Settings', pg_settings_sub:'Toggle conditions that apply org-wide',
     pg_logs_title:'LOI Logs', pg_logs_sub:'Recent login activity, most recent first',
-    pg_holidays_title:'🏖️ Company Holidays', pg_holidays_sub:"Shown as red days on everyone's leave calendar",
+    pg_holidays_title:'🏖️ Company Holidays', pg_holidays_sub:"Shown as colored days on everyone's leave calendar — pick a color for each holiday",
     pg_loginprogress_title:'🚦 Login Progress', pg_loginprogress_sub:'Who uses LOI the most, and who has never logged in',
     pg_special_title:'⭐ Special Leave Calendar', pg_special_sub:'Org-wide approved leave, filterable by department',
     pg_reports_title:'My Leave Results', pg_reports_sub:'Outcome of your own past leave requests',
@@ -2071,6 +2104,7 @@ const I18N = {
     btn_add_to_list:'+ Add to list', h3_senddoc_queue:'📋 Ready to Send',
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
+    tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
     tab_team_results:'Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
@@ -2087,6 +2121,8 @@ const I18N = {
     msg_pick_date:'⚠️ Please select a date', msg_pick_dates:'⚠️ Please select start and end dates', msg_end_after_start_date:'⚠️ End date must be after start date',
     msg_attach_medcert:'⚠️ Please attach a photo of your medical certificate', msg_attach_wfh:'⚠️ Please attach a photo for Work From Home',
     msg_file_too_big:'⚠️ File is too large (max 8MB before compression)', msg_file_unreadable:'⚠️ Could not read the attached file', msg_submitted:'✅ Leave request submitted',
+    lbl_holiday_color:'Color', msg_color_updated:'✅ Holiday color updated', yg_none:'No company holidays this year',
+    hint_year_glance_emp:'Company holidays for the whole year. Colored days are holidays.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
   th: {
@@ -2103,7 +2139,7 @@ const I18N = {
     hint_specialaccess:'ให้สิทธิ์บุคคลที่คัดเลือก (เช่น ผู้บริหาร) เข้าดูปฏิทินลาพิเศษของทั้งองค์กรได้ โดยไม่ขึ้นกับตำแหน่ง/บทบาท',
     hint_attachcleanup:'ลบไฟล์จริง (รูป/PDF ใบรับรอง) ของใบลาเก่าออกจากที่เก็บข้อมูลเพื่อเพิ่มพื้นที่ — ประวัติใบลายังอยู่ครบ ลบเฉพาะไฟล์แนบ ระบบไม่โหลดอัตโนมัติ กด "ค้นหา" ก่อน',
     hint_attachcleanup_note:'หมายเหตุ: "เก่ากว่า (วัน)" จะค้นหาเฉพาะไฟล์แนบที่เก่ากว่าจำนวนวันที่ระบุ — ใบรับรองที่เพิ่งอัปโหลดจะไม่แสดง เว้นแต่ลดตัวเลขลง ใส่ 0 เพื่อแสดงไฟล์แนบทั้งหมดที่เก็บอยู่ เช่น เพื่อตรวจว่าไม่มีอะไรตกหล่น',
-    hint_danger:'การกระทำเหล่านี้ลบข้อมูลถาวร ต้องกรอกรหัสผ่านแอดมินของคุณอีกครั้งเพื่อยืนยัน "ลบทั้งหมด" จะคงบัญชีแอดมินทุกคนไว้ แต่ลบพนักงานคนอื่นและข้อมูลการลาทั้งหมด',
+    hint_danger:'การกระทำเหล่านี้ลบข้อมูลถาวร ต้องกรอกรหัสผ่านแอดมินของคุณอีกครั้งเพื่อยืนยัน "ลบทั้งหมด" จะลบทุกอย่าง — คำขอลาและโควตาทั้งหมด พนักงานที่ไม่ใช่แอดมินพร้อมรูปโปรไฟล์ วันหยุดบริษัท ไฟล์แนบ และเอกสารที่ส่งแล้ว — แต่คงบัญชีแอดมินทุกคน การตั้งค่า และ Logs ไว้',
     lbl_year:'ปี', lbl_older_than:'เก่ากว่า (วัน)', btn_grant_access:'ให้สิทธิ์', btn_show_all_attach:'แสดงไฟล์แนบทั้งหมด (0 วัน)',
     ph_emp_code:'รหัสพนักงาน เช่น 2410', ph_admin_pw:'รหัสผ่านแอดมินของคุณ',
     photo_title:'📷 รูปโปรไฟล์', photo_choose:'เลือกรูป', photo_remove:'ลบรูป', photo_save:'บันทึก', photo_cancel:'ยกเลิก',
@@ -2159,7 +2195,7 @@ const I18N = {
     pg_employees_title:'จัดการพนักงาน', pg_employees_sub:'เพิ่มพนักงานทีละคน หรือ import จาก Excel',
     pg_settings_title:'ตั้งค่า', pg_settings_sub:'เปิด/ปิดเงื่อนไขที่ใช้ทั้งองค์กร',
     pg_logs_title:'บันทึกการใช้งาน', pg_logs_sub:'ประวัติการเข้าใช้งานล่าสุด เรียงจากใหม่ไปเก่า',
-    pg_holidays_title:'🏖️ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีแดงในปฏิทินวันลาของทุกคน',
+    pg_holidays_title:'🏖️ วันหยุดบริษัท', pg_holidays_sub:'แสดงเป็นช่องสีในปฏิทินวันลาของทุกคน — เลือกสีของแต่ละวันหยุดได้',
     pg_loginprogress_title:'🚦 ความคืบหน้าการล็อกอิน', pg_loginprogress_sub:'ใครใช้งาน LOI บ่อยที่สุด และใครยังไม่เคยล็อกอิน',
     pg_special_title:'⭐ ปฏิทินลาพิเศษ', pg_special_sub:'วันลาที่อนุมัติแล้วทั้งองค์กร กรองตามแผนกได้',
     pg_reports_title:'ผลการลาของฉัน', pg_reports_sub:'ผลคำขอลาในอดีตของฉันเอง',
@@ -2219,6 +2255,7 @@ const I18N = {
     btn_add_to_list:'+ เพิ่มลง list', h3_senddoc_queue:'📋 พร้อมส่ง',
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
+    tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
     tab_team_results:'ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
@@ -2235,6 +2272,8 @@ const I18N = {
     msg_pick_date:'⚠️ กรุณาเลือกวันที่', msg_pick_dates:'⚠️ กรุณาเลือกวันเริ่มและวันสิ้นสุด', msg_end_after_start_date:'⚠️ วันสิ้นสุดต้องไม่ก่อนวันเริ่ม',
     msg_attach_medcert:'⚠️ กรุณาแนบรูปใบรับรองแพทย์', msg_attach_wfh:'⚠️ กรุณาแนบรูปภาพสำหรับ Work From Home',
     msg_file_too_big:'⚠️ ไฟล์ใหญ่เกินไป (ไม่เกิน 8MB ก่อนบีบอัด)', msg_file_unreadable:'⚠️ อ่านไฟล์ที่แนบไม่ได้', msg_submitted:'✅ ยื่นคำขอลาแล้ว',
+    lbl_holiday_color:'สี', msg_color_updated:'✅ เปลี่ยนสีวันหยุดแล้ว', yg_none:'ปีนี้ยังไม่มีวันหยุดบริษัท',
+    hint_year_glance_emp:'วันหยุดบริษัทตลอดทั้งปี วันที่มีสีคือวันหยุด',
     months:['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
   },
 };
@@ -3013,18 +3052,52 @@ async function fetchHolidaysCache(){
   }catch(e){ /* non-fatal */ }
 }
 
+// ── สีของวันหยุดบริษัท (เลือกได้ตอนเพิ่ม/แก้ไข — ไม่ได้เลือกจะเป็นสีแดงเหมือนเดิม) ──
+const HOLIDAY_COLOR_DEFAULT = '#D64545';
+const HOLIDAY_COLOR_PRESETS = [['#D64545','red'],['#F28C28','orange'],['#F2C94C','yellow'],['#3FA66B','green'],['#1F9E9E','teal'],['#3B82F6','blue'],['#8B5CF6','purple'],['#EC4899','pink'],['#6B7280','gray']];
+function normalizeHolidayColor(v){
+  const x = String(v||'').trim().toLowerCase();
+  if(/^#[0-9a-f]{6}$/.test(x)) return x.toUpperCase();
+  const hit = HOLIDAY_COLOR_PRESETS.find(pr=>pr[1]===x);
+  return hit ? hit[0] : null;
+}
+function holidayColorOf(h){ return normalizeHolidayColor(h && h.color) || HOLIDAY_COLOR_DEFAULT; }
+function holidayTextOn(hex){
+  const n = parseInt(hex.slice(1),16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return (0.299*r + 0.587*g + 0.114*b) > 170 ? '#222' : '#fff';
+}
+function holidayStyleAttr(h){ return ` style="--hc:${holidayColorOf(h)}"`; }
+let holColorSel = HOLIDAY_COLOR_DEFAULT;
+function renderHolidaySwatches(){
+  const el = document.getElementById('holColorSwatches');
+  if(!el) return;
+  el.innerHTML = HOLIDAY_COLOR_PRESETS.map(([hex,name])=>`<button type="button" class="hol-swatch${hex===holColorSel?' sel':''}" style="background:${hex}" title="${name}" onclick="pickHolidayColor('${hex}')"></button>`).join('') +
+    `<input type="color" class="hol-color-input" value="${holColorSel.toLowerCase()}" oninput="pickHolidayColor(this.value)" title="custom"/>`;
+}
+function pickHolidayColor(hex){ holColorSel = normalizeHolidayColor(hex) || HOLIDAY_COLOR_DEFAULT; renderHolidaySwatches(); }
+async function updateHolidayColor(id, color){
+  const h = holidaysCache.find(x=>String(x.id)===String(id));
+  if(!h) return;
+  try{
+    await callApi('add_company_holiday', { holiday_date: h.holiday_date, label: h.label, color });
+    showToast(t('msg_color_updated'));
+    loadHolidays();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 async function loadHolidays(){
   try{
     const data = await callApi('get_company_holidays');
     holidaysCache = data.holidays || [];
     const body = document.getElementById('holidaysBody');
     if(!holidaysCache.length){
-      body.innerHTML = '<tr><td colspan="3" class="empty-msg">No holidays added yet</td></tr>';
+      body.innerHTML = '<tr><td colspan="4" class="empty-msg">No holidays added yet</td></tr>';
     } else {
       body.innerHTML = holidaysCache.map(h=>`
         <tr>
           <td class="mono">${formatDMY(h.holiday_date)}</td>
           <td>${escHtml(h.label)}</td>
+          <td><span class="hol-dot" style="background:${holidayColorOf(h)}"></span><input type="color" class="hol-color-input" value="${holidayColorOf(h).toLowerCase()}" onchange="updateHolidayColor('${h.id}', this.value)"/></td>
           <td><button class="btn btn-sm btn-danger" onclick="deleteHoliday('${h.id}','${escAttr(h.label)}')">Delete</button></td>
         </tr>`).join('');
     }
@@ -3043,8 +3116,8 @@ function renderMiniMonthCalendar(year, month, holidayMap){
   for(let i=0;i<firstDow;i++) cells += `<div class="mini-cal-cell"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const dateStr = `${year}-${pad(month)}-${pad(d)}`;
-    const label = holidayMap[dateStr];
-    cells += `<div class="mini-cal-cell${label?' mini-cal-holiday':''}"${label?` title="${escAttr(label)}"`:''}>${d}</div>`;
+    const hol = holidayMap[dateStr];
+    cells += `<div class="mini-cal-cell${hol?' mini-cal-holiday':''}"${hol?` title="${escAttr(hol.label)}" style="--hc:${hol.color};color:${holidayTextOn(hol.color)}"`:''}>${d}</div>`;
   }
   return `<div class="mini-cal-block">
     <div class="mini-cal-month">${MONTH_NAMES_EN[month-1]}</div>
@@ -3055,17 +3128,39 @@ function renderMiniMonthCalendar(year, month, holidayMap){
   </div>`;
 }
 
+// วาดปฏิทินย่อ 12 เดือนของปีที่ระบุลงใน grid (ใช้ร่วมกันทั้งหน้า Company Holidays ของ admin และหน้า "วันลาของฉัน")
+function renderYearGlanceInto(year, gridId, listId){
+  const holidayMap = {};
+  const yearHolidays = holidaysCache.filter(h=>String(h.holiday_date).startsWith(String(year)));
+  yearHolidays.forEach(h=>{ holidayMap[h.holiday_date] = { label:h.label, color:holidayColorOf(h) }; });
+  let html = '';
+  for(let m=1; m<=12; m++) html += renderMiniMonthCalendar(year, m, holidayMap);
+  document.getElementById(gridId).innerHTML = html;
+  if(listId){
+    document.getElementById(listId).innerHTML = yearHolidays.length
+      ? yearHolidays.map(h=>`<div><span class="hol-dot" style="background:${holidayColorOf(h)}"></span><span class="mono">${formatDMY(h.holiday_date)}</span> — ${escHtml(h.label)}</div>`).join('')
+      : `<div class="empty-msg">${escHtml(t('yg_none'))}</div>`;
+  }
+}
 function renderHolidayYearGlance(){
   const yearInput = document.getElementById('holidayYearGlance');
   if(!yearInput) return;
-  const year = Number(yearInput.value) || new Date().getFullYear();
-  const holidayMap = {};
-  holidaysCache.forEach(h=>{
-    if(h.holiday_date.startsWith(String(year))) holidayMap[h.holiday_date] = h.label;
-  });
-  let html = '';
-  for(let m=1; m<=12; m++) html += renderMiniMonthCalendar(year, m, holidayMap);
-  document.getElementById('holidayYearGlanceGrid').innerHTML = html;
+  renderYearGlanceInto(Number(yearInput.value) || new Date().getFullYear(), 'holidayYearGlanceGrid');
+}
+// ── หน้า "วันลาของฉัน": ภาพรวมทั้งปี (ซ่อนไว้ก่อน กดลูกศรเพื่อดู) ──
+function renderMyYearGlance(){
+  const yi = document.getElementById('myYearGlanceYear');
+  if(!yi.value) yi.value = new Date().getFullYear();
+  renderYearGlanceInto(Number(yi.value) || new Date().getFullYear(), 'myYearGlanceGrid', 'myYearGlanceList');
+}
+function toggleMyYearGlance(){
+  const body = document.getElementById('myYearGlanceBody');
+  const btn = document.getElementById('myYearGlanceBtn');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '▲' : '▼';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open) renderMyYearGlance();
 }
 
 async function submitAddHoliday(){
@@ -3073,10 +3168,11 @@ async function submitAddHoliday(){
   const label = document.getElementById('holLabel').value.trim();
   if(!date || !label){ showToast('⚠️ Please fill in both date and label','err'); return; }
   try{
-    await callApi('add_company_holiday', { holiday_date: date, label });
+    await callApi('add_company_holiday', { holiday_date: date, label, color: holColorSel });
     showToast('✅ Holiday added');
     document.getElementById('holDate').value='';
     document.getElementById('holLabel').value='';
+    pickHolidayColor(HOLIDAY_COLOR_DEFAULT);
     loadHolidays();
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -3102,8 +3198,8 @@ function openHolidayImportModal(){
 }
 
 function downloadHolidayTemplate(){
-  const headers=['date','label'];
-  const sample=[{ date:'2026-09-15', label:'Company Party' }];
+  const headers=['date','label','color'];
+  const sample=[{ date:'2026-09-15', label:'Company Party', color:'orange' }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Holidays');
@@ -3142,6 +3238,7 @@ function handleHolidayExcelFile(event){
       holidayImportRows = rows.map(r=>({
         date: excelDateToISO(r.date),
         label: String(r.label||'').trim(),
+        color: normalizeHolidayColor(r.color) || '',
       })).filter(r=>r.date && r.label);
 
       document.getElementById('holidayImportCount').textContent = holidayImportRows.length;
@@ -3149,8 +3246,8 @@ function handleHolidayExcelFile(event){
       const wrap=document.getElementById('holidayImportPreviewWrap');
       const table=document.getElementById('holidayImportPreviewTable');
       wrap.style.display='block';
-      table.innerHTML = '<thead><tr><th>date</th><th>label</th></tr></thead><tbody>'+
-        holidayImportRows.map(r=>`<tr><td>${escHtml(r.date)}</td><td>${escHtml(r.label)}</td></tr>`).join('')+'</tbody>';
+      table.innerHTML = '<thead><tr><th>date</th><th>label</th><th>color</th></tr></thead><tbody>'+
+        holidayImportRows.map(r=>`<tr><td>${escHtml(r.date)}</td><td>${escHtml(r.label)}</td><td>${r.color?`<span class="hol-dot" style="background:${r.color}"></span>${escHtml(r.color)}`:'—'}</td></tr>`).join('')+'</tbody>';
       document.getElementById('holidayImportSubmitBtn').style.display = holidayImportRows.length ? 'inline-block' : 'none';
     }catch(err){
       document.getElementById('holidayImportErr').textContent = 'Could not read file: '+err.message;
@@ -3163,7 +3260,7 @@ async function submitHolidayImport(){
   if(!holidayImportRows.length) return;
   const errEl=document.getElementById('holidayImportErr');
   try{
-    const data = await callApi('import_company_holidays', { holidays: holidayImportRows.map(r=>({holiday_date:r.date, label:r.label})) });
+    const data = await callApi('import_company_holidays', { holidays: holidayImportRows.map(r=>({holiday_date:r.date, label:r.label, color:r.color||null})) });
     closeModal('holidayImportModal');
     showToast(`✅ Imported ${data.imported} holiday(s)`);
     loadHolidays();
@@ -3433,7 +3530,7 @@ function renderSpecialCalendar(requests){
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(names)}"`:''}>
+    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -4105,7 +4202,7 @@ function populateDangerSelectors(){
 async function resetAllData(){
   const pw = document.getElementById('dangerPassword').value;
   if(!pw){ showToast('⚠️ Enter your admin password first','err'); return; }
-  const ok = confirm('This deletes ALL leave requests, balances, manager chains, and every non-admin employee. This cannot be undone. Continue?');
+  const ok = confirm('This deletes ALL leave requests, balances, manager chains, company holidays, attachments, sent documents, and every non-admin employee (including their photos). Admin accounts, Settings and Logs are kept. This cannot be undone. Continue?');
   if(!ok) return;
   try{
     await withLoading(()=>callApi('reset_all_data', { confirm_password: pw }), 'Clearing data...');
@@ -4392,7 +4489,7 @@ function renderCalendar(requests){
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${allNames.length?` data-names="${escAttr(names)}"`:''}>
+    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -4445,6 +4542,7 @@ applyTranslations();
 updateLangButtons();
 refreshLangDependentConstants();
 initTime24();
+renderHolidaySwatches();
 </script>
 </body>
 </html>
