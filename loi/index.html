@@ -28,13 +28,12 @@ h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
 .mono{font-family:'IBM Plex Mono',monospace}
 
 
-/* ══════════ SHARK SWIM (ปลาฉลามหัวค้อน pixel art ว่ายอยู่ด้านหลังเนื้อหา) ══════════
-   - canvas ติดกับหน้าจอ (fixed) อยู่หลังเนื้อหาทั้งหมด (z-index:-1) คลิกทะลุได้
+/* ══════════ SHARK SWIM (ปลาฉลามหัวค้อนจากอนุภาคพิกเซล ว่ายอยู่ด้านหลังเนื้อหา) ══════════
+   - canvas ติดกับหน้าจอ (fixed) อยู่หลังเนื้อหาทั้งหมด (z-index:-1) คลิกทะลุได้ ไม่กระทบการเลื่อนหน้า/กดปุ่ม
    - การ์ด/เฮดเดอร์พื้นขาวบังปลาเอง ปลาจึงโผล่เฉพาะพื้นที่ว่างข้างๆ และช่องระหว่างการ์ด */
 #sharkLayer{
   position:fixed; inset:0; width:100%; height:100%;
   z-index:-1; pointer-events:none;
-  image-rendering:pixelated; image-rendering:crisp-edges;
 }
 
 /* ══════════ LOGIN SCREEN ══════════ */
@@ -4818,167 +4817,441 @@ function setT24(id, val){
 }
 
 
-// ══════════ SHARK SWIM — ปลาฉลามหัวค้อน pixel art ว่ายเป็นพื้นหลังตกแต่ง ══════════
-// ปรับแต่งได้ที่ SHARK_CONFIG ด้านล่างนี้ที่เดียว ไม่ต้องแก้ส่วนอื่น
+// ══════════ SHARK SWIM — ปลาฉลามหัวค้อนจากอนุภาคพิกเซล (Pixel Particle Art) ══════════
+// ตัวปลาประกอบจากสี่เหลี่ยมเล็กๆ หลายพันจุด สร้างจาก silhouette (SVG path) แล้วสุ่มจุดภายในรูปร่าง
+// แต่ละจุดมีสีตามแสงเงา + ความโปร่งใสต่างกัน ลำตัวโค้งแกว่งตามหลักการว่ายของฉลาม
+// อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และปลาหลบเมาส์
+// ปรับแต่งทุกอย่างได้ที่ SHARK_CONFIG ด้านล่างที่เดียว
 const SHARK_CONFIG = {
-  count:        5,            // จำนวนปลา (แนะนำ 3–6)
-  countMobile:  3,            // จำนวนปลาเมื่อหน้าจอแคบกว่า mobileWidth
-  mobileWidth:  700,          // px — ต่ำกว่านี้ถือเป็นมือถือ
-  speed:        1,            // ตัวคูณความเร็ว (0.5 = ช้าลงครึ่งหนึ่ง, 2 = เร็วขึ้นเท่าตัว)
-  sizes:        [2, 3, 3, 4], // ขนาดของ "พิกเซล" ในหน่วย CSS px สุ่มให้ปลาแต่ละตัว (ปลาตัวเต็ม = 28×15 พิกเซล)
-  opacity:      0.5,          // ความโปร่งใสของปลา 0–1 (ยิ่งน้อยยิ่งกลมกลืนกับพื้นหลัง)
-  fps:          30,           // เฟรมเรตสูงสุดของ animation (ลดเพื่อประหยัดเครื่อง)
-  tailFps:      4,            // ความถี่การกระดิกหาง (ครั้ง/วินาที)
-  bob:          10,           // แอมพลิจูดการขึ้นลงขณะว่าย (px)
-  baseSpeed:    [14, 30],     // ช่วงความเร็วพื้นฐาน (px/วินาที) ก่อนคูณ speed
+  // ── จำนวนอนุภาค (ยิ่งมากยิ่งละเอียดแต่ใช้เครื่องมากขึ้น) ──
+  mainParticles:   2800,   // ปลาตัวหลัก (desktop)
+  smallParticles:  950,    // ปลาตัวเล็ก (desktop)
+  mobileParticles: 800,    // ปลาตัวเดียวบนมือถือ
+  smallCount:      2,      // จำนวนปลาตัวเล็ก บน desktop (0–2)
+
+  // ── ขนาดปลา: ความยาวตัว = สัดส่วนของความกว้างจอ (จำกัดช่วงต่ำสุด/สูงสุด เป็น px) ──
+  mainLengthRatio: 0.30, mainLengthMin: 240, mainLengthMax: 640,
+  smallLengthRatio: 0.52,                        // ตัวเล็ก = สัดส่วนของตัวหลัก
+  mobileWidth: 700,                              // กว้างกว่านี้ถือเป็น desktop
+  mobileLengthRatio: 0.58, mobileLengthMin: 150, mobileLengthMax: 260,
+
+  // ── การเคลื่อนไหว ──
+  speed:      1,           // ตัวคูณความเร็วว่าย (0.5 ช้าลงครึ่งหนึ่ง, 2 เร็วเท่าตัว)
+  waveAmp:    1,           // ความแรงที่ลำตัว/หางแกว่ง
+  fps:        45,          // เฟรมเรตสูงสุด
+
+  // ── อนุภาค/สี ──
+  opacity:      0.92,      // ความทึบรวมของปลา 0–1
+  particleSize: 0.82,      // ขนาดจุดเทียบกับระยะห่างระหว่างจุด (0.5 เล็กละเอียด – 1.0 ติดกัน)
+  // พาเลตต์ จากเงาเข้ม (Dark Navy) → Blue Gray → Silver → White
+  palette: ['#1B2A44', '#2F4468', '#4C6486', '#6F85A3', '#93A5BC', '#B5C3D4', '#D3DCE7', '#EEF2F7'],
+
+  // ── เอฟเฟกต์อนุภาค ──
+  dust:        1,          // ความถี่ที่ฝุ่นหลุดจากขอบตัวปลา (0 = ปิด)
+  scatter:     1,          // ความแรงการกระจายตัว (เมาส์ + ฝุ่น) 0 = ปิด, 2 = แรง
+  mouseRadius: 120,        // รัศมีที่เมาส์ทำให้อนุภาคกระจาย (px)
+  avoidMouse:  true,       // ให้ปลาเลี้ยวหลบเมาส์
 };
-
-// สีของปลา (d = หลัง, m = ลำตัวอ่อนกว่า, l = ไฮไลต์, e = ตา) — เป็นโทนฟ้าเทา เข้ากับสีม่วง/ครีมของเว็บ
-const SHARK_PALETTE = { d:'#7F96B2', m:'#9DB2C9', l:'#DCE6F0', e:'#2B2540' };
-
-// ภาพปลา มองจากด้านบน หันไปทางขวา 28×15 พิกเซล มี 3 เฟรม (หางกระดิก ขึ้น/กลาง/ลง) '.' = โปร่งใส
-const SHARK_FRAMES = [
-    [
-      '.d..........................',
-      '.dd.........lldd.........ddd',
-      '..d..........ddddd......dded',
-      '...d......dd..ddddd.....dddd',
-      '...dd......dd..ddddd....dmmd',
-      '....dd....dddddddddddddddmmd',
-      '.....dddddmmmmmmmmmmmmmmdmmd',
-      '....ddddddmmllllllllllmmdmmd',
-      '......ddddmmmmmmmmmmmmmmdmmd',
-      '.....d....dddddddddddddddmmd',
-      '....d......dd..ddddd....dmmd',
-      '...d......dd..ddddd.....dddd',
-      '.............ddddd......dded',
-      '............lldd.........ddd',
-      '............................'
-    ],
-    [
-      '............................',
-      '.d..........lldd.........ddd',
-      '.dd..........ddddd......dded',
-      '..dd......dd..ddddd.....dddd',
-      '...dd......dd..ddddd....dmmd',
-      '....dd....dddddddddddddddmmd',
-      '.....dddddmmmmmmmmmmmmmmdmmd',
-      '....ddddddmmllllllllllmmdmmd',
-      '......ddddmmmmmmmmmmmmmmdmmd',
-      '.....d....dddddddddddddddmmd',
-      '....d......dd..ddddd....dmmd',
-      '...d......dd..ddddd.....dddd',
-      '.............ddddd......dded',
-      '............lldd.........ddd',
-      '............................'
-    ],
-    [
-      '............................',
-      '............lldd.........ddd',
-      '.d...........ddddd......dded',
-      '.ddd......dd..ddddd.....dddd',
-      '..ddd......dd..ddddd....dmmd',
-      '....dd....dddddddddddddddmmd',
-      '.....dddddmmmmmmmmmmmmmmdmmd',
-      '....ddddddmmllllllllllmmdmmd',
-      '......ddddmmmmmmmmmmmmmmdmmd',
-      '.....d....dddddddddddddddmmd',
-      '....d......dd..ddddd....dmmd',
-      '...d......dd..ddddd.....dddd',
-      '.............ddddd......dded',
-      '............lldd.........ddd',
-      '............................'
-    ]
-];
 
 const SharkSwim = (function(){
   const canvas = document.getElementById('sharkLayer');
   if(!canvas) return { start(){}, stop(){} };
   const ctx = canvas.getContext('2d');
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const SPR_W = SHARK_FRAMES[0][0].length, SPR_H = SHARK_FRAMES[0].length;
-  const spriteCache = {};   // เก็บภาพปลาที่วาดไว้ล่วงหน้า (เฟรม × ขนาด × ทิศ) จะได้ไม่ต้องวาดทีละพิกเซลทุกเฟรม
-  let sharks = [], rafId = null, lastT = 0, running = false;
-
+  const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const TAU = Math.PI * 2;
   const rand = (a,b)=> a + Math.random()*(b-a);
+  const clamp = (v,a,b)=> v < a ? a : (v > b ? b : v);
+  const angDiff = (a,b)=>{ let d = a - b; while(d > Math.PI) d -= TAU; while(d < -Math.PI) d += TAU; return d; };
 
-  // วาดสไปรต์เป็นภาพ offscreen หนึ่งครั้ง แล้วเก็บไว้ใช้ซ้ำ
-  function getSprite(frame, scale, flip){
-    const key = frame+'|'+scale+'|'+(flip?1:0);
-    if(spriteCache[key]) return spriteCache[key];
-    const c = document.createElement('canvas');
-    c.width = SPR_W*scale; c.height = SPR_H*scale;
-    const g = c.getContext('2d');
-    SHARK_FRAMES[frame].forEach((row,y)=>{
-      for(let x=0; x<SPR_W; x++){
-        const col = SHARK_PALETTE[row[x]];
-        if(!col) continue;
-        g.fillStyle = col;
-        g.fillRect((flip ? SPR_W-1-x : x)*scale, y*scale, scale, scale);
-      }
-    });
-    return (spriteCache[key] = c);
+  // ───────── 1) SILHOUETTE: รูปร่างฉลามหัวค้อน มองจากด้านบน หันไปทางขวา (หัว = x มาก, หาง = x น้อย) ─────────
+  // พิกัดอยู่ในกล่อง 1000×600 หน่วย (กึ่งกลางลำตัว y=300) วาดครึ่งบนด้วยเส้นโค้ง Bezier แล้วสะท้อนเป็นครึ่งล่าง
+  // รูปแบบแต่ละช่วง: [c1x,c1y, c2x,c2y, ปลายx,ปลายy]
+  const SIL_START = [975, 300];
+  const SIL_TOP = [
+    [972,260, 968,200, 960,150],   // 1 ขอบหน้าค้อน ขึ้นไปปลายค้อน
+    [958,138, 945,130, 925,132],   // 2 ปลายค้อน (ตาอยู่ตรงนี้)
+    [912,138, 892,222, 862,264],   // 3 ขอบหลังค้อน เฉียงลงมาที่คอ
+    [815,264, 745,264, 690,262],   // 4 ลำตัวช่วงเหงือก เรียวยาว
+    [655,228, 585,178, 500,138],   // 5 ขอบหน้าครีบอก (pectoral) โค้งเหมือนเคียว กวาดไปด้านหลัง
+    [532,182, 560,226, 578,256],   // 6 ขอบหลังครีบอก กลับเข้าลำตัว
+    [540,258, 470,256, 400,250],   // 7 ลำตัว
+    [385,246, 360,238, 330,226],   // 8 ครีบท้อง (pelvic) ขอบหน้า
+    [346,242, 338,250, 322,254],   // 9 ครีบท้อง ขอบหลัง
+    [272,264, 220,280, 170,292],   // 10 ลำตัวเรียวลงสู่โคนหาง
+  ];
+  // หางฉลาม: กลีบบนยาว กลีบล่างสั้น (ไม่สมมาตร จึงวาดเอง)
+  const SIL_TAIL = [
+    [140,282, 85,215, 30,120],     // ขอบนอกกลีบบน
+    [62,175, 92,255, 108,300],     // ขอบในกลีบบน ลงมาที่รอยแยก
+    [108,330, 92,380, 55,430],     // ขอบในกลีบล่าง
+    [100,380, 135,330, 170,308],   // ขอบนอกกลีบล่าง กลับโคนหาง
+  ];
+  function buildBodyPath(){
+    const m = (y)=> 600 - y;
+    let d = 'M' + SIL_START.join(' ');
+    SIL_TOP.forEach(s=>{ d += ' C' + s.join(' '); });
+    SIL_TAIL.forEach(s=>{ d += ' C' + s.join(' '); });
+    // ครึ่งล่าง = สะท้อนครึ่งบน เดินย้อนกลับ
+    const pts = [SIL_START].concat(SIL_TOP.map(s=>[s[4], s[5]]));
+    for(let i = SIL_TOP.length - 1; i >= 0; i--){
+      const s = SIL_TOP[i], from = pts[i];
+      d += ' C' + [s[2], m(s[3]), s[0], m(s[1]), from[0], m(from[1])].join(' ');
+    }
+    return d + ' Z';
   }
+  // ครีบหลัง (dorsal) แบบตั้งเด่น เฉียงไปด้านหลัง — วาดเป็นพื้นที่สีเข้มทับกลางสันหลัง
+  const DORSAL_PATH = 'M705 282 C650 268 560 280 466 334 C530 316 592 314 640 314 C672 310 697 302 705 296 Z';
+  const EYES = [[947,146],[947,454]];
 
-  function resize(){
-    canvas.width  = window.innerWidth;   // 1 พิกเซลของ canvas = 1 CSS px → พิกเซลคมชัด ไม่เบลอ
-    canvas.height = window.innerHeight;
-    const target = window.innerWidth < SHARK_CONFIG.mobileWidth ? SHARK_CONFIG.countMobile : SHARK_CONFIG.count;
-    while(sharks.length < target) sharks.push(makeShark(sharks.length, target, true));
-    sharks.length = target;
-  }
-
-  // สร้างปลาหนึ่งตัว: แบ่งความสูงจอเป็นแถบๆ ให้ปลากระจายไม่ซ้อนกัน
-  function makeShark(i, total, initial){
-    const scale = SHARK_CONFIG.sizes[Math.floor(Math.random()*SHARK_CONFIG.sizes.length)];
-    const dir = Math.random() < 0.6 ? 1 : -1;            // 1 = ซ้าย→ขวา, -1 = ขวา→ซ้าย
-    const w = SPR_W*scale;
-    const band = canvas.height / total;
-    const s = {
-      scale, dir, w,
-      speed: rand(SHARK_CONFIG.baseSpeed[0], SHARK_CONFIG.baseSpeed[1]) * SHARK_CONFIG.speed * (0.8 + scale*0.1),
-      baseY: band*i + rand(band*0.2, band*0.8),
-      bobPhase: rand(0, Math.PI*2), bobSpeed: rand(0.5, 1.0),
-      tailOffset: Math.floor(rand(0, 4)),
-      x: 0,
+  // ───────── 2) สร้างอนุภาคจาก silhouette (ทำครั้งเดียวต่อจำนวนอนุภาค แล้วเก็บไว้ใช้ซ้ำ) ─────────
+  const shapeCache = {};
+  function buildShape(target){
+    if(shapeCache[target]) return shapeCache[target];
+    const W = 1000, H = 600;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#f00'; g.fill(new Path2D(buildBodyPath()));          // แดง = ลำตัว
+    g.fillStyle = '#0f0'; g.fill(new Path2D(DORSAL_PATH));              // เขียว = ครีบหลัง
+    g.fillStyle = '#00f';                                               // น้ำเงิน = ตา
+    EYES.forEach(e=>{ g.beginPath(); g.arc(e[0], e[1], 10, 0, TAU); g.fill(); });
+    const px = g.getImageData(0, 0, W, H).data;
+    // คืนค่า 0 = นอกรูป, 1 = ลำตัว, 2 = ครีบหลัง, 3 = ตา
+    const at = (x,y)=>{
+      x = x|0; y = y|0;
+      if(x < 0 || y < 0 || x >= W || y >= H) return 0;
+      const i = (y*W + x)*4;
+      if(px[i+3] < 128) return 0;
+      return px[i+2] > 127 ? 3 : (px[i+1] > 127 ? 2 : 1);
     };
-    // ตอนเริ่มให้กระจายอยู่ทั่วจอ หลังจากนั้นเกิดนอกจอฝั่งที่ว่ายเข้ามา
-    s.x = initial ? rand(-w, canvas.width) : (dir > 0 ? -w - rand(0, 120) : canvas.width + rand(0, 120));
+    let area = 0;
+    for(let y = 0; y < H; y += 4) for(let x = 0; x < W; x += 4) if(at(x,y)) area += 16;
+    const sp = Math.sqrt(area / target);                  // ระยะห่างระหว่างจุด (หน่วยเดียวกับ silhouette)
+
+    const pts = [];
+    for(let y = sp*0.5; y < H; y += sp){
+      for(let x = sp*0.5; x < W; x += sp){
+        const jx = x + rand(-0.38, 0.38)*sp, jy = y + rand(-0.38, 0.38)*sp;   // สุ่มขยับเล็กน้อยให้ดูเป็นธรรมชาติ ไม่เป็นตารางแข็ง
+        const type = at(jx, jy);
+        if(type) pts.push({ x: jx, y: jy, type });
+      }
+    }
+    // ระยะถึงขอบ (depth) — ใช้ทำแสงเงา (ขอบสว่าง แกนกลางเข้ม) และหาอนุภาคที่ขอบสำหรับทำฝุ่น
+    const dirs = []; for(let k = 0; k < 8; k++) dirs.push([Math.cos(k*TAU/8), Math.sin(k*TAU/8)]);
+    const step = sp*0.5;
+    const P = SHARK_CONFIG.palette.length;
+    const n = pts.length;
+    const hx = new Float32Array(n), hy = new Float32Array(n), fin = new Float32Array(n), sz = new Float32Array(n);
+    const edge = new Uint8Array(n), bucket = new Uint16Array(n);
+    const alphaLv = [0.55, 0.78, 1];
+    for(let i = 0; i < n; i++){
+      const p = pts[i];
+      let depth = 99;
+      for(const dv of dirs){
+        let d = 0;
+        while(d < 8 && at(p.x + dv[0]*step*(d+1), p.y + dv[1]*step*(d+1))) d++;
+        if(d < depth) depth = d;
+      }
+      const rim = clamp(1 - depth/6, 0, 1);               // 1 = ติดขอบ
+      const vy = p.y - 300;
+      const light = clamp(-vy/170, -1, 1)*0.5 + 0.5;       // แสงมาจากด้านบน: ครึ่งบนสว่างกว่า
+      const spine = p.x < 800 ? 1 - clamp(Math.abs(vy)/45, 0, 1) : 0;
+      let t = 0.16 + 0.48*rim + 0.17*light - 0.13*spine + rand(-0.07, 0.07);
+      if(p.x > 860) t += 0.05;                              // หัวค้อนสว่างขึ้นเล็กน้อย
+      let al = Math.random();
+      if(p.type === 2) t = 0.04 + rand(0, 0.12);            // ครีบหลัง: เข้มสุด
+      if(p.type === 3){ t = 0; al = 1; }                    // ตา: เข้มสุด ทึบ
+      t = clamp(t, 0, 0.92);
+      const sh = Math.round(t*(P-1));
+      const lvl = (p.type >= 2) ? 2 : (depth < 2 ? (al < 0.5 ? 0 : 1) : (al < 0.18 ? 0 : (al < 0.5 ? 1 : 2)));
+      bucket[i] = sh*3 + lvl;
+      hx[i] = p.x - 500; hy[i] = vy;
+      // fin = น้ำหนักการสะบัดของครีบอก/ครีบท้อง (ยิ่งห่างลำตัวยิ่งสะบัดมาก)
+      const inFin = (p.x > 300 && p.x < 700) && Math.abs(vy) > 46 && p.type === 1;
+      fin[i] = inFin ? clamp((Math.abs(vy) - 46)/90, 0, 1) : 0;
+      edge[i] = (depth < 2 && p.type === 1) ? 1 : 0;
+      sz[i] = rand(0.78, 1.12);
+    }
+    // เรียงอนุภาคตามกลุ่มสี เพื่อวาดทีละกลุ่มด้วยคำสั่งเดียว (เร็วกว่าตั้งสีทีละจุดมาก)
+    const nb = P*3, counts = new Uint32Array(nb + 1);
+    for(let i = 0; i < n; i++) counts[bucket[i] + 1]++;
+    for(let b = 0; b < nb; b++) counts[b+1] += counts[b];
+    const start = Uint32Array.from(counts), fill = Uint32Array.from(counts);
+    const order = new Uint32Array(n);
+    for(let i = 0; i < n; i++) order[fill[bucket[i]]++] = i;
+    const S = {
+      n, sp, start, bucketCount: nb,
+      hx: new Float32Array(n), hy: new Float32Array(n), u: new Float32Array(n),
+      fin: new Float32Array(n), sz: new Float32Array(n), edge: new Uint8Array(n),
+    };
+    for(let j = 0; j < n; j++){                             // เก็บข้อมูลตามลำดับกลุ่มสี
+      const i = order[j];
+      S.hx[j] = hx[i]; S.hy[j] = hy[i]; S.u[j] = (hx[i] + 500)/1000;
+      S.fin[j] = fin[i]; S.sz[j] = sz[i]; S.edge[j] = edge[i];
+    }
+    return (shapeCache[target] = S);
+  }
+
+  // สีของกลุ่มอนุภาค: ความโปร่งใส 3 ระดับ × เฉดสีตามพาเลตต์
+  const ALPHA_LEVELS = [0.55, 0.78, 1];
+
+  // ───────── 3) ตัวปลา: สถานะการว่าย + อนุภาค ─────────
+  const sharks = [];
+  const view = { w: 0, h: 0, dpr: 1, mobile: false, zones: null };
+  const mouse = { x: -9999, y: -9999, active: false };
+  let running = false, rafId = null, lastT = 0, simT = 0, slowMs = 0, slowSince = 0;
+
+  const TAB_N = 96;                                         // ความละเอียดตารางเส้นกลางลำตัว
+  const tabY = new Float32Array(TAB_N + 1), tabSin = new Float32Array(TAB_N + 1), tabCos = new Float32Array(TAB_N + 1);
+
+  function lengthFor(role){
+    const C = SHARK_CONFIG;
+    if(view.mobile) return clamp(view.w*C.mobileLengthRatio, C.mobileLengthMin, C.mobileLengthMax);
+    let main = clamp(view.w*C.mainLengthRatio, C.mainLengthMin, C.mainLengthMax);
+    // ให้ขนาดสัมพันธ์กับพื้นที่ว่างข้างเนื้อหา: ว่างน้อยปลาก็เล็กลง (ยังว่ายลอดใต้การ์ดได้)
+    const z = view.zones;
+    if(z){
+      const free = Math.max(z.left, z.right);
+      if(free > 60) main = clamp(Math.min(main, free*1.1), C.mainLengthMin*0.8, C.mainLengthMax);
+    }
+    return role === 'main' ? main : main*C.smallLengthRatio;
+  }
+
+  function makeShark(role, idx){
+    const C = SHARK_CONFIG;
+    const target = view.mobile ? C.mobileParticles : (role === 'main' ? C.mainParticles : C.smallParticles);
+    const shape = buildShape(target);
+    const n = shape.n;
+    const L = lengthFor(role);
+    const s = {
+      role, idx, shape, n, L, scale: L/1000,
+      x: 0, y: 0, h: rand(0, TAU), turn: 0, speed: 0,
+      phase: rand(0, TAU), omega: 4,
+      p1: rand(0, TAU), p2: rand(0, TAU), p3: rand(0, TAU),
+      ax: 0, ay: 0, anchorT: 0,
+      alpha: role === 'main' ? 1 : 0.62,                    // ตัวเล็ก = อยู่ไกลกว่า จางกว่า
+      fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
+      ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
+      px: new Float32Array(n), py: new Float32Array(n),
+    };
+    pickAnchor(s, true);
+    s.x = s.ax; s.y = s.ay;
     return s;
   }
 
-  const TAIL_SEQ = [1, 0, 1, 2];   // ลำดับเฟรมหางกระดิก: กลาง → ขึ้น → กลาง → ลง
+  // พื้นที่ว่างข้างเนื้อหา: อ่านจากกรอบ <main> ที่แสดงอยู่ เพื่อให้ปลาว่ายวนอยู่ในที่ว่างเป็นหลัก
+  function measureZones(){
+    const m = document.querySelector('main');
+    const r = m ? m.getBoundingClientRect() : null;
+    if(!r || r.width < 50){ view.zones = null; return; }
+    view.zones = { left: Math.max(0, r.left), right: Math.max(0, view.w - r.right) };
+  }
+  function pickAnchor(s, first){
+    const z = view.zones, vw = view.w, vh = view.h;
+    let cx, spread;
+    const useZone = z && Math.max(z.left, z.right) > s.L*0.35 && !view.mobile;
+    if(useZone){
+      // ตัวหลักเลือกฝั่งที่กว้างกว่า ตัวเล็กเลือกฝั่งอีกข้างบ้าง
+      let side = z.left >= z.right ? 'left' : 'right';
+      if(s.role !== 'main' && Math.random() < 0.6) side = side === 'left' ? 'right' : 'left';
+      if(s.role === 'main' && Math.random() < 0.18) side = side === 'left' ? 'right' : 'left';
+      const zw = z[side];
+      cx = side === 'left' ? zw*0.5 : vw - zw*0.5;
+      spread = Math.max(zw*0.22, 20);
+    } else {
+      cx = rand(vw*0.15, vw*0.85); spread = vw*0.2;           // ไม่มีที่ว่างพอ: ว่ายทั่วจอ (ลอดใต้การ์ด)
+    }
+    s.ax = clamp(cx + rand(-spread, spread), 10, vw - 10);
+    // ตัวเล็กแต่ละตัวอยู่คนละช่วงความสูงของจอ จะได้ไม่ซ้อนกัน
+    const band = s.role === 'main' ? [0.14, 0.86] : (s.idx === 1 ? [0.12, 0.45] : [0.55, 0.88]);
+    s.ay = rand(vh*band[0], vh*band[1]);
+    s.anchorT = simT + rand(11, 18);
+  }
 
-  function frame(t){
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth, h = window.innerHeight;
+    const wasMobile = view.mobile;
+    view.w = w; view.h = h; view.dpr = dpr;
+    view.mobile = w < SHARK_CONFIG.mobileWidth;
+    canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    measureZones();
+    if(!sharks.length || wasMobile !== view.mobile){
+      sharks.length = 0;
+      sharks.push(makeShark('main', 0));
+      if(!view.mobile) for(let i = 0; i < SHARK_CONFIG.smallCount; i++) sharks.push(makeShark('small', i + 1));
+    } else {
+      sharks.forEach(s=>{ s.L = lengthFor(s.role); s.scale = s.L/1000; });
+    }
+  }
+
+  // ───────── 4) อัปเดตการว่าย + อนุภาค ─────────
+  function updateShark(s, dt, t){
+    const C = SHARK_CONFIG;
+    s.fade = Math.min(1, s.fade + dt/1.8);
+    // --- เป้าหมายและการเลี้ยว: ว่ายโค้งนุ่มนวล ไม่เปลี่ยนทิศแบบกระตุก ---
+    if(t > s.anchorT) pickAnchor(s, false);
+    let want = 0.30*Math.sin(t*0.21 + s.p1) + 0.22*Math.sin(t*0.37 + s.p2);      // ส่ายซ้ายขวาเบาๆ ตามธรรมชาติ
+    const dx = s.ax - s.x, dy = s.ay - s.y, dist = Math.hypot(dx, dy);
+    if(dist > s.L*0.3) want += clamp(angDiff(Math.atan2(dy, dx), s.h)*0.9, -0.85, 0.85);
+    const mg = s.L*0.18;
+    if(s.x < mg || s.x > view.w - mg || s.y < mg || s.y > view.h - mg){           // กันออกนอกจอ
+      want += clamp(angDiff(Math.atan2(view.h/2 - s.y, view.w/2 - s.x), s.h)*1.5, -1.1, 1.1);
+    }
+    let boost = 1;
+    if(C.avoidMouse && mouse.active){                                             // หลบเมาส์
+      const hxp = s.x + Math.cos(s.h)*s.L*0.34, hyp = s.y + Math.sin(s.h)*s.L*0.34;
+      const d = Math.min(Math.hypot(mouse.x - s.x, mouse.y - s.y), Math.hypot(mouse.x - hxp, mouse.y - hyp));
+      const reach = s.L*0.62 + C.mouseRadius;
+      if(d < reach){
+        const k = 1 - d/reach;
+        want += clamp(angDiff(Math.atan2(s.y - mouse.y, s.x - mouse.x), s.h)*1.7, -1.5, 1.5)*(0.5 + k*1.6);
+        boost = 1 + k*0.35;
+      }
+    }
+    want = clamp(want, -1.15, 1.15);
+    s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
+    s.h += s.turn*dt;
+    const base = (26 + s.L*0.07)*C.speed;                                          // px/วินาที ปลาใหญ่ว่ายเร็วกว่าเล็กน้อย
+    s.speed += (base*boost*(1 - Math.min(Math.abs(s.turn), 1)*0.18) - s.speed)*Math.min(1, dt*1.5);
+    s.x += Math.cos(s.h)*s.speed*dt;
+    s.y += Math.sin(s.h)*s.speed*dt;
+    s.omega = TAU*(0.42 + s.speed/(170 + s.L*0.2))*(0.9 + 0.1*Math.sin(t*0.3 + s.p3)); // ว่ายเร็ว → กระดิกถี่ขึ้น
+    s.phase += s.omega*dt;
+
+    // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (หัวนิ่ง หางแกว่งมาก) ---
+    const A = 66*C.waveAmp*(1 + Math.min(Math.abs(s.turn), 1)*0.25), kw = TAU*0.92;
+    for(let k = 0; k <= TAB_N; k++){
+      const u = k/TAB_N, amp = A*(0.04 + 0.96*Math.pow(1 - u, 2.2));
+      tabY[k] = amp*Math.sin(kw*u + s.phase);
+    }
+    for(let k = 0; k <= TAB_N; k++){
+      const a = tabY[Math.min(TAB_N, k + 1)] - tabY[Math.max(0, k - 1)];
+      const slope = a/((Math.min(TAB_N, k + 1) - Math.max(0, k - 1))*(1000/TAB_N));
+      const inv = 1/Math.sqrt(1 + slope*slope);
+      tabCos[k] = inv; tabSin[k] = slope*inv;
+    }
+    // ปลาขยับความลึกเล็กน้อย (ขนาดเปลี่ยน ±6%)
+    const sc = s.scale*(1 + 0.06*Math.sin(t*0.13 + s.p3));
+    const cosH = Math.cos(s.h), sinH = Math.sin(s.h);
+
+    // --- อนุภาค: ตำแหน่งบ้าน + ฟิสิกส์สปริง (ฝุ่นหลุดแล้วกลับ) ---
+    const S = s.shape, n = s.n;
+    const hxA = S.hx, hyA = S.hy, uA = S.u, finA = S.fin, edgeA = S.edge;
+    const ox = s.ox, oy = s.oy, vx = s.vx, vy = s.vy, px = s.px, py = s.py;
+    const K = 8.5, Cd = 3.1;
+    const sc2 = C.scatter;
+    const dustP = C.dust*0.05*dt;                           // ความน่าจะเป็นต่ออนุภาคขอบต่อเฟรม
+    const flap = Math.sin(s.phase*0.5);
+    const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius;
+    const R = C.mouseRadius, R2 = R*R;
+    const damp = Math.max(0, 1 - Cd*dt);
+    for(let i = 0; i < n; i++){
+      const u = uA[i], k = (u*TAB_N + 0.5)|0;
+      const ly = hyA[i];
+      let lx = hxA[i] - ly*tabSin[k];
+      let yy = tabY[k] + ly*tabCos[k];
+      const f = finA[i];
+      if(f > 0){                                            // ครีบสะบัดเบาๆ
+        const sg = ly < 0 ? -1 : 1;
+        yy += sg*f*10*flap;
+        lx -= f*8*flap;
+      }
+      const bx = s.x + (lx*cosH - yy*sinH)*sc;
+      const by = s.y + (lx*sinH + yy*cosH)*sc;
+      // ฝุ่นหลุดจากขอบ
+      if(edgeA[i] && sc2 > 0 && Math.random() < dustP){
+        const a = Math.random()*TAU, v = rand(14, 42)*sc2;
+        vx[i] += Math.cos(a)*v; vy[i] += Math.sin(a)*v;
+      }
+      // เมาส์ผลักอนุภาคให้กระจาย
+      if(useMouse){
+        const ddx = bx + ox[i] - mouse.x, ddy = by + oy[i] - mouse.y, d2 = ddx*ddx + ddy*ddy;
+        if(d2 < R2){
+          const d = Math.sqrt(d2) + 0.001, q = 1 - d/R;
+          const push = q*q*400*sc2*dt;                        // แรงผลักนุ่มนวล ไม่กระชาก
+          vx[i] += (ddx/d + (Math.random() - 0.5)*0.9)*push;  // ใส่ความสุ่มเล็กน้อย ให้กระจายเป็นฝุ่น ไม่เป็นวงกลมเรียบ
+          vy[i] += (ddy/d + (Math.random() - 0.5)*0.9)*push;
+        }
+      }
+      // สปริงดึงกลับสู่รูปปลา
+      vx[i] = (vx[i] - K*ox[i]*dt)*damp;
+      vy[i] = (vy[i] - K*oy[i]*dt)*damp;
+      ox[i] += vx[i]*dt; oy[i] += vy[i]*dt;
+      px[i] = bx + ox[i]; py[i] = by + oy[i];
+    }
+    return sc;
+  }
+
+  function drawShark(s, sc){
+    const C = SHARK_CONFIG, S = s.shape;
+    const ps = Math.max(1.3, S.sp*sc*C.particleSize);        // ขนาดจุด (px)
+    const px = s.px, py = s.py, sz = S.sz, start = S.start;
+    const pal = C.palette, op = C.opacity*s.alpha*s.fade;
+    for(let b = 0; b < S.bucketCount; b++){
+      const a = start[b], z = start[b + 1];
+      if(a === z) continue;
+      ctx.fillStyle = pal[(b/3)|0];
+      ctx.globalAlpha = ALPHA_LEVELS[b%3]*op;
+      ctx.beginPath();
+      for(let i = a; i < z; i++){
+        const q = ps*sz[i];
+        ctx.rect(px[i], py[i], q, q);
+      }
+      ctx.fill();
+    }
+  }
+
+  function frame(now){
     if(!running) return;
     rafId = requestAnimationFrame(frame);
-    const dt = t - lastT;
-    if(dt < 1000/SHARK_CONFIG.fps) return;            // จำกัด fps
-    lastT = t - (dt % (1000/SHARK_CONFIG.fps));
-    const sec = Math.min(dt, 100) / 1000;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.globalAlpha = SHARK_CONFIG.opacity;
-    for(let i=0; i<sharks.length; i++){
-      const s = sharks[i];
-      s.x += s.dir * s.speed * sec;
-      s.bobPhase += s.bobSpeed * sec;
-      // ออกนอกจอแล้ว → เกิดใหม่อีกฝั่ง (loop ต่อเนื่อง) พร้อมสุ่มขนาด/ความเร็วใหม่
-      if((s.dir > 0 && s.x > canvas.width + 20) || (s.dir < 0 && s.x < -s.w - 20)){
-        sharks[i] = makeShark(i, sharks.length, false);
-        continue;
-      }
-      const y = s.baseY + Math.sin(s.bobPhase) * SHARK_CONFIG.bob;
-      const step = Math.floor(t/1000 * SHARK_CONFIG.tailFps + s.tailOffset) % TAIL_SEQ.length;
-      ctx.drawImage(getSprite(TAIL_SEQ[step], s.scale, s.dir < 0), Math.round(s.x), Math.round(y));
+    const minDt = 1000/SHARK_CONFIG.fps;
+    const dtMs = now - lastT;
+    if(dtMs < minDt - 1) return;
+    lastT = now;
+    const dt = Math.min(dtMs, 60)/1000;
+    simT += dt;
+    const t0 = performance.now();
+    ctx.clearRect(0, 0, view.w, view.h);
+    for(let i = 0; i < sharks.length; i++){
+      const sc = updateShark(sharks[i], dt, simT);
+      drawShark(sharks[i], sc);
     }
+    ctx.globalAlpha = 1;
+    // ป้องกันเครื่องช้า: ถ้าแต่ละเฟรมใช้เวลานานต่อเนื่อง ให้ตัดปลาตัวเล็กออก
+    const cost = performance.now() - t0;
+    slowMs = slowMs*0.95 + cost*0.05;
+    if(slowMs > 14 && sharks.length > 1){
+      if(!slowSince) slowSince = now;
+      if(now - slowSince > 2500){ sharks.length = 1; slowSince = 0; }
+    } else slowSince = 0;
+  }
+
+  // ภาพนิ่งหนึ่งเฟรมสำหรับคนที่ตั้งค่าลดการเคลื่อนไหว (ไม่มี animation)
+  function drawStill(){
+    ctx.clearRect(0, 0, view.w, view.h);
+    sharks.forEach((s,i)=>{ s.fade = 1; s.h = 0; s.turn = 0; const sc = updateShark(s, 0.0001, 0); drawShark(s, sc); });
     ctx.globalAlpha = 1;
   }
 
+  function onMove(e){ mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }
+  function onLeave(){ mouse.active = false; }
+  let resizeTimer = null;
+  function onResize(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(()=>{ if(running || sharks.length){ resize(); if(reduceMotion && running) drawStill(); } }, 160);
+  }
+  let zoneTimer = null;
+
   function start(){
-    if(running || reduceMotion) return;               // ผู้ใช้ตั้งค่าลดการเคลื่อนไหว → ไม่แสดง animation
+    if(running) return;
     running = true;
     resize();
+    window.addEventListener('resize', onResize);
+    if(reduceMotion){ drawStill(); return; }
+    window.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('mouseleave', onLeave);
+    zoneTimer = setInterval(measureZones, 1500);            // หน้าเปลี่ยน กรอบเนื้อหาเปลี่ยน → วัดพื้นที่ว่างใหม่
     lastT = performance.now();
     rafId = requestAnimationFrame(frame);
   }
@@ -4986,14 +5259,15 @@ const SharkSwim = (function(){
     running = false;
     if(rafId) cancelAnimationFrame(rafId);
     rafId = null;
+    clearInterval(zoneTimer); zoneTimer = null;
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseleave', onLeave);
+    mouse.active = false;
+    sharks.length = 0;                                       // เริ่มใหม่ตอนล็อกอินครั้งถัดไป
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
-
-  let resizeTimer = null;
-  window.addEventListener('resize', ()=>{
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ if(running) resize(); }, 150);
-  });
 
   return { start, stop };
 })();
