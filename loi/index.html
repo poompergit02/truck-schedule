@@ -4851,13 +4851,21 @@ const SHARK_CONFIG = {
   scatter:     1,          // ความแรงการกระจายตัว (เมาส์ + ฝุ่น) 0 = ปิด, 2 = แรง
   mouseRadius: 120,        // รัศมีที่เมาส์ทำให้อนุภาคกระจาย (px)
   avoidMouse:  true,       // ให้ปลาเลี้ยวหลบเมาส์
+
+  // ── เมื่ออุปกรณ์เปิด "ลดการเคลื่อนไหว" (prefers-reduced-motion — Windows ปิด Animation effects / โหมดประหยัดแบตมักเปิดเอง) ──
+  //   'calm'   = ว่ายช้านุ่มๆ ครึ่งความเร็ว ไม่มีฝุ่น/ไม่ตอบสนองเมาส์ (ค่าเริ่มต้น)
+  //   'ignore' = ว่ายเหมือนปกติทุกอย่าง ไม่สนค่าลดการเคลื่อนไหวของเครื่อง
+  //   'still'  = ภาพนิ่ง ไม่ขยับ
+  reducedMotion: 'calm',
 };
 
 const SharkSwim = (function(){
   const canvas = document.getElementById('sharkLayer');
   if(!canvas) return { start(){}, stop(){} };
   const ctx = canvas.getContext('2d');
-  const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const prefersReduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const MOTION_MODE = prefersReduced ? SHARK_CONFIG.reducedMotion : 'ignore';
+  const calm = MOTION_MODE === 'calm', still = MOTION_MODE === 'still';
   const TAU = Math.PI * 2;
   const rand = (a,b)=> a + Math.random()*(b-a);
   const clamp = (v,a,b)=> v < a ? a : (v > b ? b : v);
@@ -5099,7 +5107,7 @@ const SharkSwim = (function(){
       want += clamp(angDiff(Math.atan2(view.h/2 - s.y, view.w/2 - s.x), s.h)*1.5, -1.1, 1.1);
     }
     let boost = 1;
-    if(C.avoidMouse && mouse.active){                                             // หลบเมาส์
+    if(C.avoidMouse && mouse.active && !calm){                                             // หลบเมาส์
       const hxp = s.x + Math.cos(s.h)*s.L*0.34, hyp = s.y + Math.sin(s.h)*s.L*0.34;
       const d = Math.min(Math.hypot(mouse.x - s.x, mouse.y - s.y), Math.hypot(mouse.x - hxp, mouse.y - hyp));
       const reach = s.L*0.62 + C.mouseRadius;
@@ -5112,7 +5120,7 @@ const SharkSwim = (function(){
     want = clamp(want, -1.15, 1.15);
     s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
     s.h += s.turn*dt;
-    const base = (26 + s.L*0.07)*C.speed;                                          // px/วินาที ปลาใหญ่ว่ายเร็วกว่าเล็กน้อย
+    const base = (26 + s.L*0.07)*C.speed*(calm ? 0.5 : 1);                                          // px/วินาที ปลาใหญ่ว่ายเร็วกว่าเล็กน้อย
     s.speed += (base*boost*(1 - Math.min(Math.abs(s.turn), 1)*0.18) - s.speed)*Math.min(1, dt*1.5);
     s.x += Math.cos(s.h)*s.speed*dt;
     s.y += Math.sin(s.h)*s.speed*dt;
@@ -5120,7 +5128,7 @@ const SharkSwim = (function(){
     s.phase += s.omega*dt;
 
     // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (หัวนิ่ง หางแกว่งมาก) ---
-    const A = 66*C.waveAmp*(1 + Math.min(Math.abs(s.turn), 1)*0.25), kw = TAU*0.92;
+    const A = 66*C.waveAmp*(calm ? 0.8 : 1)*(1 + Math.min(Math.abs(s.turn), 1)*0.25), kw = TAU*0.92;
     for(let k = 0; k <= TAB_N; k++){
       const u = k/TAB_N, amp = A*(0.04 + 0.96*Math.pow(1 - u, 2.2));
       tabY[k] = amp*Math.sin(kw*u + s.phase);
@@ -5140,7 +5148,7 @@ const SharkSwim = (function(){
     const hxA = S.hx, hyA = S.hy, uA = S.u, finA = S.fin, edgeA = S.edge;
     const ox = s.ox, oy = s.oy, vx = s.vx, vy = s.vy, px = s.px, py = s.py;
     const K = 8.5, Cd = 3.1;
-    const sc2 = C.scatter;
+    const sc2 = calm ? 0 : C.scatter;
     const dustP = C.dust*0.05*dt;                           // ความน่าจะเป็นต่ออนุภาคขอบต่อเฟรม
     const flap = Math.sin(s.phase*0.5);
     const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius;
@@ -5239,7 +5247,7 @@ const SharkSwim = (function(){
   let resizeTimer = null;
   function onResize(){
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ if(running || sharks.length){ resize(); if(reduceMotion && running) drawStill(); } }, 160);
+    resizeTimer = setTimeout(()=>{ if(running || sharks.length){ resize(); if(still && running) drawStill(); } }, 160);
   }
   let zoneTimer = null;
 
@@ -5248,7 +5256,7 @@ const SharkSwim = (function(){
     running = true;
     resize();
     window.addEventListener('resize', onResize);
-    if(reduceMotion){ drawStill(); return; }
+    if(still){ drawStill(); return; }
     window.addEventListener('mousemove', onMove, { passive: true });
     document.addEventListener('mouseleave', onLeave);
     zoneTimer = setInterval(measureZones, 1500);            // หน้าเปลี่ยน กรอบเนื้อหาเปลี่ยน → วัดพื้นที่ว่างใหม่
