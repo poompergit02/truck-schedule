@@ -27,6 +27,16 @@ body{
 h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
 .mono{font-family:'IBM Plex Mono',monospace}
 
+
+/* ══════════ SHARK SWIM (ปลาฉลามหัวค้อน pixel art ว่ายอยู่ด้านหลังเนื้อหา) ══════════
+   - canvas ติดกับหน้าจอ (fixed) อยู่หลังเนื้อหาทั้งหมด (z-index:-1) คลิกทะลุได้
+   - การ์ด/เฮดเดอร์พื้นขาวบังปลาเอง ปลาจึงโผล่เฉพาะพื้นที่ว่างข้างๆ และช่องระหว่างการ์ด */
+#sharkLayer{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:-1; pointer-events:none;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+
 /* ══════════ LOGIN SCREEN ══════════ */
 #loginScreen{
   /* รูปพื้นหลัง: Nadezhda Moryak, Pexels (ฟรี ใช้ได้ตาม Pexels License — https://www.pexels.com/photo/8677191/) */
@@ -391,6 +401,8 @@ tr:hover td{background:var(--cream)}
 </style>
 </head>
 <body>
+
+<canvas id="sharkLayer" aria-hidden="true"></canvas>
 
 <!-- ══════════ LOGIN SCREEN ══════════ -->
 <div id="loginScreen">
@@ -1582,6 +1594,7 @@ function doLogout(){
   localStorage.removeItem('loi_token');
   currentUser=null;
   document.getElementById('app').style.display='none';
+  SharkSwim.stop();
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
   document.getElementById('loginPassword').value='';
@@ -1625,6 +1638,7 @@ let appSettingsCache = {};
 async function enterApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
+  SharkSwim.start();   // เริ่มให้ปลาว่ายหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง)
   document.getElementById('userName').textContent = currentUser.name;
   document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
   renderMyAvatar();
@@ -4802,6 +4816,187 @@ function setT24(id, val){
   document.getElementById(id+'_h').value = parts[0] || '';
   document.getElementById(id+'_m').value = parts[1] || '';
 }
+
+
+// ══════════ SHARK SWIM — ปลาฉลามหัวค้อน pixel art ว่ายเป็นพื้นหลังตกแต่ง ══════════
+// ปรับแต่งได้ที่ SHARK_CONFIG ด้านล่างนี้ที่เดียว ไม่ต้องแก้ส่วนอื่น
+const SHARK_CONFIG = {
+  count:        5,            // จำนวนปลา (แนะนำ 3–6)
+  countMobile:  3,            // จำนวนปลาเมื่อหน้าจอแคบกว่า mobileWidth
+  mobileWidth:  700,          // px — ต่ำกว่านี้ถือเป็นมือถือ
+  speed:        1,            // ตัวคูณความเร็ว (0.5 = ช้าลงครึ่งหนึ่ง, 2 = เร็วขึ้นเท่าตัว)
+  sizes:        [2, 3, 3, 4], // ขนาดของ "พิกเซล" ในหน่วย CSS px สุ่มให้ปลาแต่ละตัว (ปลาตัวเต็ม = 28×15 พิกเซล)
+  opacity:      0.5,          // ความโปร่งใสของปลา 0–1 (ยิ่งน้อยยิ่งกลมกลืนกับพื้นหลัง)
+  fps:          30,           // เฟรมเรตสูงสุดของ animation (ลดเพื่อประหยัดเครื่อง)
+  tailFps:      4,            // ความถี่การกระดิกหาง (ครั้ง/วินาที)
+  bob:          10,           // แอมพลิจูดการขึ้นลงขณะว่าย (px)
+  baseSpeed:    [14, 30],     // ช่วงความเร็วพื้นฐาน (px/วินาที) ก่อนคูณ speed
+};
+
+// สีของปลา (d = หลัง, m = ลำตัวอ่อนกว่า, l = ไฮไลต์, e = ตา) — เป็นโทนฟ้าเทา เข้ากับสีม่วง/ครีมของเว็บ
+const SHARK_PALETTE = { d:'#7F96B2', m:'#9DB2C9', l:'#DCE6F0', e:'#2B2540' };
+
+// ภาพปลา มองจากด้านบน หันไปทางขวา 28×15 พิกเซล มี 3 เฟรม (หางกระดิก ขึ้น/กลาง/ลง) '.' = โปร่งใส
+const SHARK_FRAMES = [
+    [
+      '.d..........................',
+      '.dd.........lldd.........ddd',
+      '..d..........ddddd......dded',
+      '...d......dd..ddddd.....dddd',
+      '...dd......dd..ddddd....dmmd',
+      '....dd....dddddddddddddddmmd',
+      '.....dddddmmmmmmmmmmmmmmdmmd',
+      '....ddddddmmllllllllllmmdmmd',
+      '......ddddmmmmmmmmmmmmmmdmmd',
+      '.....d....dddddddddddddddmmd',
+      '....d......dd..ddddd....dmmd',
+      '...d......dd..ddddd.....dddd',
+      '.............ddddd......dded',
+      '............lldd.........ddd',
+      '............................'
+    ],
+    [
+      '............................',
+      '.d..........lldd.........ddd',
+      '.dd..........ddddd......dded',
+      '..dd......dd..ddddd.....dddd',
+      '...dd......dd..ddddd....dmmd',
+      '....dd....dddddddddddddddmmd',
+      '.....dddddmmmmmmmmmmmmmmdmmd',
+      '....ddddddmmllllllllllmmdmmd',
+      '......ddddmmmmmmmmmmmmmmdmmd',
+      '.....d....dddddddddddddddmmd',
+      '....d......dd..ddddd....dmmd',
+      '...d......dd..ddddd.....dddd',
+      '.............ddddd......dded',
+      '............lldd.........ddd',
+      '............................'
+    ],
+    [
+      '............................',
+      '............lldd.........ddd',
+      '.d...........ddddd......dded',
+      '.ddd......dd..ddddd.....dddd',
+      '..ddd......dd..ddddd....dmmd',
+      '....dd....dddddddddddddddmmd',
+      '.....dddddmmmmmmmmmmmmmmdmmd',
+      '....ddddddmmllllllllllmmdmmd',
+      '......ddddmmmmmmmmmmmmmmdmmd',
+      '.....d....dddddddddddddddmmd',
+      '....d......dd..ddddd....dmmd',
+      '...d......dd..ddddd.....dddd',
+      '.............ddddd......dded',
+      '............lldd.........ddd',
+      '............................'
+    ]
+];
+
+const SharkSwim = (function(){
+  const canvas = document.getElementById('sharkLayer');
+  if(!canvas) return { start(){}, stop(){} };
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SPR_W = SHARK_FRAMES[0][0].length, SPR_H = SHARK_FRAMES[0].length;
+  const spriteCache = {};   // เก็บภาพปลาที่วาดไว้ล่วงหน้า (เฟรม × ขนาด × ทิศ) จะได้ไม่ต้องวาดทีละพิกเซลทุกเฟรม
+  let sharks = [], rafId = null, lastT = 0, running = false;
+
+  const rand = (a,b)=> a + Math.random()*(b-a);
+
+  // วาดสไปรต์เป็นภาพ offscreen หนึ่งครั้ง แล้วเก็บไว้ใช้ซ้ำ
+  function getSprite(frame, scale, flip){
+    const key = frame+'|'+scale+'|'+(flip?1:0);
+    if(spriteCache[key]) return spriteCache[key];
+    const c = document.createElement('canvas');
+    c.width = SPR_W*scale; c.height = SPR_H*scale;
+    const g = c.getContext('2d');
+    SHARK_FRAMES[frame].forEach((row,y)=>{
+      for(let x=0; x<SPR_W; x++){
+        const col = SHARK_PALETTE[row[x]];
+        if(!col) continue;
+        g.fillStyle = col;
+        g.fillRect((flip ? SPR_W-1-x : x)*scale, y*scale, scale, scale);
+      }
+    });
+    return (spriteCache[key] = c);
+  }
+
+  function resize(){
+    canvas.width  = window.innerWidth;   // 1 พิกเซลของ canvas = 1 CSS px → พิกเซลคมชัด ไม่เบลอ
+    canvas.height = window.innerHeight;
+    const target = window.innerWidth < SHARK_CONFIG.mobileWidth ? SHARK_CONFIG.countMobile : SHARK_CONFIG.count;
+    while(sharks.length < target) sharks.push(makeShark(sharks.length, target, true));
+    sharks.length = target;
+  }
+
+  // สร้างปลาหนึ่งตัว: แบ่งความสูงจอเป็นแถบๆ ให้ปลากระจายไม่ซ้อนกัน
+  function makeShark(i, total, initial){
+    const scale = SHARK_CONFIG.sizes[Math.floor(Math.random()*SHARK_CONFIG.sizes.length)];
+    const dir = Math.random() < 0.6 ? 1 : -1;            // 1 = ซ้าย→ขวา, -1 = ขวา→ซ้าย
+    const w = SPR_W*scale;
+    const band = canvas.height / total;
+    const s = {
+      scale, dir, w,
+      speed: rand(SHARK_CONFIG.baseSpeed[0], SHARK_CONFIG.baseSpeed[1]) * SHARK_CONFIG.speed * (0.8 + scale*0.1),
+      baseY: band*i + rand(band*0.2, band*0.8),
+      bobPhase: rand(0, Math.PI*2), bobSpeed: rand(0.5, 1.0),
+      tailOffset: Math.floor(rand(0, 4)),
+      x: 0,
+    };
+    // ตอนเริ่มให้กระจายอยู่ทั่วจอ หลังจากนั้นเกิดนอกจอฝั่งที่ว่ายเข้ามา
+    s.x = initial ? rand(-w, canvas.width) : (dir > 0 ? -w - rand(0, 120) : canvas.width + rand(0, 120));
+    return s;
+  }
+
+  const TAIL_SEQ = [1, 0, 1, 2];   // ลำดับเฟรมหางกระดิก: กลาง → ขึ้น → กลาง → ลง
+
+  function frame(t){
+    if(!running) return;
+    rafId = requestAnimationFrame(frame);
+    const dt = t - lastT;
+    if(dt < 1000/SHARK_CONFIG.fps) return;            // จำกัด fps
+    lastT = t - (dt % (1000/SHARK_CONFIG.fps));
+    const sec = Math.min(dt, 100) / 1000;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = SHARK_CONFIG.opacity;
+    for(let i=0; i<sharks.length; i++){
+      const s = sharks[i];
+      s.x += s.dir * s.speed * sec;
+      s.bobPhase += s.bobSpeed * sec;
+      // ออกนอกจอแล้ว → เกิดใหม่อีกฝั่ง (loop ต่อเนื่อง) พร้อมสุ่มขนาด/ความเร็วใหม่
+      if((s.dir > 0 && s.x > canvas.width + 20) || (s.dir < 0 && s.x < -s.w - 20)){
+        sharks[i] = makeShark(i, sharks.length, false);
+        continue;
+      }
+      const y = s.baseY + Math.sin(s.bobPhase) * SHARK_CONFIG.bob;
+      const step = Math.floor(t/1000 * SHARK_CONFIG.tailFps + s.tailOffset) % TAIL_SEQ.length;
+      ctx.drawImage(getSprite(TAIL_SEQ[step], s.scale, s.dir < 0), Math.round(s.x), Math.round(y));
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function start(){
+    if(running || reduceMotion) return;               // ผู้ใช้ตั้งค่าลดการเคลื่อนไหว → ไม่แสดง animation
+    running = true;
+    resize();
+    lastT = performance.now();
+    rafId = requestAnimationFrame(frame);
+  }
+  function stop(){
+    running = false;
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  let resizeTimer = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(()=>{ if(running) resize(); }, 150);
+  });
+
+  return { start, stop };
+})();
 
 applyTranslations();
 updateLangButtons();
