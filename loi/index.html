@@ -926,6 +926,44 @@ tr:hover td{background:var(--cream)}
         <div id="specialCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
     </div>
+    <!-- ADMIN: NEXT YEAR PLANNING (เตรียมโควตาปีหน้า แล้วย้ายไปแทนที่โควตาจริงตามวันที่กำหนด) -->
+    <div class="page" id="page-next_year">
+      <div class="section-title" data-i18n="pg_ny_title">🗓️ Next Year Planning</div>
+      <div class="section-sub" data-i18n="pg_ny_sub">Prepare next year's leave quotas now. Employees are loaded automatically; the quotas below replace the live quotas on the date you choose.</div>
+
+      <div class="card">
+        <h3 data-i18n="h3_ny_transfer">🔄 Transfer to live quotas</h3>
+        <p class="hint" data-i18n="hint_ny_transfer">At 00:01 (Thai time) on the effective date, the quotas below replace the employees' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.</p>
+        <div class="form-grid">
+          <div class="field"><label data-i18n="lbl_ny_date">Effective date</label><input type="date" id="nyEffectiveDate"/></div>
+        </div>
+        <div id="nyTransferStatus" style="margin:12px 0;font-size:.86rem"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="confirmYearTransfer()" data-i18n="btn_ny_confirm">✅ Confirm transfer</button>
+          <button class="btn btn-outline" id="nyCancelBtn" style="display:none" onclick="cancelYearTransfer()" data-i18n="btn_ny_cancel">Cancel scheduled transfer</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="nySearch" oninput="filterNextYearRows()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
+          <button class="btn btn-outline" onclick="fillNextYearFromCurrent()" data-i18n="btn_ny_fill">Fill empty cells from this year</button>
+          <button class="btn btn-primary" onclick="saveNextYearPlan()" data-i18n="btn_ny_save">💾 Save quotas</button>
+        </div>
+        <p class="hint" style="margin-top:10px" data-i18n="hint_ny_table">Grey numbers show this year's quota. Leave a cell empty to keep that employee's quota unchanged.</p>
+      </div>
+
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr>
+            <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
+            <th data-i18n="ny_col_annual">Annual</th><th data-i18n="ny_col_sick">Sick</th><th data-i18n="ny_col_personal">Personal</th>
+          </tr></thead>
+          <tbody id="nyBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <!-- REPORTS: my own resolved requests -->
     <div class="page" id="page-reports">
       <div class="section-title" data-i18n="pg_reports_title">My Leave Results</div>
@@ -1196,7 +1234,7 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="importModal">
   <div class="modal wide">
     <h3>📊 Import Employees from Excel</h3>
-    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days, auto_approve<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)<br/>auto_approve ใส่ "yes"/"true"/"1" สำหรับผู้บริหารที่ลาแล้วอนุมัติทันที ไม่ต้องผ่านใคร</p>
+    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days, auto_approve, bypass_conditions, special_calendar_access<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)<br/>auto_approve ใส่ "yes"/"true"/"1" สำหรับผู้บริหารที่ลาแล้วอนุมัติทันที ไม่ต้องผ่านใคร<br/>bypass_conditions ใส่ "yes"/"true"/"1" = Emergency Leave (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่า)<br/>special_calendar_access ใส่ "yes"/"true"/"1" = ให้สิทธิ์ดูปฏิทินลารวมทั้งองค์กร (เว้นว่าง = ไม่ให้)</p>
     <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
       <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
       <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
@@ -1359,6 +1397,11 @@ const MSG_TH_TO_EN_EXACT = {
   'ลาป่วยวันจันทร์หรือวันศุกร์ต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave on Monday or Friday requires a medical certificate attachment',
   'อัปโหลดไฟล์แนบไม่สำเร็จ กรุณาลองใหม่':'Attachment upload failed. Please try again',
   'ลา Work From Home ต้องแนบรูปภาพ':'Work From Home requires a photo attachment',
+  'ขณะนี้ลาได้เฉพาะภายในปีปัจจุบันเท่านั้น':'Leave is currently allowed only within the current year',
+  'วันที่ไม่ถูกต้อง':'Invalid date',
+  'ไม่สามารถย้ายโควตาไปยังปีที่ผ่านมาแล้วได้':'Quotas cannot be transferred into a past year',
+  'ยังไม่มีข้อมูลโควตาปีหน้าให้ย้าย กรุณากรอกและบันทึกก่อน':'There are no next-year quotas to transfer yet. Please enter and save them first',
+  'ไม่มีข้อมูลให้บันทึก':'Nothing to save',
   'ไม่พบคำขอนี้':'Request not found',
   'คำขอนี้ไม่ได้รออนุมัติจากคุณ':'This request is not waiting for your approval',
   'คำขอนี้ไม่ได้รออนุมัติขั้นสุดท้าย':'This request is not waiting for final approval',
@@ -1372,6 +1415,7 @@ const MSG_TH_TO_EN_EXACT = {
   'ไม่มีข้อมูลพนักงานให้ import':'No employee data to import',
   'ข้อมูลไม่ครบ (ต้องมี employee_code, name, password)':'Incomplete data (employee_code, name, password required)',
   'จำนวนวันไม่ถูกต้อง':'Invalid number of days',
+  'ข้อมูลไม่ถูกต้อง':'Invalid data',
   'เกิดข้อผิดพลาดในการค้นหา':'Search error',
   'พนักงานคนนี้มีวันลาคงเหลือไม่เกิน 3 วัน ไม่เข้าเงื่อนไขยกยอด':'This employee has 3 days or less remaining — not eligible for carryover',
   'ไม่ระบุรหัสพนักงาน':'No employee code specified',
@@ -1389,6 +1433,7 @@ const MSG_TH_TO_EN_RULES = [
   [/^โควตาพักร้อนยกยอดนี้ใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น หมดอายุแล้ว$/, 'This carryover annual leave was valid only until 31 March $1 and has expired'],
   [/^ลบไม่สำเร็จบางส่วน: (.*)$/s, 'Delete partially failed: $1'],
   [/^ลบไม่สำเร็จ: (.*)$/s, 'Delete failed: $1'],
+  [/^ย้ายโควตาไม่สำเร็จ: (.*)$/s, 'Quota transfer failed: $1'],
   [/^ไม่รู้จัก action นี้: (.*)$/s, 'Unknown action: $1'],
 ];
 function localizeMsg(msg){
@@ -1604,6 +1649,7 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
+      {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
       {id:'special_calendar', label:t('tab_special')},
     ];
@@ -1719,6 +1765,7 @@ function showPage(id, el){
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
+  if(id==='next_year') loadNextYearPlan();
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
@@ -2181,6 +2228,22 @@ const I18N = {
     lbl_unit_half:'Half day (morning / afternoon)', lbl_half_session:'Session', opt_half_am:'Morning (3.5 hrs)', opt_half_pm:'Afternoon (4.5 hrs)',
     lbl_wfh_photo:'📷 Photo (required for Work From Home)', btn_attachment:'Attachment',
     set_wfhphoto_title:'Work From Home requires a photo', set_wfhphoto_desc:'When ON, a Work From Home request cannot be submitted without attaching a photo.',
+    tab_nextyear:'🗓️ Next Year Planning', pg_ny_title:'🗓️ Next Year Planning',
+    pg_ny_sub:'Prepare next year\'s leave quotas now. Employees are loaded automatically; the quotas below replace the live quotas on the date you choose.',
+    h3_ny_transfer:'🔄 Transfer to live quotas',
+    hint_ny_transfer:'At 00:01 (Thai time) on the effective date, the quotas below replace the employees\' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.',
+    lbl_ny_date:'Effective date', btn_ny_confirm:'✅ Confirm transfer', btn_ny_cancel:'Cancel scheduled transfer',
+    btn_ny_save:'💾 Save quotas', btn_ny_fill:'Fill empty cells from this year', ph_ny_search:'Search code, name or department',
+    hint_ny_table:'Grey numbers show this year\'s quota. Leave a cell empty to keep that employee\'s quota unchanged.',
+    ny_col_code:'Code', ny_col_name:'Name', ny_col_dept:'Department', ny_col_annual:'Annual', ny_col_sick:'Sick', ny_col_personal:'Personal',
+    ny_status_none:'No transfer is scheduled.', ny_status_pending:'Scheduled: quotas for {y} will be applied on {d} at 00:01.',
+    ny_status_done:'Last transfer: year {y}, {n} quota(s) applied on {d}.', ny_status_failed:'Last transfer for {y} failed: {e}',
+    msg_ny_saved:'✅ Quotas saved', msg_ny_nochange:'Nothing changed', msg_ny_pick_date:'⚠️ Please pick the effective date',
+    msg_ny_sched_ok:'✅ Scheduled for {d} at 00:01', msg_ny_done_ok:'✅ Transferred {n} quota(s) into year {y}', msg_ny_cancelled:'✅ Scheduled transfer cancelled',
+    cf_ny_sched:'Schedule the transfer for {d} (00:01)? The saved quotas will replace the live quotas for year {y} at that time.',
+    cf_ny_now:'The date {d} has already arrived, so the transfer runs NOW and replaces the live quotas for year {y} immediately. Continue?',
+    cf_ny_cancel:'Cancel the scheduled transfer?', loading_ny:'Saving...',
+    set_curyear_title:'Leave only within the current year', set_curyear_desc:'When ON, both the start and end date must fall in the current calendar year. Use this until next year\'s quotas are in place.',
     dot_pending:'{n} request(s) waiting for your approval',
     msg_pick_one_date:'⚠️ Please pick at least one date', msg_multi_ok:'✅ Submitted {ok} of {total} date(s)', msg_multi_fail:'⚠️ {n} failed: {err}',
     msg_fill_hour:'⚠️ Please fill in date, start time, and end time', msg_end_after_start_time:'⚠️ End time must be after start time',
@@ -2332,6 +2395,22 @@ const I18N = {
     lbl_unit_half:'ครึ่งวัน (เช้า / บ่าย)', lbl_half_session:'ช่วงเวลา', opt_half_am:'เช้า (3.5 ชม.)', opt_half_pm:'บ่าย (4.5 ชม.)',
     lbl_wfh_photo:'📷 รูปภาพ (ต้องแนบสำหรับ Work From Home)', btn_attachment:'ไฟล์แนบ',
     set_wfhphoto_title:'Work From Home ต้องแนบรูปภาพ', set_wfhphoto_desc:'เมื่อเปิด จะส่งคำขอ Work From Home ไม่ได้ถ้าไม่แนบรูปภาพ',
+    tab_nextyear:'🗓️ เตรียมข้อมูลปีหน้า', pg_ny_title:'🗓️ เตรียมข้อมูลปีหน้า',
+    pg_ny_sub:'เตรียมโควตาวันลาปีหน้าไว้ล่วงหน้า ระบบดึงรายชื่อพนักงานให้อัตโนมัติ และโควตาด้านล่างจะไปแทนที่โควตาจริงตามวันที่คุณเลือก',
+    h3_ny_transfer:'🔄 ย้ายไปเป็นโควตาจริง',
+    hint_ny_transfer:'เวลา 00:01 น. (เวลาไทย) ของวันที่กำหนด โควตาด้านล่างจะไปแทนที่โควตาจริงของปีนั้น โดยวันที่ใช้ไปแล้วยังคงอยู่ พนักงานที่ไม่ได้กรอกโควตาไว้จะไม่ถูกเปลี่ยนแปลง',
+    lbl_ny_date:'วันที่มีผล', btn_ny_confirm:'✅ ยืนยันย้ายข้อมูล', btn_ny_cancel:'ยกเลิกการตั้งเวลาย้ายข้อมูล',
+    btn_ny_save:'💾 บันทึกโควตา', btn_ny_fill:'เติมช่องว่างจากโควตาปีนี้', ph_ny_search:'ค้นหารหัส ชื่อ หรือแผนก',
+    hint_ny_table:'ตัวเลขสีเทาคือโควตาปีนี้ เว้นช่องว่างไว้ = ไม่เปลี่ยนโควตาของพนักงานคนนั้น',
+    ny_col_code:'รหัส', ny_col_name:'ชื่อ', ny_col_dept:'แผนก', ny_col_annual:'พักร้อน', ny_col_sick:'ลาป่วย', ny_col_personal:'ลากิจ',
+    ny_status_none:'ยังไม่ได้ตั้งเวลาย้ายข้อมูล', ny_status_pending:'ตั้งเวลาไว้: จะใช้โควตาปี {y} ในวันที่ {d} เวลา 00:01 น.',
+    ny_status_done:'ย้ายล่าสุด: ปี {y} จำนวน {n} รายการ เมื่อ {d}', ny_status_failed:'การย้ายข้อมูลปี {y} ล่าสุดไม่สำเร็จ: {e}',
+    msg_ny_saved:'✅ บันทึกโควตาแล้ว', msg_ny_nochange:'ไม่มีการเปลี่ยนแปลง', msg_ny_pick_date:'⚠️ กรุณาเลือกวันที่มีผล',
+    msg_ny_sched_ok:'✅ ตั้งเวลาไว้วันที่ {d} เวลา 00:01 น.', msg_ny_done_ok:'✅ ย้ายโควตา {n} รายการเข้าปี {y} แล้ว', msg_ny_cancelled:'✅ ยกเลิกการตั้งเวลาแล้ว',
+    cf_ny_sched:'ตั้งเวลาย้ายข้อมูลวันที่ {d} (00:01 น.)? โควตาที่บันทึกไว้จะไปแทนที่โควตาจริงของปี {y} ตอนนั้น',
+    cf_ny_now:'วันที่ {d} มาถึงแล้ว ระบบจะย้ายข้อมูล "ทันที" และแทนที่โควตาจริงของปี {y} ทันที ต้องการดำเนินการต่อหรือไม่?',
+    cf_ny_cancel:'ยกเลิกการตั้งเวลาย้ายข้อมูล?', loading_ny:'กำลังบันทึก...',
+    set_curyear_title:'ลาได้เฉพาะภายในปีปัจจุบัน', set_curyear_desc:'เมื่อเปิด วันเริ่มและวันสิ้นสุดการลาต้องอยู่ในปีปัจจุบันเท่านั้น (ใช้ระหว่างที่ยังไม่ได้ย้ายโควตาปีหน้า)',
     dot_pending:'มี {n} คำขอรอการอนุมัติจากคุณ',
     msg_pick_one_date:'⚠️ กรุณาเลือกอย่างน้อย 1 วัน', msg_multi_ok:'✅ ยื่นสำเร็จ {ok} จาก {total} วัน', msg_multi_fail:'⚠️ ล้มเหลว {n} รายการ: {err}',
     msg_fill_hour:'⚠️ กรุณากรอกวันที่ เวลาเริ่ม และเวลาสิ้นสุดให้ครบ', msg_end_after_start_time:'⚠️ เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
@@ -4085,6 +4164,7 @@ const SETTING_DEFS = [
   { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
   { key: 'wfh_requires_photo', titleKey: 'set_wfhphoto_title', descKey: 'set_wfhphoto_desc' },
+  { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
 ];
 
 async function loadSettings(){
@@ -4113,6 +4193,123 @@ async function toggleSetting(key, checked){
     await callApi('update_setting', { key, value: checked ? 'true' : 'false' });
     showToast(checked ? '✅ Enabled' : '✅ Disabled');
   }catch(e){ showToast(e.message,'err'); loadSettings(); }
+}
+
+// ── ADMIN: NEXT YEAR PLANNING ──
+let nyState = { employees: [], plan: {}, cur: {}, curYear: null, transfers: [] };
+const NY_TYPES = ['annual','sick','personal'];
+
+async function loadNextYearPlan(){
+  try{
+    const d = await callApi('get_next_year_plan');
+    nyState.curYear = d.current_year;
+    nyState.employees = (d.employees||[]).filter(e=>e.active!==false);
+    nyState.plan = {}; (d.plan||[]).forEach(r=>{ nyState.plan[r.employee_id+'|'+r.leave_type] = Number(r.total_days); });
+    nyState.cur = {}; (d.current_balances||[]).forEach(r=>{ nyState.cur[r.employee_id+'|'+r.leave_type] = Number(r.total_days); });
+    nyState.transfers = d.transfers||[];
+    const dateEl = document.getElementById('nyEffectiveDate');
+    if(dateEl && !dateEl.value) dateEl.value = (d.current_year+1)+'-01-01';
+    renderNextYearTable();
+    renderTransferStatus();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+function renderNextYearTable(){
+  const body = document.getElementById('nyBody');
+  if(!nyState.employees.length){ body.innerHTML = '<tr><td colspan="6" class="empty-msg">—</td></tr>'; return; }
+  body.innerHTML = nyState.employees.map(e=>{
+    const search = escAttr(((e.employee_code||'')+' '+(e.name||'')+' '+(e.department||'')).toLowerCase());
+    const cells = NY_TYPES.map(tp=>{
+      const k = e.id+'|'+tp;
+      const v = nyState.plan[k];
+      const ph = nyState.cur[k]!==undefined ? String(nyState.cur[k]) : '';
+      return `<td><input type="number" min="0" step="0.5" class="ny-input" data-emp="${e.id}" data-type="${tp}" value="${v!==undefined?v:''}" placeholder="${ph}" style="width:84px;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.84rem"/></td>`;
+    }).join('');
+    return `<tr data-search="${search}"><td class="mono">${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${cells}</tr>`;
+  }).join('');
+  filterNextYearRows();
+}
+
+function filterNextYearRows(){
+  const q = (document.getElementById('nySearch').value||'').trim().toLowerCase();
+  document.querySelectorAll('#nyBody tr[data-search]').forEach(tr=>{
+    tr.style.display = (!q || tr.getAttribute('data-search').includes(q)) ? '' : 'none';
+  });
+}
+
+function fillNextYearFromCurrent(){
+  document.querySelectorAll('#nyBody .ny-input').forEach(inp=>{
+    if(inp.value!=='') return;
+    const v = nyState.cur[inp.dataset.emp+'|'+inp.dataset.type];
+    if(v!==undefined) inp.value = v;
+  });
+}
+
+// คืนค่า true ถ้าบันทึกสำเร็จ (หรือไม่มีอะไรเปลี่ยน)
+async function saveNextYearPlan(silent){
+  const rows = [];
+  document.querySelectorAll('#nyBody .ny-input').forEach(inp=>{
+    const k = inp.dataset.emp+'|'+inp.dataset.type;
+    const old = nyState.plan[k];
+    const raw = inp.value.trim();
+    if(raw===''){ if(old!==undefined) rows.push({ employee_id: inp.dataset.emp, leave_type: inp.dataset.type, total_days: null }); }
+    else if(Number(raw)!==old){ rows.push({ employee_id: inp.dataset.emp, leave_type: inp.dataset.type, total_days: Number(raw) }); }
+  });
+  if(!rows.length){ if(!silent) showToast(t('msg_ny_nochange')); return true; }
+  try{
+    await withLoading(()=>callApi('save_next_year_quotas', { rows }), t('loading_ny'));
+    rows.forEach(r=>{ const k=r.employee_id+'|'+r.leave_type; if(r.total_days===null) delete nyState.plan[k]; else nyState.plan[k]=r.total_days; });
+    if(!silent) showToast(t('msg_ny_saved'));
+    return true;
+  }catch(e){ showToast(e.message,'err'); return false; }
+}
+
+function renderTransferStatus(){
+  const el = document.getElementById('nyTransferStatus');
+  const cancelBtn = document.getElementById('nyCancelBtn');
+  const pending = nyState.transfers.find(x=>x.status==='pending');
+  const last = nyState.transfers.find(x=>x.status==='done'||x.status==='failed');
+  const lines = [];
+  if(pending) lines.push(`⏳ ${t('ny_status_pending').replace('{d}', formatDMY(pending.effective_date)).replace('{y}', pending.target_year)}`);
+  else lines.push(`${t('ny_status_none')}`);
+  if(last){
+    const when = last.executed_at ? formatDMY(String(last.executed_at).slice(0,10)) : '';
+    lines.push(last.status==='done'
+      ? `✅ ${t('ny_status_done').replace('{y}', last.target_year).replace('{n}', last.applied_count||0).replace('{d}', when)}`
+      : `⚠️ ${t('ny_status_failed').replace('{y}', last.target_year).replace('{e}', last.note||'')}`);
+  }
+  el.innerHTML = lines.map(l=>`<div>${escHtml(l)}</div>`).join('');
+  cancelBtn.style.display = pending ? 'inline-block' : 'none';
+}
+
+function todayLocalIso(){
+  const n = new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+
+async function confirmYearTransfer(){
+  const date = document.getElementById('nyEffectiveDate').value;
+  if(!date){ showToast(t('msg_ny_pick_date'),'err'); return; }
+  const year = date.slice(0,4);
+  const immediate = date <= todayLocalIso();
+  const msg = (immediate ? t('cf_ny_now') : t('cf_ny_sched')).replace('{y}', year).replace('{d}', formatDMY(date));
+  if(!confirm(msg)) return;
+  try{
+    if(!(await saveNextYearPlan(true))) return;
+    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date }), t('loading_ny'));
+    showToast(res.executed ? t('msg_ny_done_ok').replace('{n}', res.applied).replace('{y}', res.target_year)
+                           : t('msg_ny_sched_ok').replace('{d}', formatDMY(date)));
+    loadNextYearPlan();
+  }catch(e){ showToast(e.message,'err'); loadNextYearPlan(); }
+}
+
+async function cancelYearTransfer(){
+  if(!confirm(t('cf_ny_cancel'))) return;
+  try{
+    await callApi('cancel_year_transfer');
+    showToast(t('msg_ny_cancelled'));
+    loadNextYearPlan();
+  }catch(e){ showToast(e.message,'err'); }
 }
 
 // ── ADMIN: LOI LOGS ──
@@ -4412,11 +4609,11 @@ function openImportModal(){
 }
 
 function downloadExcelTemplate(){
-  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days','auto_approve'];
+  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days','auto_approve','bypass_conditions','special_calendar_access'];
   const sample=[{
     employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
     position:'Staff', role:'employee', manager_code:'2400,2401', password:'welcome123',
-    annual_days:10, sick_days:30, personal_days:3, auto_approve:'no',
+    annual_days:10, sick_days:30, personal_days:3, auto_approve:'no', bypass_conditions:'no', special_calendar_access:'no',
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
   const wb = XLSX.utils.book_new();
@@ -4446,6 +4643,8 @@ function handleExcelFile(event){
         sick_days:Number(r.sick_days)||0,
         personal_days:Number(r.personal_days)||0,
         auto_approve:String(r.auto_approve||'').trim(),
+        bypass_conditions:String(r.bypass_conditions||'').trim(),
+        special_calendar_access:String(r.special_calendar_access||'').trim(),
       })).filter(r=>r.employee_code);
 
       document.getElementById('importCount').textContent = importRows.length;
@@ -4464,7 +4663,7 @@ function renderImportPreview(){
   const table=document.getElementById('importPreviewTable');
   if(!importRows.length){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days','auto_approve'];
+  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days','auto_approve','bypass_conditions','special_calendar_access'];
   table.innerHTML = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+importRows.map(r=>'<tr>'+cols.map(c=>`<td>${escHtml(String(r[c]))}</td>`).join('')+'</tr>').join('')+'</tbody>';
 }
