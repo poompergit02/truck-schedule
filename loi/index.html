@@ -28,13 +28,21 @@ h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
 .mono{font-family:'IBM Plex Mono',monospace}
 
 
-/* ══════════ SHARK SWIM (ปลาฉลามหัวค้อนจากอนุภาคพิกเซล ว่ายอยู่ด้านหลังเนื้อหา) ══════════
+/* ══════════ BG ART (ภาพพื้นหลังสัตว์ประจำเดือนจากอนุภาคพิกเซล ว่ายอยู่ด้านหลังเนื้อหา) ══════════
    - canvas ติดกับหน้าจอ (fixed) อยู่หลังเนื้อหาทั้งหมด (z-index:-1) คลิกทะลุได้ ไม่กระทบการเลื่อนหน้า/กดปุ่ม
-   - การ์ด/เฮดเดอร์พื้นขาวบังปลาเอง ปลาจึงโผล่เฉพาะพื้นที่ว่างข้างๆ และช่องระหว่างการ์ด */
-#sharkLayer{
+   - การ์ด/เฮดเดอร์พื้นขาวบังตัวสัตว์เอง จึงโผล่เฉพาะพื้นที่ว่างข้างๆ และช่องระหว่างการ์ด */
+#bgArtLayer{
   position:fixed; inset:0; width:100%; height:100%;
   z-index:-1; pointer-events:none;
 }
+/* ปุ่มเลือกภาพพื้นหลัง (หน้า Login Progress — admin) */
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.bg-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px 12px;background:var(--white);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;font-family:inherit;color:var(--ink);transition:border-color .15s,box-shadow .15s,transform .15s}
+.bg-tile:hover{border-color:var(--plum-600);transform:translateY(-1px)}
+.bg-tile.on{border-color:var(--plum-700);box-shadow:0 0 0 3px rgba(85,46,140,.16);background:#FBF9FF}
+.bg-tile canvas{width:100%;max-width:132px;height:auto;aspect-ratio:132/80;background:var(--cream);border-radius:8px;image-rendering:pixelated}
+.bg-tile-name{font-size:.8rem;font-weight:600;text-align:center;line-height:1.3}
+.bg-tile-sub{font-size:.72rem;color:var(--text-dim);text-align:center}
 
 /* ══════════ LOGIN SCREEN ══════════ */
 #loginScreen{
@@ -91,6 +99,9 @@ header{
 }
 .brand-text h1{font-size:1.15rem;font-weight:600;color:var(--ink)}
 .brand-text p{font-size:.7rem;color:var(--text-dim);letter-spacing:.04em;font-family:'IBM Plex Mono',monospace}
+/* ลิงก์ไปหน้า Home ของ IIDA SMART CENTER (หน้าเดียวกับเว็บหลัก) — หน้าตาเหมือนข้อความเดิม แต่ชี้แล้วขีดเส้นใต้ */
+.brand-text a.brand-home{color:inherit;text-decoration:none;cursor:pointer;border-bottom:1px solid transparent;transition:color .15s,border-color .15s}
+.brand-text a.brand-home:hover,.brand-text a.brand-home:focus-visible{color:var(--plum-700);border-bottom-color:currentColor;outline:none}
 .header-right{display:flex;align-items:center;gap:14px}
 .user-chip{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border:1px solid var(--line);border-radius:30px;background:var(--line-soft)}
 .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--plum-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600}
@@ -401,7 +412,7 @@ tr:hover td{background:var(--cream)}
 </head>
 <body>
 
-<canvas id="sharkLayer" aria-hidden="true"></canvas>
+<canvas id="bgArtLayer" aria-hidden="true"></canvas>
 
 <!-- ══════════ LOGIN SCREEN ══════════ -->
 <div id="loginScreen">
@@ -435,7 +446,7 @@ tr:hover td{background:var(--cream)}
       <div class="brand-mark">LOI</div>
       <div class="brand-text">
         <h1>Leave Request Online IIDA</h1>
-        <p>IIDA SMART CENTER</p>
+        <p><a class="brand-home" href="https://iida-smart-center.onrender.com/" title="IIDA SMART CENTER — Home">IIDA SMART CENTER</a></p>
       </div>
     </div>
     <div class="header-right">
@@ -900,6 +911,11 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-outline" onclick="exportNeverLoggedIn()" data-i18n="btn_export_excel">Export to Excel</button>
         </div>
         <div id="loginProgressResults"></div>
+      </div>
+      <div class="card">
+        <h3 data-i18n="bg_title">🎨 Background Art</h3>
+        <p class="hint" style="margin-bottom:16px" data-i18n="bg_hint">Pick the animal shown swimming in the background of LOI for everyone. "Auto" follows the current month. People see a change the next time they sign in or reload.</p>
+        <div class="bg-grid" id="bgPickerGrid"></div>
       </div>
     </div>
 
@@ -1593,7 +1609,7 @@ function doLogout(){
   localStorage.removeItem('loi_token');
   currentUser=null;
   document.getElementById('app').style.display='none';
-  SharkSwim.stop();
+  BgArt.stop();
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
   document.getElementById('loginPassword').value='';
@@ -1637,7 +1653,6 @@ let appSettingsCache = {};
 async function enterApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
-  SharkSwim.start();   // เริ่มให้ปลาว่ายหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง)
   document.getElementById('userName').textContent = currentUser.name;
   document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
   renderMyAvatar();
@@ -1648,6 +1663,7 @@ async function enterApp(){
     const s = await callApi('get_settings');
     appSettingsCache = s.settings || {};
   }catch(e){ /* non-fatal, server still enforces regardless */ }
+  BgArt.start(appSettingsCache['bg_animal']);   // เริ่มภาพพื้นหลังหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง) — สัตว์ตามที่ admin เลือก หรือตามเดือนปัจจุบัน
 }
 
 function buildTabs(){
@@ -1779,7 +1795,7 @@ function showPage(id, el){
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
   if(id==='next_year') loadNextYearPlan();
-  if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); }
+  if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); loadBgPicker(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
 }
@@ -2256,6 +2272,8 @@ const I18N = {
     cf_ny_sched:'Schedule the transfer for {d} (00:01)? The saved quotas will replace the live quotas for year {y} at that time.',
     cf_ny_now:'The date {d} has already arrived, so the transfer runs NOW and replaces the live quotas for year {y} immediately. Continue?',
     cf_ny_cancel:'Cancel the scheduled transfer?', loading_ny:'Saving...',
+    bg_title:'🎨 Background Art', bg_hint:'Pick the animal shown swimming in the background of LOI for everyone. "Auto" follows the current month. People see a change the next time they sign in or reload.',
+    bg_auto:'Auto — current month', bg_off:'Off (no background)', bg_saved:'✅ Background saved',
     set_curyear_title:'Leave only within the current year', set_curyear_desc:'When ON, both the start and end date must fall in the current calendar year. Use this until next year\'s quotas are in place.',
     dot_pending:'{n} request(s) waiting for your approval',
     msg_pick_one_date:'⚠️ Please pick at least one date', msg_multi_ok:'✅ Submitted {ok} of {total} date(s)', msg_multi_fail:'⚠️ {n} failed: {err}',
@@ -2423,6 +2441,8 @@ const I18N = {
     cf_ny_sched:'ตั้งเวลาย้ายข้อมูลวันที่ {d} (00:01 น.)? โควตาที่บันทึกไว้จะไปแทนที่โควตาจริงของปี {y} ตอนนั้น',
     cf_ny_now:'วันที่ {d} มาถึงแล้ว ระบบจะย้ายข้อมูล "ทันที" และแทนที่โควตาจริงของปี {y} ทันที ต้องการดำเนินการต่อหรือไม่?',
     cf_ny_cancel:'ยกเลิกการตั้งเวลาย้ายข้อมูล?', loading_ny:'กำลังบันทึก...',
+    bg_title:'🎨 ภาพพื้นหลัง', bg_hint:'เลือกสัตว์ที่ว่ายเป็นพื้นหลังของ LOI สำหรับทุกคน "อัตโนมัติ" จะเปลี่ยนตามเดือนปัจจุบัน ผู้ใช้จะเห็นการเปลี่ยนแปลงเมื่อเข้าสู่ระบบหรือโหลดหน้าใหม่ครั้งถัดไป',
+    bg_auto:'อัตโนมัติ — ตามเดือนปัจจุบัน', bg_off:'ปิด (ไม่มีพื้นหลัง)', bg_saved:'✅ บันทึกภาพพื้นหลังแล้ว',
     set_curyear_title:'ลาได้เฉพาะภายในปีปัจจุบัน', set_curyear_desc:'เมื่อเปิด วันเริ่มและวันสิ้นสุดการลาต้องอยู่ในปีปัจจุบันเท่านั้น (ใช้ระหว่างที่ยังไม่ได้ย้ายโควตาปีหน้า)',
     dot_pending:'มี {n} คำขอรอการอนุมัติจากคุณ',
     msg_pick_one_date:'⚠️ กรุณาเลือกอย่างน้อย 1 วัน', msg_multi_ok:'✅ ยื่นสำเร็จ {ok} จาก {total} วัน', msg_multi_fail:'⚠️ ล้มเหลว {n} รายการ: {err}',
@@ -4216,7 +4236,7 @@ async function loadNextYearPlan(){
   try{
     const d = await callApi('get_next_year_plan');
     nyState.curYear = d.current_year;
-    nyState.employees = (d.employees||[]).filter(e=>e.active!==false);
+    nyState.employees = (d.employees||[]).filter(e=>e.active!==false && e.role!=='admin');   // ไม่แสดงบัญชี admin
     nyState.plan = {}; (d.plan||[]).forEach(r=>{ nyState.plan[r.employee_id+'|'+r.leave_type] = Number(r.total_days); });
     nyState.cur = {}; (d.current_balances||[]).forEach(r=>{ nyState.cur[r.employee_id+'|'+r.leave_type] = Number(r.total_days); });
     nyState.transfers = d.transfers||[];
@@ -4322,6 +4342,45 @@ async function cancelYearTransfer(){
     await callApi('cancel_year_transfer');
     showToast(t('msg_ny_cancelled'));
     loadNextYearPlan();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ADMIN: BACKGROUND ART PICKER (เลือกสัตว์ประจำเดือนที่ว่ายเป็นพื้นหลัง) ──
+const BG_MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const BG_MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function bgLabel(key){
+  const A = BG_ANIMALS[key], th = currentLang === 'th';
+  const name = th ? A.th : A.en;
+  return A.month ? (th ? BG_MONTHS_TH : BG_MONTHS_EN)[A.month - 1] + ' · ' + name : name;
+}
+async function loadBgPicker(){
+  try{
+    const d = await callApi('get_settings');
+    appSettingsCache = d.settings || appSettingsCache;
+  }catch(e){ /* ใช้ค่าที่จำไว้ */ }
+  renderBgPicker(appSettingsCache['bg_animal'] || 'auto');
+}
+function renderBgPicker(cur){
+  const grid = document.getElementById('bgPickerGrid');
+  if(!grid) return;
+  const auto = BgArt.resolve('auto');
+  const items = [{ key:'auto', label:t('bg_auto'), sub:bgLabel(auto), prev:auto }]
+    .concat(BG_ORDER.map(k=>({ key:k, label:bgLabel(k), prev:k })))
+    .concat([{ key:'off', label:t('bg_off'), prev:'off' }]);
+  grid.innerHTML = items.map(it=>`
+    <button type="button" class="bg-tile${it.key===cur?' on':''}" onclick="selectBgAnimal('${it.key}')">
+      <canvas width="132" height="80" data-prev="${it.prev}"></canvas>
+      <span class="bg-tile-name">${escHtml(it.label)}</span>${it.sub?`<span class="bg-tile-sub">${escHtml(it.sub)}</span>`:''}
+    </button>`).join('');
+  grid.querySelectorAll('canvas[data-prev]').forEach(cv=>BgArt.drawPreview(cv, cv.dataset.prev));
+}
+async function selectBgAnimal(key){
+  try{
+    await callApi('update_setting', { key:'bg_animal', value:key });
+    appSettingsCache['bg_animal'] = key;
+    BgArt.setAnimal(key);
+    renderBgPicker(key);
+    showToast(t('bg_saved'));
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -4817,205 +4876,475 @@ function setT24(id, val){
 }
 
 
-// ══════════ SHARK SWIM — ปลาฉลามหัวค้อนจากอนุภาคพิกเซล (Pixel Particle Art) ══════════
-// ตัวปลาประกอบจากสี่เหลี่ยมเล็กๆ หลายพันจุด สร้างจาก silhouette (SVG path) แล้วสุ่มจุดภายในรูปร่าง
-// แต่ละจุดมีสีตามแสงเงา + ความโปร่งใสต่างกัน ลำตัวโค้งแกว่งตามหลักการว่ายของฉลาม
-// อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และปลาหลบเมาส์
-// ปรับแต่งทุกอย่างได้ที่ SHARK_CONFIG ด้านล่างที่เดียว
-const SHARK_CONFIG = {
-  // ── จำนวนอนุภาค (ยิ่งมากยิ่งละเอียดแต่ใช้เครื่องมากขึ้น) ──
-  mainParticles:   2800,   // ปลาตัวหลัก (desktop)
-  smallParticles:  950,    // ปลาตัวเล็ก (desktop)
-  mobileParticles: 800,    // ปลาตัวเดียวบนมือถือ
-  smallCount:      2,      // จำนวนปลาตัวเล็ก บน desktop (0–2)
+// ══════════ BG ANIMALS — สัตว์ประจำเดือน 12 ตัว + ฉลามหัวค้อน (มุมมองจากด้านบน หันหัวไปทางขวา) ══════════
+// แต่ละตัวประกอบจาก "ชิ้นส่วน" (parts) วาดลงกล่อง 1000×600 (กึ่งกลางลำตัว y=300) แล้วระบบสุ่มอนุภาคภายในรูป
+// kind: 1 = ผิวปกติ, 2 = ส่วนเข้ม (ขอ/เขา/แผงคอ/จมูก), 3 = ตา, 4 = ส่วนสว่าง (ท้อง/ปลายหาง/ลายบนปีก), 5 = เข้มกลาง (แผงคอสิงโต)
+// anim (ไม่ใส่ = ไม่ขยับเอง):
+//   {t:'swing', px,py, amp, spd, ph}  หมุนรอบจุด (px,py)  amp=เรเดียน  (หาง ครีบ หนวด ก้ามปู)
+//   {t:'slide', dx, spd, ph}          เลื่อนไป-กลับตามแกนลำตัว (เท้าก้าวเดิน)
+//   {t:'flap',  py, lo, spd, ph}      ยืด/หดแนวตั้งรอบแกน y=py (ปีกผีเสื้อกระพือ) lo = ขนาดต่ำสุด 0–1
+// colors: [เข้มสุด, สีหลักของเดือน, สว่างสุด]  — ระบบไล่เฉดให้เอง
+const BG_TAU = Math.PI * 2;
+function bgEll(g, cx, cy, rx, ry, rot){ rot = rot || 0; g.moveTo(cx + rx*Math.cos(rot), cy + rx*Math.sin(rot)); g.ellipse(cx, cy, rx, ry, rot, 0, BG_TAU); }
+function bgPoly(g, pts){ g.moveTo(pts[0][0], pts[0][1]); for(let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); }
+function bgBez(p, t){ const u = 1 - t; return [u*u*u*p[0][0] + 3*u*u*t*p[1][0] + 3*u*t*t*p[2][0] + t*t*t*p[3][0], u*u*u*p[0][1] + 3*u*u*t*p[1][1] + 3*u*t*t*p[2][1] + t*t*t*p[3][1]]; }
+// วงกลมเล็กเรียงตามเส้นโค้ง รัศมีค่อยๆ เปลี่ยน (ใช้ทำหาง/คอ/ลำตัวเรียว)
+function bgChain(g, p, r0, r1, n){ for(let i = 0; i <= n; i++){ const t = i/n, q = bgBez(p, t), r = r0 + (r1 - r0)*t; g.moveTo(q[0] + r, q[1]); g.arc(q[0], q[1], r, 0, BG_TAU); } }
+function bgLine(g, pts, w){ g.lineWidth = w; g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for(let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); }
+// ชิ้นส่วนเดี่ยว
+function bgP(kind, draw, anim, opt){ return Object.assign({ kind: kind, draw: draw, anim: anim || null }, opt || {}); }
+// ชิ้นส่วนคู่ซ้าย-ขวา (ครึ่งบนวาดเอง ครึ่งล่างเป็นภาพสะท้อน) — alt:true = ขยับสลับกัน (เดิน)
+function bgPM(kind, draw, anim, opt){
+  const top = bgP(kind, draw, anim, opt);
+  let bot = null;
+  if(anim){
+    bot = Object.assign({}, anim);
+    if(anim.t === 'swing'){ bot.py = 600 - anim.py; bot.amp = -anim.amp; }
+    bot.ph = (anim.ph || 0) + (anim.alt ? Math.PI : 0);
+  }
+  return [top, bgP(kind, g=>{ g.save(); g.translate(0, 600); g.scale(1, -1); draw(g); g.restore(); }, bot, opt)];
+}
+const bgFlat = a => a.reduce((o, x)=> Array.isArray(x) ? o.concat(bgFlat(x)) : o.concat([x]), []);   // แบนลิสต์ซ้อนกันหลายชั้น
 
-  // ── ขนาดปลา: ความยาวตัว = สัดส่วนของความกว้างจอ (จำกัดช่วงต่ำสุด/สูงสุด เป็น px) ──
+const BG_ANIMALS = {};
+
+// ─── 1) มกราคม · แพะภูเขา · เทาเงิน ───
+BG_ANIMALS['1'] = { month: 1, th: 'แพะภูเขา', en: 'Mountain Goat', colors: ['#323A45', '#808C9A', '#E4E9EE'], sz: 1, speed: 0.8, wob: 1,
+  wave: { amp: 12, exp: 0.6, base: 0.5 }, tb: 0.24,
+  parts: bgFlat([
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 692, 196, 38, 20); g.fill(); }, { t:'slide', dx: 22, spd: 1, ph: 0, alt: true }),
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 300, 198, 40, 21); g.fill(); }, { t:'slide', dx: 22, spd: 1, ph: Math.PI, alt: true }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 232, 300, 36, 20); g.fill(); }, { t:'swing', px: 262, py: 300, amp: 0.3, spd: 1.2 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 470, 300, 236, 92); bgEll(g, 330, 300, 118, 98); bgEll(g, 625, 300, 118, 102); g.fill(); }, null, { spine: [820, 70] }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 722, 300, 74, 60); g.fill(); }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 806, 300, 86, 54); bgEll(g, 876, 300, 44, 34); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 916, 300, 14, 12); g.fill(); }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 856, 336, 10, 30); g.fill(); }),
+    bgPM(2, g=>{ g.beginPath(); g.moveTo(820, 268); g.bezierCurveTo(814, 218, 782, 178, 716, 158); g.bezierCurveTo(756, 192, 776, 232, 786, 276); g.closePath(); g.fill(); }, { t:'swing', px: 812, py: 270, amp: 0.04, spd: 1 }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 774, 244, 32, 12, -0.5); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 832, 280, 6, 5); g.fill(); }),
+  ]) };
+
+// ─── 2) กุมภาพันธ์ · กระต่าย · ชมพู ───
+BG_ANIMALS['2'] = { month: 2, th: 'กระต่าย', en: 'Rabbit', colors: ['#7A2F4C', '#E58FB0', '#FFE8F0'], sz: 1, speed: 0.95, wob: 1.2,
+  wave: { amp: 10, exp: 0.6, base: 0.5 }, tb: 0.3,
+  parts: bgFlat([
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 290, 178, 72, 21, -0.1); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0 }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 730, 214, 40, 17); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 430, 300, 200, 124); bgEll(g, 565, 300, 150, 98); bgEll(g, 665, 300, 100, 78); g.fill(); }, null, { spine: [700, 90] }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 228, 300, 42, 40); g.fill(); }, { t:'swing', px: 250, py: 300, amp: 0.25, spd: 1.5 }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 712, 214, 126, 29, 0.46); g.fill(); }, { t:'swing', px: 822, py: 268, amp: 0.08, spd: 1.3 }),
+    bgPM(4, g=>{ g.beginPath(); bgEll(g, 712, 214, 104, 13, 0.46); g.fill(); }, { t:'swing', px: 822, py: 268, amp: 0.08, spd: 1.3 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 786, 300, 94, 68); bgEll(g, 862, 300, 42, 33); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 898, 300, 11, 9); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 812, 272, 7, 6); g.fill(); }),
+  ]) };
+
+// ─── 3) มีนาคม · ปลาคู่ · น้ำเงิน ───
+(function(){
+  function fish(cx, cy, ph){
+    return [
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx + 80, cy - 78, 56, 16, 0.5); g.fill(); }, { t:'swing', px: cx + 120, py: cy - 56, amp: 0.3, spd: 1, ph: ph }),
+      bgP(1, g=>{ g.beginPath(); g.moveTo(cx - 165, cy - 12); g.quadraticCurveTo(cx - 230, cy - 30, cx - 300, cy - 92); g.quadraticCurveTo(cx - 262, cy, cx - 300, cy + 92); g.quadraticCurveTo(cx - 230, cy + 30, cx - 165, cy + 12); g.closePath(); g.fill(); }, { t:'swing', px: cx - 170, py: cy, amp: 0.45, spd: 1, ph: ph }),
+      bgP(1, g=>{ g.beginPath(); g.moveTo(cx + 285, cy); g.bezierCurveTo(cx + 250, cy - 62, cx + 120, cy - 84, cx - 20, cy - 54); g.bezierCurveTo(cx - 90, cy - 38, cx - 140, cy - 22, cx - 175, cy - 12); g.lineTo(cx - 175, cy + 12); g.bezierCurveTo(cx - 140, cy + 22, cx - 90, cy + 38, cx - 20, cy + 54); g.bezierCurveTo(cx + 120, cy + 84, cx + 250, cy + 62, cx + 285, cy); g.closePath(); g.fill(); }, null, { spine: [cx + 200, 52] }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, cx + 20, cy, 150, 22); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, cx + 215, cy - 22, 8, 8); g.fill(); }),
+    ];
+  }
+  BG_ANIMALS['3'] = { month: 3, th: 'ปลาคู่', en: 'Twin Fish', colors: ['#12306B', '#3F7FD0', '#D8E9FF'], sz: 1, speed: 1, wob: 1,
+    wave: { amp: 40, exp: 1.8, base: 0.05 }, tb: 0.3,
+    parts: bgFlat([
+      bgP(4, g=>{ g.beginPath(); g.moveTo(282, 172); g.bezierCurveTo(110, 205, 120, 395, 350, 430); g.lineWidth = 11; g.lineCap = 'round'; g.stroke(); }),
+      fish(600, 168, 0), fish(670, 432, 1.6),
+    ]) };
+})();
+
+// ─── 4) เมษายน · เม่น · ขาวทอง ───
+BG_ANIMALS['4'] = { month: 4, th: 'เม่น', en: 'Hedgehog', colors: ['#5C4414', '#CDB26E', '#FFFDF4'], sz: 0.95, speed: 0.55, wob: 1,
+  wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.26,
+  parts: bgFlat([
+    bgPM(4, g=>{ g.beginPath(); bgEll(g, 790, 206, 36, 18); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0, alt: true }),
+    bgP(1, g=>{
+      g.beginPath();
+      const N = 52, cx = 440, cy = 300, rx = 282, ry = 186;
+      for(let i = 0; i < N*2; i++){
+        const a = (i/(N*2))*BG_TAU, front = Math.cos(a) > 0.72;
+        const f = (front || i % 2 === 0) ? 1 : 1.16 + 0.05*Math.sin(i*1.7);
+        const x = cx + rx*f*Math.cos(a), y = cy + ry*f*Math.sin(a);
+        if(i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath(); g.fill();
+    }, null, { spine: [700, 110] }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 745, 300, 128, 90); bgEll(g, 848, 300, 72, 48); g.fill(); }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 706, 222, 28, 22); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 918, 300, 17, 14); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 818, 266, 8, 8); g.fill(); }),
+  ]) };
+
+// ─── 5) พฤษภาคม · กระทิง · น้ำตาล ───
+BG_ANIMALS['5'] = { month: 5, th: 'กระทิง', en: 'Bison', colors: ['#2E1A0C', '#7A4B2A', '#D9B48A'], sz: 1, speed: 0.7, wob: 0.8,
+  wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.3,
+  parts: bgFlat([
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 700, 184, 44, 22); g.fill(); }, { t:'slide', dx: 18, spd: 0.9, ph: 0, alt: true }),
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 300, 190, 50, 24); g.fill(); }, { t:'slide', dx: 18, spd: 0.9, ph: Math.PI, alt: true }),
+    bgP(1, g=>{ g.beginPath(); g.moveTo(190, 300); g.quadraticCurveTo(132, 322, 106, 372); g.lineWidth = 12; g.lineCap = 'round'; g.stroke(); }, { t:'swing', px: 190, py: 300, amp: 0.3, spd: 1.1 }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 98, 388, 20, 36, 0.4); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.3, spd: 1.1 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 360, 300, 176, 122); bgEll(g, 510, 300, 190, 130); bgEll(g, 640, 300, 142, 150); bgEll(g, 730, 300, 92, 100); g.fill(); }, null, { spine: [820, 90] }),
+    bgP(5, g=>{ g.beginPath(); bgEll(g, 690, 300, 48, 92); g.fill(); }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 806, 300, 76, 68); bgEll(g, 876, 300, 42, 46); g.fill(); }),
+    bgP(5, g=>{ g.beginPath(); bgEll(g, 792, 300, 26, 42); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 914, 300, 12, 20); g.fill(); }),
+    bgPM(2, g=>{ g.beginPath(); g.moveTo(792, 252); g.bezierCurveTo(768, 188, 790, 130, 872, 92); g.bezierCurveTo(836, 140, 836, 192, 840, 246); g.closePath(); g.fill(); }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 770, 226, 34, 15, -0.4); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 830, 270, 6, 6); g.fill(); }),
+  ]) };
+
+// ─── 6) มิถุนายน · จิ้งจอกคู่ · ส้มขาว ───
+(function(){
+  function fox(cx, cy, ph){
+    return [
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx + 92, cy - 56, 36, 15); g.fill(); }, { t:'slide', dx: 12, spd: 1.2, ph: ph, alt: true }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx - 96, cy - 56, 38, 15); g.fill(); }, { t:'slide', dx: 12, spd: 1.2, ph: ph + Math.PI, alt: true }),
+      bgP(1, g=>{ g.beginPath(); g.moveTo(cx - 100, cy - 20); g.bezierCurveTo(cx - 190, cy - 92, cx - 300, cy - 80, cx - 396, cy); g.bezierCurveTo(cx - 300, cy + 80, cx - 190, cy + 92, cx - 100, cy + 20); g.closePath(); g.fill(); }, { t:'swing', px: cx - 100, py: cy, amp: 0.26, spd: 1, ph: ph }),
+      bgP(4, g=>{ g.beginPath(); g.moveTo(cx - 318, cy - 34); g.bezierCurveTo(cx - 350, cy - 32, cx - 378, cy - 18, cx - 398, cy); g.bezierCurveTo(cx - 378, cy + 18, cx - 350, cy + 32, cx - 318, cy + 34); g.bezierCurveTo(cx - 336, cy + 14, cx - 336, cy - 14, cx - 318, cy - 34); g.closePath(); g.fill(); }, { t:'swing', px: cx - 100, py: cy, amp: 0.26, spd: 1, ph: ph }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, cx - 10, cy, 128, 58); bgEll(g, cx + 80, cy, 70, 52); g.fill(); }, null, { spine: [cx + 140, 38] }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, cx + 70, cy, 70, 26); g.fill(); }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, cx + 160, cy, 62, 52); bgPoly(g, [[cx + 190, cy - 36], [cx + 285, cy], [cx + 190, cy + 36]]); g.fill(); }),
+      bgP(4, g=>{ g.beginPath(); bgPoly(g, [[cx + 196, cy - 24], [cx + 280, cy], [cx + 196, cy + 24]]); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, cx + 285, cy, 10, 9); g.fill(); }),
+      bgPM(2, g=>{ g.beginPath(); bgPoly(g, [[cx + 132, cy - 40], [cx + 106, cy - 112], [cx + 186, cy - 58]]); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, cx + 190, cy - 24, 6, 5); g.fill(); }),
+    ];
+  }
+  BG_ANIMALS['6'] = { month: 6, th: 'จิ้งจอกคู่', en: 'Twin Foxes', colors: ['#6A2E0C', '#E8803A', '#FFF6EC'], sz: 1.02, speed: 1.1, wob: 1.2,
+    wave: { amp: 14, exp: 1.0, base: 0.3 }, tb: 0.3,
+    parts: bgFlat([ fox(520, 170, 0), fox(560, 430, 2.4) ]) };
+})();
+
+// ─── 7) กรกฎาคม · ปู · แดงส้ม ───
+(function(){
+  const legs = [];
+  [570, 510, 450, 390].forEach((x, i)=>{
+    const ey = 300 - 150*Math.sqrt(Math.max(0, 1 - Math.pow((x - 470)/210, 2)));
+    legs.push(bgPM(1, g=>{ bgLine(g, [[x, ey + 14], [x - 18, ey - 56], [x - 74, ey - 96]], 22); }, { t:'swing', px: x, py: ey + 10, amp: 0.22, spd: 1.3, ph: i*0.9, alt: true }));
+  });
+  BG_ANIMALS['7'] = { month: 7, th: 'ปู', en: 'Crab', colors: ['#6B1A10', '#E2573A', '#FFD9C4'], sz: 1, speed: 0.5, wob: 1,
+    wave: { amp: 6, exp: 0.6, base: 0.5 }, tb: 0.3,
+    parts: bgFlat([
+      legs,
+      bgPM(1, g=>{ bgLine(g, [[600, 210], [694, 150]], 38); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 742, 138, 62, 50); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 836, 82, 70, 21, -0.62); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 838, 154, 66, 20, -0.12); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 470, 300, 212, 150); g.fill(); }, null, { spine: [700, 110] }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 480, 300, 120, 78); g.fill(); }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 672, 252, 11, 28, 0.2); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 678, 228, 8, 8); g.fill(); }),
+    ]) };
+})();
+
+// ─── 8) สิงหาคม · สิงโต · ทอง ───
+BG_ANIMALS['8'] = { month: 8, th: 'สิงโต', en: 'Lion', colors: ['#6B430A', '#D4A12C', '#FBE9B0'], sz: 1, speed: 0.75, wob: 0.9,
+  wave: { amp: 10, exp: 0.6, base: 0.5 }, tb: 0.3,
+  parts: bgFlat([
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 268, 196, 58, 26); g.fill(); }, { t:'slide', dx: 16, spd: 0.9, ph: 0, alt: true }),
+    bgP(1, g=>{ g.beginPath(); bgChain(g, [[190, 300], [120, 300], [84, 340], [70, 402]], 15, 8, 14); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.32, spd: 1 }),
+    bgP(5, g=>{ g.beginPath(); bgEll(g, 64, 424, 24, 36, -0.2); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.32, spd: 1 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 400, 300, 220, 96); bgEll(g, 300, 300, 112, 108); g.fill(); }, null, { spine: [600, 70] }),
+    bgP(5, g=>{
+      g.beginPath();
+      const N = 34, cx = 660, cy = 300, rx = 206, ry = 198;
+      for(let i = 0; i < N*2; i++){
+        const a = (i/(N*2))*BG_TAU, f = (i % 2 === 0) ? 1 : 0.8;
+        const x = cx + rx*f*Math.cos(a), y = cy + ry*f*Math.sin(a);
+        if(i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath(); g.fill();
+    }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 802, 300, 86, 78); g.fill(); }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 876, 300, 44, 36); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 914, 300, 14, 11); g.fill(); }),
+    bgPM(1, g=>{ g.beginPath(); bgEll(g, 748, 222, 28, 24); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 824, 272, 7, 6); g.fill(); }),
+  ]) };
+
+// ─── 9) กันยายน · หงส์ · ขาวเงิน ───
+BG_ANIMALS['9'] = { month: 9, th: 'หงส์', en: 'Swan', colors: ['#34445C', '#A9B6C6', '#FFFFFF'], sz: 1.05, speed: 0.7, wob: 0.9,
+  wave: { amp: 8, exp: 0.8, base: 0.3 }, tb: 0.2,
+  parts: bgFlat([
+    bgP(1, g=>{ g.beginPath(); g.moveTo(150, 300); g.bezierCurveTo(230, 235, 360, 185, 500, 185); g.bezierCurveTo(610, 185, 680, 235, 706, 300); g.bezierCurveTo(680, 365, 610, 415, 500, 415); g.bezierCurveTo(360, 415, 230, 365, 150, 300); g.closePath(); g.fill(); }, null, { spine: [700, 110] }),
+    bgPM(4, g=>{ g.beginPath(); g.moveTo(196, 288); g.bezierCurveTo(300, 218, 430, 198, 566, 216); g.bezierCurveTo(596, 248, 566, 284, 504, 298); g.bezierCurveTo(404, 302, 296, 300, 196, 288); g.closePath(); g.fill(); }, { t:'swing', px: 570, py: 236, amp: 0.045, spd: 1.4 }),
+    bgP(1, g=>{ g.beginPath(); bgChain(g, [[690, 300], [770, 300], [790, 246], [850, 246]], 31, 22, 12); bgChain(g, [[850, 246], [900, 246], [920, 285], [908, 322]], 22, 18, 10); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 912, 330, 30, 24); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
+    bgP(2, g=>{ g.beginPath(); bgPoly(g, [[934, 320], [988, 334], [934, 346]]); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
+    bgP(3, g=>{ g.beginPath(); bgEll(g, 918, 322, 5, 5); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
+  ]) };
+
+// ─── 10) ตุลาคม · ผีเสื้อ · ฟ้าม่วง ───
+(function(){
+  const flapA = { t: 'flap', py: 300, lo: 0.22, spd: 2.6, ph: 0 };
+  const fore = g=>{ g.beginPath(); g.moveTo(602, 290); g.bezierCurveTo(644, 200, 706, 110, 772, 44); g.bezierCurveTo(694, 22, 560, 28, 498, 96); g.bezierCurveTo(448, 152, 470, 234, 522, 296); g.closePath(); g.fill(); };
+  const hind = g=>{ g.beginPath(); g.moveTo(528, 304); g.bezierCurveTo(470, 252, 402, 168, 332, 134); g.bezierCurveTo(250, 100, 176, 152, 198, 218); g.bezierCurveTo(214, 268, 330, 302, 424, 312); g.closePath(); g.fill(); };
+  const inner = (draw, cx, cy)=> g=>{ g.save(); g.translate(cx, cy); g.scale(0.84, 0.84); g.translate(-cx, -cy); draw(g); g.restore(); };
+  BG_ANIMALS['10'] = { month: 10, th: 'ผีเสื้อ', en: 'Butterfly', colors: ['#2B2A78', '#7B8CE8', '#EAF0FF'], sz: 0.95, speed: 1.15, wob: 2.4,
+    wave: { amp: 6, exp: 0.6, base: 0.4 }, tb: 0.3,
+    parts: bgFlat([
+      bgPM(2, hind, flapA), bgPM(1, inner(hind, 340, 215), flapA),
+      bgPM(4, g=>{ g.beginPath(); bgEll(g, 296, 176, 36, 26, 0.4); bgEll(g, 380, 232, 20, 15, 0.3); g.fill(); }, flapA),
+      bgPM(2, fore, flapA), bgPM(1, inner(fore, 560, 130), flapA),
+      bgPM(4, g=>{ g.beginPath(); bgEll(g, 664, 96, 34, 22, -0.95); bgEll(g, 566, 82, 22, 14, -0.5); bgEll(g, 548, 170, 18, 12, 0.5); g.fill(); }, flapA),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 480, 300, 160, 15); bgEll(g, 610, 300, 52, 24); bgEll(g, 672, 300, 26, 24); g.fill(); }, { t:'swing', px: 330, py: 300, amp: 0.03, spd: 2.6 }),
+      bgPM(2, g=>{ g.beginPath(); g.moveTo(676, 290); g.quadraticCurveTo(730, 250, 796, 236); g.lineWidth = 5; g.lineCap = 'round'; g.stroke(); g.beginPath(); bgEll(g, 800, 235, 10, 7, -0.2); g.fill(); }, { t:'swing', px: 676, py: 290, amp: 0.1, spd: 1.8 }),
+    ]) };
+})();
+
+// ─── 11) พฤศจิกายน · แมงป่อง · ม่วงเข้ม ───
+(function(){
+  const legs = [];
+  [740, 690, 640, 590].forEach((x, i)=>{
+    legs.push(bgPM(1, g=>{ bgLine(g, [[x, 236], [x - 16, 176], [x - 70, 138]], 15); }, { t:'swing', px: x, py: 232, amp: 0.22, spd: 1.4, ph: i*0.8, alt: true }));
+  });
+  const tailBez = [[410, 300], [150, 330], [70, 110], [300, 80]];
+  const tailAnim = { t: 'swing', px: 410, py: 300, amp: 0.09, spd: 0.8 };
+  BG_ANIMALS['11'] = { month: 11, th: 'แมงป่อง', en: 'Scorpion', colors: ['#1F0B3A', '#5A2A86', '#D6BDF0'], sz: 1, speed: 0.55, wob: 1,
+    wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.3,
+    parts: bgFlat([
+      legs,
+      bgP(1, g=>{ g.beginPath(); bgChain(g, tailBez, 30, 14, 22); g.fill(); }, tailAnim),
+      bgP(2, g=>{ g.beginPath(); bgPoly(g, [[322, 54], [352, 92], [296, 108]]); g.fill(); }, tailAnim),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 572, 300, 74, 64); bgEll(g, 496, 300, 60, 54); bgEll(g, 434, 300, 48, 44); g.fill(); }, null, { spine: [640, 40] }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 690, 300, 108, 80); g.fill(); }),
+      bgPM(1, g=>{ bgLine(g, [[770, 256], [842, 218]], 28); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 888, 196, 58, 42, -0.5); g.fill(); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 940, 150, 52, 16, -0.95); g.fill(); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 752, 282, 6, 6); g.fill(); }),
+    ]) };
+})();
+
+// ─── 12) ธันวาคม · ม้าป่า · น้ำตาลทอง ───
+BG_ANIMALS['12'] = { month: 12, th: 'ม้าป่า', en: 'Wild Horse', colors: ['#3A200C', '#B07A3A', '#F0D8A8'], sz: 1.02, speed: 1.15, wob: 1,
+  wave: { amp: 12, exp: 0.8, base: 0.4 }, tb: 0.3,
+  parts: bgFlat([
+    bgP(2, g=>{ g.beginPath(); bgChain(g, [[200, 300], [130, 296], [80, 350], [34, 430]], 30, 11, 18); g.fill(); }, { t:'swing', px: 200, py: 300, amp: 0.3, spd: 1.1 }),
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 706, 168, 74, 16, -0.5); g.fill(); }, { t:'slide', dx: 26, spd: 1.3, ph: 0, alt: true }),
+    bgPM(2, g=>{ g.beginPath(); bgEll(g, 236, 168, 76, 17, 0.55); g.fill(); }, { t:'slide', dx: 26, spd: 1.3, ph: Math.PI, alt: true }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 430, 300, 226, 104); bgEll(g, 290, 300, 124, 108); bgEll(g, 606, 300, 116, 100); g.fill(); }, null, { spine: [760, 70] }),
+    bgP(1, g=>{ g.beginPath(); bgPoly(g, [[650, 240], [808, 268], [808, 332], [650, 360]]); g.fill(); }),
+    bgP(2, g=>{ g.beginPath(); bgEll(g, 590, 300, 250, 13); bgEll(g, 745, 300, 62, 22); g.fill(); }),
+    bgP(1, g=>{ g.beginPath(); bgEll(g, 866, 300, 78, 44); bgEll(g, 930, 300, 44, 32); g.fill(); }),
+    bgP(4, g=>{ g.beginPath(); bgEll(g, 944, 300, 24, 18); g.fill(); }),
+    bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[826, 266], [806, 200], [864, 252]]); g.fill(); }),
+    bgPM(3, g=>{ g.beginPath(); bgEll(g, 876, 278, 6, 5); g.fill(); }),
+  ]) };
+
+// ─── (เพิ่มเติม) ฉลามหัวค้อน — ตัวเดิมที่ทำไว้ เลือกได้จาก "ภาพพื้นหลัง" ───
+(function(){
+  const TOP = [
+    [972,260, 968,200, 960,150], [958,138, 945,130, 925,132], [912,138, 892,220, 862,248], [820,238, 750,222, 690,222],
+    [655,200, 585,160, 500,128], [534,170, 562,205, 585,222], [530,214, 460,210, 400,212], [385,208, 360,204, 330,198],
+    [346,214, 338,222, 322,228], [270,240, 215,264, 170,286],
+  ];
+  const TAIL = [[140,276, 85,212, 30,120], [62,175, 92,255, 108,300], [108,330, 92,380, 55,430], [100,380, 135,336, 170,314]];
+  const m = y => 600 - y;
+  function bodyPath(g){
+    g.beginPath(); g.moveTo(975, 300);
+    TOP.forEach(s=> g.bezierCurveTo(s[0], s[1], s[2], s[3], s[4], s[5]));
+    TAIL.forEach(s=> g.bezierCurveTo(s[0], s[1], s[2], s[3], s[4], s[5]));
+    const pts = [[975, 300]].concat(TOP.map(s=>[s[4], s[5]]));
+    for(let i = TOP.length - 1; i >= 0; i--){ const s = TOP[i], f = pts[i]; g.bezierCurveTo(s[2], m(s[3]), s[0], m(s[1]), f[0], m(f[1])); }
+    g.closePath(); g.fill();
+  }
+  BG_ANIMALS['shark'] = { month: 0, th: 'ฉลามหัวค้อน', en: 'Hammerhead Shark', colors: ['#1B2A44', '#6F85A3', '#EEF2F7'], sz: 1, speed: 1, wob: 1,
+    wave: { amp: 66, exp: 2.2, base: 0.04 }, tb: 0.16, finFlap: true,
+    parts: bgFlat([
+      bgP(1, bodyPath, null, { spine: [800, 80], fin: (x, y)=>{ const vy = Math.abs(y - 300); return (x > 300 && x < 700 && vy > 84) ? Math.min(1, (vy - 84)/90) : 0; } }),
+      bgP(2, g=>{ g.beginPath(); g.moveTo(705, 268); g.bezierCurveTo(650, 246, 560, 260, 462, 322); g.bezierCurveTo(530, 298, 592, 296, 640, 298); g.bezierCurveTo(672, 294, 697, 290, 705, 288); g.closePath(); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 947, 146, 10, 10); g.fill(); }),
+    ]) };
+})();
+
+const BG_ORDER = ['1','2','3','4','5','6','7','8','9','10','11','12','shark'];
+
+
+// ══════════ BG ART — ภาพพื้นหลังอนุภาคพิกเซล สัตว์ประจำเดือน (ว่ายอยู่ด้านหลังเนื้อหา) ══════════
+// ตัวสัตว์ประกอบจากสี่เหลี่ยมเล็กๆ หลายพันจุด สุ่มจากรูปร่าง (silhouette) ที่วาดไว้ใน BG_ANIMALS ด้านบน
+// แต่ละจุดมีสีตามแสงเงา + ความโปร่งใสต่างกัน ส่วนต่างๆ (หาง เท้า ปีก ก้าม) ขยับตามชนิดสัตว์
+// อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และสัตว์หลบเมาส์
+// ปรับแต่งทุกอย่างได้ที่ BG_CONFIG ด้านล่างที่เดียว (สีและรูปร่างของสัตว์แต่ละตัวแก้ที่ BG_ANIMALS)
+const BG_CONFIG = {
+  // ── เลือกสัตว์: 'auto' = ตามเดือนปัจจุบัน | '1'–'12' = เดือนนั้น | 'shark' = ฉลามหัวค้อน | 'off' = ปิด ──
+  // (ค่านี้ admin ตั้งได้ในหน้า "ความคืบหน้าการล็อกอิน" → ภาพพื้นหลัง และถูกเก็บใน Settings ของระบบ ค่าด้านล่างใช้เมื่อยังไม่เคยตั้ง)
+  animal: 'auto',
+
+  // ── จำนวนอนุภาค (ยิ่งมากยิ่งละเอียดแต่ใช้เครื่องมากขึ้น) ──
+  mainParticles:   2800,   // ตัวหลัก (desktop)
+  smallParticles:  950,    // ตัวเล็ก (desktop)
+  mobileParticles: 800,    // ตัวเดียวบนมือถือ
+  smallCount:      2,      // จำนวนตัวเล็กบน desktop (0–2)
+
+  // ── ขนาด: ความกว้างตัว = สัดส่วนของความกว้างจอ (จำกัดช่วงต่ำสุด/สูงสุด เป็น px) ──
   mainLengthRatio: 0.30, mainLengthMin: 240, mainLengthMax: 640,
   smallLengthRatio: 0.52,                        // ตัวเล็ก = สัดส่วนของตัวหลัก
-  mobileWidth: 700,                              // กว้างกว่านี้ถือเป็น desktop
+  mobileWidth: 700,                              // จอกว้างกว่านี้ถือเป็น desktop
   mobileLengthRatio: 0.58, mobileLengthMin: 150, mobileLengthMax: 260,
 
   // ── การเคลื่อนไหว ──
-  speed:      1,           // ตัวคูณความเร็วว่าย (0.5 ช้าลงครึ่งหนึ่ง, 2 เร็วเท่าตัว)
+  speed:      1,           // ตัวคูณความเร็ว (0.5 ช้าลงครึ่งหนึ่ง, 2 เร็วเท่าตัว)
   waveAmp:    1,           // ความแรงที่ลำตัว/หางแกว่ง
   fps:        45,          // เฟรมเรตสูงสุด
 
-  // ── อนุภาค/สี ──
-  opacity:      0.92,      // ความทึบรวมของปลา 0–1
+  // ── อนุภาค ──
+  opacity:      0.92,      // ความทึบรวม 0–1
   particleSize: 0.82,      // ขนาดจุดเทียบกับระยะห่างระหว่างจุด (0.5 เล็กละเอียด – 1.0 ติดกัน)
-  // พาเลตต์ จากเงาเข้ม (Dark Navy) → Blue Gray → Silver → White
-  palette: ['#1B2A44', '#2F4468', '#4C6486', '#6F85A3', '#93A5BC', '#B5C3D4', '#D3DCE7', '#EEF2F7'],
 
   // ── เอฟเฟกต์อนุภาค ──
-  dust:        1,          // ความถี่ที่ฝุ่นหลุดจากขอบตัวปลา (0 = ปิด)
+  dust:        1,          // ความถี่ที่ฝุ่นหลุดจากขอบตัว (0 = ปิด)
   scatter:     1,          // ความแรงการกระจายตัว (เมาส์ + ฝุ่น) 0 = ปิด, 2 = แรง
   mouseRadius: 120,        // รัศมีที่เมาส์ทำให้อนุภาคกระจาย (px)
-  avoidMouse:  true,       // ให้ปลาเลี้ยวหลบเมาส์
+  avoidMouse:  true,       // ให้สัตว์เลี้ยวหลบเมาส์
 
   // ── เมื่ออุปกรณ์เปิด "ลดการเคลื่อนไหว" (prefers-reduced-motion — Windows ปิด Animation effects / โหมดประหยัดแบตมักเปิดเอง) ──
   //   'calm'   = ว่ายช้านุ่มๆ ครึ่งความเร็ว ไม่มีฝุ่น/ไม่ตอบสนองเมาส์ (ค่าเริ่มต้น)
-  //   'ignore' = ว่ายเหมือนปกติทุกอย่าง ไม่สนค่าลดการเคลื่อนไหวของเครื่อง
+  //   'ignore' = ขยับเหมือนปกติทุกอย่าง ไม่สนค่าลดการเคลื่อนไหวของเครื่อง
   //   'still'  = ภาพนิ่ง ไม่ขยับ
   reducedMotion: 'calm',
 };
 
-const SharkSwim = (function(){
-  const canvas = document.getElementById('sharkLayer');
-  if(!canvas) return { start(){}, stop(){} };
+// สีตามเดือน → พาเลตต์ 8 เฉดไล่จาก เข้ม → สีหลัก → สว่าง
+function bgPalette(c){
+  const hex = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+  const A = hex(c[0]), B = hex(c[1]), C = hex(c[2]), out = [];
+  for(let i = 0; i < 8; i++){
+    const s = i/7, f = s < 0.5 ? s*2 : (s - 0.5)*2, from = s < 0.5 ? A : B, to = s < 0.5 ? B : C;
+    out.push('rgb(' + from.map((v, k) => Math.round(v + (to[k] - v)*f)).join(',') + ')');
+  }
+  return out;
+}
+// 'auto' → เดือนปัจจุบัน (1–12) | ค่าที่ไม่รู้จัก → auto
+function bgResolveKey(key){
+  if(key === 'off') return 'off';
+  if(key && BG_ANIMALS[key]) return key;
+  return String(new Date().getMonth() + 1);
+}
+
+const BgArt = (function(){
+  const canvas = document.getElementById('bgArtLayer');
+  if(!canvas) return { start(){}, stop(){}, setAnimal(){}, resolve: bgResolveKey, drawPreview(){} };
   const ctx = canvas.getContext('2d');
   const prefersReduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const MOTION_MODE = prefersReduced ? SHARK_CONFIG.reducedMotion : 'ignore';
+  const MOTION_MODE = prefersReduced ? BG_CONFIG.reducedMotion : 'ignore';
   const calm = MOTION_MODE === 'calm', still = MOTION_MODE === 'still';
   const TAU = Math.PI * 2;
   const rand = (a,b)=> a + Math.random()*(b-a);
   const clamp = (v,a,b)=> v < a ? a : (v > b ? b : v);
   const angDiff = (a,b)=>{ let d = a - b; while(d > Math.PI) d -= TAU; while(d < -Math.PI) d += TAU; return d; };
+  const palCache = {};
+  const palOf = key => palCache[key] || (palCache[key] = bgPalette(BG_ANIMALS[key].colors));
+  const ALPHA_LEVELS = [0.55, 0.78, 1];
 
-  // ───────── 1) SILHOUETTE: รูปร่างฉลามหัวค้อน มองจากด้านบน หันไปทางขวา (หัว = x มาก, หาง = x น้อย) ─────────
-  // พิกัดอยู่ในกล่อง 1000×600 หน่วย (กึ่งกลางลำตัว y=300) วาดครึ่งบนด้วยเส้นโค้ง Bezier แล้วสะท้อนเป็นครึ่งล่าง
-  // รูปแบบแต่ละช่วง: [c1x,c1y, c2x,c2y, ปลายx,ปลายy]
-  const SIL_START = [975, 300];
-  const SIL_TOP = [
-    [972,260, 968,200, 960,150],   // 1 ขอบหน้าค้อน ขึ้นไปปลายค้อน
-    [958,138, 945,130, 925,132],   // 2 ปลายค้อน (ตาอยู่ตรงนี้)
-    [912,138, 892,220, 862,248],   // 3 ขอบหลังค้อน เฉียงลงมาที่คอ
-    [820,238, 750,222, 690,222],   // 4 ลำตัวช่วงเหงือก (อ้วน ครึ่งความกว้าง ≈ 78)
-    [655,200, 585,160, 500,128],   // 5 ขอบหน้าครีบอก (pectoral) โค้งเหมือนเคียว กวาดไปด้านหลัง
-    [534,170, 562,205, 585,222],   // 6 ขอบหลังครีบอก กลับเข้าลำตัว
-    [530,214, 460,210, 400,212],   // 7 ลำตัวช่วงกลาง (ส่วนที่อ้วนที่สุด ≈ 88)
-    [385,208, 360,204, 330,198],   // 8 ครีบท้อง (pelvic) ขอบหน้า
-    [346,214, 338,222, 322,228],   // 9 ครีบท้อง ขอบหลัง
-    [270,240, 215,264, 170,286],   // 10 ลำตัวเรียวลงสู่โคนหาง
-  ];
-  // หางฉลาม: กลีบบนยาว กลีบล่างสั้น (ไม่สมมาตร จึงวาดเอง)
-  const SIL_TAIL = [
-    [140,276, 85,212, 30,120],     // ขอบนอกกลีบบน
-    [62,175, 92,255, 108,300],     // ขอบในกลีบบน ลงมาที่รอยแยก
-    [108,330, 92,380, 55,430],     // ขอบในกลีบล่าง
-    [100,380, 135,336, 170,314],   // ขอบนอกกลีบล่าง กลับโคนหาง
-  ];
-  function buildBodyPath(){
-    const m = (y)=> 600 - y;
-    let d = 'M' + SIL_START.join(' ');
-    SIL_TOP.forEach(s=>{ d += ' C' + s.join(' '); });
-    SIL_TAIL.forEach(s=>{ d += ' C' + s.join(' '); });
-    // ครึ่งล่าง = สะท้อนครึ่งบน เดินย้อนกลับ
-    const pts = [SIL_START].concat(SIL_TOP.map(s=>[s[4], s[5]]));
-    for(let i = SIL_TOP.length - 1; i >= 0; i--){
-      const s = SIL_TOP[i], from = pts[i];
-      d += ' C' + [s[2], m(s[3]), s[0], m(s[1]), from[0], m(from[1])].join(' ');
-    }
-    return d + ' Z';
-  }
-  // ครีบหลัง (dorsal) แบบตั้งเด่น เฉียงไปด้านหลัง — วาดเป็นพื้นที่สีเข้มทับกลางสันหลัง
-  const DORSAL_PATH = 'M705 268 C650 246 560 260 462 322 C530 298 592 296 640 298 C672 294 697 290 705 288 Z';
-  const EYES = [[947,146],[947,454]];
-
-  // ───────── 2) สร้างอนุภาคจาก silhouette (ทำครั้งเดียวต่อจำนวนอนุภาค แล้วเก็บไว้ใช้ซ้ำ) ─────────
+  // ───────── 1) สร้างอนุภาคจากชิ้นส่วนของสัตว์ (ทำครั้งเดียวต่อสัตว์/จำนวนอนุภาค แล้วเก็บไว้ใช้ซ้ำ) ─────────
   const shapeCache = {};
-  function buildShape(target){
-    if(shapeCache[target]) return shapeCache[target];
+  function buildShape(key, target){
+    const ck = key + '|' + target;
+    if(shapeCache[ck]) return shapeCache[ck];
+    const A = BG_ANIMALS[key], parts = A.parts, NP = parts.length;
     const W = 1000, H = 600;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d', { willReadFrequently: true });
-    g.fillStyle = '#f00'; g.fill(new Path2D(buildBodyPath()));          // แดง = ลำตัว
-    g.fillStyle = '#0f0'; g.fill(new Path2D(DORSAL_PATH));              // เขียว = ครีบหลัง
-    g.fillStyle = '#00f';                                               // น้ำเงิน = ตา
-    EYES.forEach(e=>{ g.beginPath(); g.arc(e[0], e[1], 10, 0, TAU); g.fill(); });
+    // วาดทุกชิ้นส่วนลงแผนที่ โดยเข้ารหัสเลขชิ้นส่วนไว้ในค่าสีแดง (ชิ้นที่ i → 8×(i+1)) ชิ้นหลังวาดทับชิ้นก่อน
+    parts.forEach((part, pi)=>{
+      const col = 'rgb(' + (8*(pi + 1)) + ',0,0)';
+      g.fillStyle = col; g.strokeStyle = col; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.save(); part.draw(g); g.restore();
+    });
     const px = g.getImageData(0, 0, W, H).data;
-    // คืนค่า 0 = นอกรูป, 1 = ลำตัว, 2 = ครีบหลัง, 3 = ตา
-    const at = (x,y)=>{
+    const at = (x, y)=>{                                // คืนเลขชิ้นส่วน (1..NP) หรือ 0 = ไม่มี
       x = x|0; y = y|0;
       if(x < 0 || y < 0 || x >= W || y >= H) return 0;
       const i = (y*W + x)*4;
-      if(px[i+3] < 128) return 0;
-      return px[i+2] > 127 ? 3 : (px[i+1] > 127 ? 2 : 1);
+      if(px[i + 3] < 128) return 0;
+      return clamp(Math.round(px[i]/8), 1, NP);
     };
-    let area = 0;
-    for(let y = 0; y < H; y += 4) for(let x = 0; x < W; x += 4) if(at(x,y)) area += 16;
-    const sp = Math.sqrt(area / target);                  // ระยะห่างระหว่างจุด (หน่วยเดียวกับ silhouette)
-
+    let area = 0, minX = 1e9, maxX = -1e9;
+    for(let y = 0; y < H; y += 4) for(let x = 0; x < W; x += 4) if(at(x, y)){ area += 16; if(x < minX) minX = x; if(x > maxX) maxX = x; }
+    const sp = Math.sqrt(area/target);                  // ระยะห่างระหว่างจุด (หน่วยเดียวกับ silhouette)
     const pts = [];
     for(let y = sp*0.5; y < H; y += sp){
       for(let x = sp*0.5; x < W; x += sp){
-        const jx = x + rand(-0.38, 0.38)*sp, jy = y + rand(-0.38, 0.38)*sp;   // สุ่มขยับเล็กน้อยให้ดูเป็นธรรมชาติ ไม่เป็นตารางแข็ง
-        const type = at(jx, jy);
-        if(type) pts.push({ x: jx, y: jy, type });
+        const jx = x + rand(-0.38, 0.38)*sp, jy = y + rand(-0.38, 0.38)*sp;     // สุ่มขยับเล็กน้อย ไม่ให้เป็นตารางแข็ง
+        const pid = at(jx, jy);
+        if(pid) pts.push({ x: jx, y: jy, pid });
       }
     }
-    // ระยะถึงขอบ (depth) — ใช้ทำแสงเงา (ขอบสว่าง แกนกลางเข้ม) และหาอนุภาคที่ขอบสำหรับทำฝุ่น
+    // กรอบของแต่ละชิ้นส่วน (ใช้ทำแสงเงาภายในชิ้นนั้น)
+    const bb = parts.map(()=>({ n: 0, y0: 1e9, y1: -1e9 }));
+    pts.forEach(p=>{ const b = bb[p.pid - 1]; b.n++; if(p.y < b.y0) b.y0 = p.y; if(p.y > b.y1) b.y1 = p.y; });
+    // ระยะถึงขอบ (depth) — ขอบสว่าง แกนกลางเข้ม และหาอนุภาคริมขอบสำหรับทำฝุ่น
     const dirs = []; for(let k = 0; k < 8; k++) dirs.push([Math.cos(k*TAU/8), Math.sin(k*TAU/8)]);
-    const step = sp*0.5;
-    const P = SHARK_CONFIG.palette.length;
-    const n = pts.length;
-    const hx = new Float32Array(n), hy = new Float32Array(n), fin = new Float32Array(n), sz = new Float32Array(n);
-    const edge = new Uint8Array(n), bucket = new Uint16Array(n);
-    const alphaLv = [0.55, 0.78, 1];
+    const step = sp*0.5, P = 8, n = pts.length, nb = P*3;
+    const tb = A.tb !== undefined ? A.tb : 0.3;
+    const x0 = new Float32Array(n), y0 = new Float32Array(n), fin = new Float32Array(n), sz = new Float32Array(n);
+    const edge = new Uint8Array(n), bucket = new Uint16Array(n), pid8 = new Uint8Array(n);
     for(let i = 0; i < n; i++){
-      const p = pts[i];
+      const p = pts[i], part = parts[p.pid - 1], b = bb[p.pid - 1], kind = part.kind;
       let depth = 99;
       for(const dv of dirs){
         let d = 0;
-        while(d < 8 && at(p.x + dv[0]*step*(d+1), p.y + dv[1]*step*(d+1))) d++;
+        while(d < 8 && at(p.x + dv[0]*step*(d + 1), p.y + dv[1]*step*(d + 1)) === p.pid) d++;   // นับเฉพาะภายในชิ้นเดียวกัน
         if(d < depth) depth = d;
       }
-      const rim = clamp(1 - depth/6, 0, 1);               // 1 = ติดขอบ
-      const vy = p.y - 300;
-      const light = clamp(-vy/200, -1, 1)*0.5 + 0.5;       // แสงมาจากด้านบน: ครึ่งบนสว่างกว่า
-      const spine = p.x < 800 ? 1 - clamp(Math.abs(vy)/80, 0, 1) : 0;
-      let t = 0.16 + 0.48*rim + 0.17*light - 0.13*spine + rand(-0.07, 0.07);
-      if(p.x > 860) t += 0.05;                              // หัวค้อนสว่างขึ้นเล็กน้อย
-      let al = Math.random();
-      if(p.type === 2) t = 0.04 + rand(0, 0.12);            // ครีบหลัง: เข้มสุด
-      if(p.type === 3){ t = 0; al = 1; }                    // ตา: เข้มสุด ทึบ
-      t = clamp(t, 0, 0.92);
-      const sh = Math.round(t*(P-1));
-      const lvl = (p.type >= 2) ? 2 : (depth < 2 ? (al < 0.5 ? 0 : 1) : (al < 0.18 ? 0 : (al < 0.5 ? 1 : 2)));
+      const rim = clamp(1 - depth/6, 0, 1);                                    // 1 = ติดขอบ
+      const hh = Math.max(8, (b.y1 - b.y0)/2), cyp = (b.y0 + b.y1)/2;
+      const light = clamp((cyp - p.y)/hh, -1, 1)*0.5 + 0.5;                    // แสงมาจากด้านบน
+      const spine = (part.spine && p.x < part.spine[0]) ? 1 - clamp(Math.abs(p.y - 300)/part.spine[1], 0, 1) : 0;
+      let al = Math.random(), t;
+      if(kind === 2) t = 0.04 + rand(0, 0.12);
+      else if(kind === 3){ t = 0; al = 1; }
+      else if(kind === 4) t = clamp(0.6 + 0.24*rim + rand(-0.06, 0.06), 0, 0.95);
+      else if(kind === 5) t = clamp(0.13 + 0.22*rim + 0.1*light + rand(-0.05, 0.05), 0, 0.6);
+      else t = tb + 0.38*rim + 0.2*light - 0.12*spine + rand(-0.07, 0.07);
+      t = clamp(t, 0, 0.95);
+      const sh = Math.round(t*(P - 1));
+      const lvl = (kind === 2 || kind === 3) ? 2 : (depth < 2 ? (al < 0.5 ? 0 : 1) : (al < 0.18 ? 0 : (al < 0.5 ? 1 : 2)));
       bucket[i] = sh*3 + lvl;
-      hx[i] = p.x - 500; hy[i] = vy;
-      // fin = น้ำหนักการสะบัดของครีบอก/ครีบท้อง (ยิ่งห่างลำตัวยิ่งสะบัดมาก)
-      const inFin = (p.x > 300 && p.x < 700) && Math.abs(vy) > 84 && p.type === 1;
-      fin[i] = inFin ? clamp((Math.abs(vy) - 84)/90, 0, 1) : 0;
-      edge[i] = (depth < 2 && p.type === 1) ? 1 : 0;
+      x0[i] = p.x; y0[i] = p.y; pid8[i] = p.pid;
+      fin[i] = part.fin ? part.fin(p.x, p.y) : 0;
+      edge[i] = (depth < 2 && kind !== 3) ? 1 : 0;
       sz[i] = rand(0.78, 1.12);
     }
-    // เรียงอนุภาคตามกลุ่มสี เพื่อวาดทีละกลุ่มด้วยคำสั่งเดียว (เร็วกว่าตั้งสีทีละจุดมาก)
-    const nb = P*3, counts = new Uint32Array(nb + 1);
+    // เรียงตามกลุ่มสี เพื่อวาดทีละกลุ่มด้วยคำสั่งเดียว (เร็วกว่าตั้งสีทีละจุดมาก)
+    const counts = new Uint32Array(nb + 1);
     for(let i = 0; i < n; i++) counts[bucket[i] + 1]++;
-    for(let b = 0; b < nb; b++) counts[b+1] += counts[b];
+    for(let b = 0; b < nb; b++) counts[b + 1] += counts[b];
     const start = Uint32Array.from(counts), fill = Uint32Array.from(counts);
     const order = new Uint32Array(n);
     for(let i = 0; i < n; i++) order[fill[bucket[i]]++] = i;
-    const S = {
-      n, sp, start, bucketCount: nb,
-      hx: new Float32Array(n), hy: new Float32Array(n), u: new Float32Array(n),
-      fin: new Float32Array(n), sz: new Float32Array(n), edge: new Uint8Array(n),
-    };
-    for(let j = 0; j < n; j++){                             // เก็บข้อมูลตามลำดับกลุ่มสี
+    const bw = Math.max(1, maxX - minX);
+    const S = { key, n, sp, bw, cx: (minX + maxX)/2, minX, start, bucketCount: nb,
+      x0: new Float32Array(n), y0: new Float32Array(n), u: new Float32Array(n), pid: new Uint8Array(n),
+      fin: new Float32Array(n), sz: new Float32Array(n), edge: new Uint8Array(n) };
+    for(let j = 0; j < n; j++){
       const i = order[j];
-      S.hx[j] = hx[i]; S.hy[j] = hy[i]; S.u[j] = (hx[i] + 500)/1000;
-      S.fin[j] = fin[i]; S.sz[j] = sz[i]; S.edge[j] = edge[i];
+      S.x0[j] = x0[i]; S.y0[j] = y0[i]; S.u[j] = clamp((x0[i] - minX)/bw, 0, 1);
+      S.pid[j] = pid8[i]; S.fin[j] = fin[i]; S.sz[j] = sz[i]; S.edge[j] = edge[i];
     }
-    return (shapeCache[target] = S);
+    return (shapeCache[ck] = S);
   }
 
-  // สีของกลุ่มอนุภาค: ความโปร่งใส 3 ระดับ × เฉดสีตามพาเลตต์
-  const ALPHA_LEVELS = [0.55, 0.78, 1];
-
-  // ───────── 3) ตัวปลา: สถานะการว่าย + อนุภาค ─────────
-  const sharks = [];
+  // ───────── 2) ตัวสัตว์: สถานะการว่าย + อนุภาค ─────────
+  const sharks = [];                                        // (ชื่อเดิม) รายการสัตว์ที่กำลังแสดง
   const view = { w: 0, h: 0, dpr: 1, mobile: false, zones: null };
   const mouse = { x: -9999, y: -9999, active: false };
-  let running = false, rafId = null, lastT = 0, simT = 0, slowMs = 0, slowSince = 0;
+  let running = false, rafId = null, lastT = 0, simT = 0, slowMs = 0, slowSince = 0, currentKey = 'off';
 
   const TAB_N = 96;                                         // ความละเอียดตารางเส้นกลางลำตัว
   const tabY = new Float32Array(TAB_N + 1), tabSin = new Float32Array(TAB_N + 1), tabCos = new Float32Array(TAB_N + 1);
 
   function lengthFor(role){
-    const C = SHARK_CONFIG;
+    const C = BG_CONFIG;
     if(view.mobile) return clamp(view.w*C.mobileLengthRatio, C.mobileLengthMin, C.mobileLengthMax);
     let main = clamp(view.w*C.mainLengthRatio, C.mainLengthMin, C.mainLengthMax);
-    // ให้ขนาดสัมพันธ์กับพื้นที่ว่างข้างเนื้อหา: ว่างน้อยปลาก็เล็กลง (ยังว่ายลอดใต้การ์ดได้)
+    // ให้ขนาดสัมพันธ์กับพื้นที่ว่างข้างเนื้อหา: ว่างน้อยก็เล็กลง (ยังว่ายลอดใต้การ์ดได้)
     const z = view.zones;
     if(z){
       const free = Math.max(z.left, z.right);
@@ -5023,15 +5352,15 @@ const SharkSwim = (function(){
     }
     return role === 'main' ? main : main*C.smallLengthRatio;
   }
+  const scaleOf = s => s.L*(BG_ANIMALS[s.key].sz || 1)/s.shape.bw;
 
   function makeShark(role, idx){
-    const C = SHARK_CONFIG;
+    const C = BG_CONFIG;
     const target = view.mobile ? C.mobileParticles : (role === 'main' ? C.mainParticles : C.smallParticles);
-    const shape = buildShape(target);
-    const n = shape.n;
-    const L = lengthFor(role);
+    const shape = buildShape(currentKey, target);
+    const n = shape.n, np = BG_ANIMALS[currentKey].parts.length + 1;
     const s = {
-      role, idx, shape, n, L, scale: L/1000,
+      key: currentKey, role, idx, shape, n, L: lengthFor(role), scale: 1,
       x: 0, y: 0, h: rand(0, TAU), turn: 0, speed: 0,
       phase: rand(0, TAU), omega: 4,
       p1: rand(0, TAU), p2: rand(0, TAU), p3: rand(0, TAU),
@@ -5040,13 +5369,15 @@ const SharkSwim = (function(){
       fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
       ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n),
+      m: new Float32Array(np*6),                            // เมทริกซ์ขยับของแต่ละชิ้นส่วน (m11,m12,m21,m22,tx,ty)
     };
+    s.scale = scaleOf(s);
     pickAnchor(s, true);
     s.x = s.ax; s.y = s.ay;
     return s;
   }
 
-  // พื้นที่ว่างข้างเนื้อหา: อ่านจากกรอบ <main> ที่แสดงอยู่ เพื่อให้ปลาว่ายวนอยู่ในที่ว่างเป็นหลัก
+  // พื้นที่ว่างข้างเนื้อหา: อ่านจากกรอบ <main> ที่แสดงอยู่ เพื่อให้สัตว์ว่ายวนอยู่ในที่ว่างเป็นหลัก
   function measureZones(){
     const m = document.querySelector('main');
     const r = m ? m.getBoundingClientRect() : null;
@@ -5058,7 +5389,6 @@ const SharkSwim = (function(){
     let cx, spread;
     const useZone = z && Math.max(z.left, z.right) > s.L*0.35 && !view.mobile;
     if(useZone){
-      // ตัวหลักเลือกฝั่งที่กว้างกว่า ตัวเล็กเลือกฝั่งอีกข้างบ้าง
       let side = z.left >= z.right ? 'left' : 'right';
       if(s.role !== 'main' && Math.random() < 0.6) side = side === 'left' ? 'right' : 'left';
       if(s.role === 'main' && Math.random() < 0.18) side = side === 'left' ? 'right' : 'left';
@@ -5075,31 +5405,34 @@ const SharkSwim = (function(){
     s.anchorT = simT + rand(11, 18);
   }
 
+  function rebuildSharks(){
+    sharks.length = 0;
+    if(currentKey === 'off') return;
+    sharks.push(makeShark('main', 0));
+    if(!view.mobile) for(let i = 0; i < BG_CONFIG.smallCount; i++) sharks.push(makeShark('small', i + 1));
+  }
+
   function resize(){
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = window.innerWidth, h = window.innerHeight;
     const wasMobile = view.mobile;
     view.w = w; view.h = h; view.dpr = dpr;
-    view.mobile = w < SHARK_CONFIG.mobileWidth;
+    view.mobile = w < BG_CONFIG.mobileWidth;
     canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     measureZones();
-    if(!sharks.length || wasMobile !== view.mobile){
-      sharks.length = 0;
-      sharks.push(makeShark('main', 0));
-      if(!view.mobile) for(let i = 0; i < SHARK_CONFIG.smallCount; i++) sharks.push(makeShark('small', i + 1));
-    } else {
-      sharks.forEach(s=>{ s.L = lengthFor(s.role); s.scale = s.L/1000; });
-    }
+    if((!sharks.length && currentKey !== 'off') || wasMobile !== view.mobile) rebuildSharks();
+    else sharks.forEach(s=>{ s.L = lengthFor(s.role); s.scale = scaleOf(s); });
   }
 
-  // ───────── 4) อัปเดตการว่าย + อนุภาค ─────────
+  // ───────── 3) อัปเดตการว่าย + อนุภาค ─────────
   function updateShark(s, dt, t){
-    const C = SHARK_CONFIG;
+    const C = BG_CONFIG, A = BG_ANIMALS[s.key];
     s.fade = Math.min(1, s.fade + dt/1.8);
-    // --- เป้าหมายและการเลี้ยว: ว่ายโค้งนุ่มนวล ไม่เปลี่ยนทิศแบบกระตุก ---
+    // --- เป้าหมายและการเลี้ยว: เคลื่อนที่เป็นเส้นโค้งนุ่มนวล ไม่เปลี่ยนทิศแบบกระตุก ---
     if(t > s.anchorT) pickAnchor(s, false);
-    let want = 0.30*Math.sin(t*0.21 + s.p1) + 0.22*Math.sin(t*0.37 + s.p2);      // ส่ายซ้ายขวาเบาๆ ตามธรรมชาติ
+    const wob = A.wob || 1;
+    let want = wob*(0.30*Math.sin(t*0.21 + s.p1) + 0.22*Math.sin(t*0.37 + s.p2));      // ส่ายซ้ายขวาเบาๆ ตามธรรมชาติ
     const dx = s.ax - s.x, dy = s.ay - s.y, dist = Math.hypot(dx, dy);
     if(dist > s.L*0.3) want += clamp(angDiff(Math.atan2(dy, dx), s.h)*0.9, -0.85, 0.85);
     const mg = s.L*0.18;
@@ -5107,7 +5440,7 @@ const SharkSwim = (function(){
       want += clamp(angDiff(Math.atan2(view.h/2 - s.y, view.w/2 - s.x), s.h)*1.5, -1.1, 1.1);
     }
     let boost = 1;
-    if(C.avoidMouse && mouse.active && !calm){                                             // หลบเมาส์
+    if(C.avoidMouse && mouse.active && !calm){                                    // หลบเมาส์
       const hxp = s.x + Math.cos(s.h)*s.L*0.34, hyp = s.y + Math.sin(s.h)*s.L*0.34;
       const d = Math.min(Math.hypot(mouse.x - s.x, mouse.y - s.y), Math.hypot(mouse.x - hxp, mouse.y - hyp));
       const reach = s.L*0.62 + C.mouseRadius;
@@ -5120,32 +5453,55 @@ const SharkSwim = (function(){
     want = clamp(want, -1.15, 1.15);
     s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
     s.h += s.turn*dt;
-    const base = (26 + s.L*0.07)*C.speed*(calm ? 0.5 : 1);                                          // px/วินาที ปลาใหญ่ว่ายเร็วกว่าเล็กน้อย
+    const base = (26 + s.L*0.07)*C.speed*(A.speed || 1)*(calm ? 0.5 : 1);         // px/วินาที
     s.speed += (base*boost*(1 - Math.min(Math.abs(s.turn), 1)*0.18) - s.speed)*Math.min(1, dt*1.5);
     s.x += Math.cos(s.h)*s.speed*dt;
     s.y += Math.sin(s.h)*s.speed*dt;
-    s.omega = TAU*(0.42 + s.speed/(170 + s.L*0.2))*(0.9 + 0.1*Math.sin(t*0.3 + s.p3)); // ว่ายเร็ว → กระดิกถี่ขึ้น
+    s.omega = TAU*(0.42 + s.speed/(170 + s.L*0.2))*(0.9 + 0.1*Math.sin(t*0.3 + s.p3)); // เร็วขึ้น → กระดิก/ก้าวถี่ขึ้น
     s.phase += s.omega*dt;
 
-    // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (หัวนิ่ง หางแกว่งมาก) ---
-    const A = 66*C.waveAmp*(calm ? 0.8 : 1)*(1 + Math.min(Math.abs(s.turn), 1)*0.25), kw = TAU*0.92;
+    // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (ปลา/ฉลาม: หัวนิ่ง หางแกว่งมาก, สัตว์อื่น: โยกเบาๆ) ---
+    const W = A.wave, bw = s.shape.bw;
+    const AM = W.amp*C.waveAmp*(calm ? 0.8 : 1)*(1 + Math.min(Math.abs(s.turn), 1)*0.25), kw = TAU*0.92;
     for(let k = 0; k <= TAB_N; k++){
-      const u = k/TAB_N, amp = A*(0.04 + 0.96*Math.pow(1 - u, 2.2));
+      const u = k/TAB_N, amp = AM*(W.base + (1 - W.base)*Math.pow(1 - u, W.exp));
       tabY[k] = amp*Math.sin(kw*u + s.phase);
     }
     for(let k = 0; k <= TAB_N; k++){
-      const a = tabY[Math.min(TAB_N, k + 1)] - tabY[Math.max(0, k - 1)];
-      const slope = a/((Math.min(TAB_N, k + 1) - Math.max(0, k - 1))*(1000/TAB_N));
+      const k1 = Math.min(TAB_N, k + 1), k0 = Math.max(0, k - 1);
+      const slope = (tabY[k1] - tabY[k0])/((k1 - k0)*(bw/TAB_N));
       const inv = 1/Math.sqrt(1 + slope*slope);
       tabCos[k] = inv; tabSin[k] = slope*inv;
     }
-    // ปลาขยับความลึกเล็กน้อย (ขนาดเปลี่ยน ±6%)
+    // --- เมทริกซ์ขยับของแต่ละชิ้นส่วน (หมุน/เลื่อน/ยืด) ---
+    const parts = A.parts, m = s.m;
+    m[0] = 1; m[1] = 0; m[2] = 0; m[3] = 1; m[4] = 0; m[5] = 0;                  // ชิ้นที่ 0 = ไม่ขยับ
+    const mv = calm ? 0.6 : 1;
+    for(let i = 0; i < parts.length; i++){
+      const an = parts[i].anim, o = (i + 1)*6;
+      let a11 = 1, a12 = 0, a21 = 0, a22 = 1, tx = 0, ty = 0;
+      if(an){
+        const ang = Math.sin(s.phase*(an.spd || 1) + (an.ph || 0));
+        if(an.t === 'swing'){
+          const th = (an.amp || 0)*ang*mv, c = Math.cos(th), sn = Math.sin(th);
+          a11 = c; a12 = -sn; a21 = sn; a22 = c;
+          tx = an.px - (c*an.px - sn*an.py); ty = an.py - (sn*an.px + c*an.py);
+        } else if(an.t === 'slide'){
+          tx = (an.dx || 0)*ang*mv;
+        } else if(an.t === 'flap'){
+          const lo = an.lo !== undefined ? an.lo : 0.25, sc = lo + (1 - lo)*(0.5 + 0.5*ang);
+          a22 = 1 - (1 - sc)*mv; ty = (an.py !== undefined ? an.py : 300)*(1 - a22);
+        }
+      }
+      m[o] = a11; m[o + 1] = a12; m[o + 2] = a21; m[o + 3] = a22; m[o + 4] = tx; m[o + 5] = ty;
+    }
+    // ขยับความลึกเล็กน้อย (ขนาดเปลี่ยน ±6%)
     const sc = s.scale*(1 + 0.06*Math.sin(t*0.13 + s.p3));
     const cosH = Math.cos(s.h), sinH = Math.sin(s.h);
 
     // --- อนุภาค: ตำแหน่งบ้าน + ฟิสิกส์สปริง (ฝุ่นหลุดแล้วกลับ) ---
     const S = s.shape, n = s.n;
-    const hxA = S.hx, hyA = S.hy, uA = S.u, finA = S.fin, edgeA = S.edge;
+    const xA = S.x0, yA = S.y0, uA = S.u, pA = S.pid, finA = S.fin, edgeA = S.edge, cxS = S.cx;
     const ox = s.ox, oy = s.oy, vx = s.vx, vy = s.vy, px = s.px, py = s.py;
     const K = 8.5, Cd = 3.1;
     const sc2 = calm ? 0 : C.scatter;
@@ -5155,12 +5511,15 @@ const SharkSwim = (function(){
     const R = C.mouseRadius, R2 = R*R;
     const damp = Math.max(0, 1 - Cd*dt);
     for(let i = 0; i < n; i++){
-      const u = uA[i], k = (u*TAB_N + 0.5)|0;
-      const ly = hyA[i];
-      let lx = hxA[i] - ly*tabSin[k];
+      const o = pA[i]*6;
+      const X0 = xA[i], Y0 = yA[i];
+      const X = m[o]*X0 + m[o + 1]*Y0 + m[o + 4], Y = m[o + 2]*X0 + m[o + 3]*Y0 + m[o + 5];   // หลังขยับชิ้นส่วน
+      const k = (uA[i]*TAB_N + 0.5)|0;
+      const ly = Y - 300;
+      let lx = (X - cxS) - ly*tabSin[k];
       let yy = tabY[k] + ly*tabCos[k];
       const f = finA[i];
-      if(f > 0){                                            // ครีบสะบัดเบาๆ
+      if(f > 0){                                            // ครีบฉลามสะบัดเบาๆ
         const sg = ly < 0 ? -1 : 1;
         yy += sg*f*10*flap;
         lx -= f*8*flap;
@@ -5182,7 +5541,7 @@ const SharkSwim = (function(){
           vy[i] += (ddy/d + (Math.random() - 0.5)*0.9)*push;
         }
       }
-      // สปริงดึงกลับสู่รูปปลา
+      // สปริงดึงกลับสู่รูปสัตว์
       vx[i] = (vx[i] - K*ox[i]*dt)*damp;
       vy[i] = (vy[i] - K*oy[i]*dt)*damp;
       ox[i] += vx[i]*dt; oy[i] += vy[i]*dt;
@@ -5192,10 +5551,10 @@ const SharkSwim = (function(){
   }
 
   function drawShark(s, sc){
-    const C = SHARK_CONFIG, S = s.shape;
+    const C = BG_CONFIG, S = s.shape;
     const ps = Math.max(1.3, S.sp*sc*C.particleSize);        // ขนาดจุด (px)
     const px = s.px, py = s.py, sz = S.sz, start = S.start;
-    const pal = C.palette, op = C.opacity*s.alpha*s.fade;
+    const pal = palOf(s.key), op = C.opacity*s.alpha*s.fade;
     for(let b = 0; b < S.bucketCount; b++){
       const a = start[b], z = start[b + 1];
       if(a === z) continue;
@@ -5213,7 +5572,7 @@ const SharkSwim = (function(){
   function frame(now){
     if(!running) return;
     rafId = requestAnimationFrame(frame);
-    const minDt = 1000/SHARK_CONFIG.fps;
+    const minDt = 1000/BG_CONFIG.fps;
     const dtMs = now - lastT;
     if(dtMs < minDt - 1) return;
     lastT = now;
@@ -5226,7 +5585,7 @@ const SharkSwim = (function(){
       drawShark(sharks[i], sc);
     }
     ctx.globalAlpha = 1;
-    // ป้องกันเครื่องช้า: ถ้าแต่ละเฟรมใช้เวลานานต่อเนื่อง ให้ตัดปลาตัวเล็กออก
+    // ป้องกันเครื่องช้า: ถ้าแต่ละเฟรมใช้เวลานานต่อเนื่อง ให้ตัดตัวเล็กออก
     const cost = performance.now() - t0;
     slowMs = slowMs*0.95 + cost*0.05;
     if(slowMs > 14 && sharks.length > 1){
@@ -5238,7 +5597,7 @@ const SharkSwim = (function(){
   // ภาพนิ่งหนึ่งเฟรมสำหรับคนที่ตั้งค่าลดการเคลื่อนไหว (ไม่มี animation)
   function drawStill(){
     ctx.clearRect(0, 0, view.w, view.h);
-    sharks.forEach((s,i)=>{ s.fade = 1; s.h = 0; s.turn = 0; const sc = updateShark(s, 0.0001, 0); drawShark(s, sc); });
+    sharks.forEach(s=>{ s.fade = 1; s.h = 0; s.turn = 0; const sc = updateShark(s, 0.0001, 0); drawShark(s, sc); });
     ctx.globalAlpha = 1;
   }
 
@@ -5247,14 +5606,25 @@ const SharkSwim = (function(){
   let resizeTimer = null;
   function onResize(){
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ if(running || sharks.length){ resize(); if(still && running) drawStill(); } }, 160);
+    resizeTimer = setTimeout(()=>{ if(running){ resize(); if(still) drawStill(); } }, 160);
   }
   let zoneTimer = null;
 
-  function start(){
-    if(running) return;
+  // เปลี่ยนสัตว์ระหว่างใช้งาน (admin เลือกจากหน้า Login Progress) — 'auto' | '1'–'12' | 'shark' | 'off'
+  function setAnimal(key){
+    currentKey = bgResolveKey(key);
+    if(!running) return;
+    rebuildSharks();
+    if(currentKey === 'off') ctx.clearRect(0, 0, view.w, view.h);
+    else if(still) drawStill();
+  }
+
+  function start(key){
+    currentKey = bgResolveKey(key !== undefined ? key : BG_CONFIG.animal);
+    if(running){ setAnimal(key); return; }
     running = true;
     resize();
+    if(currentKey !== 'off' && !sharks.length) rebuildSharks();
     window.addEventListener('resize', onResize);
     if(still){ drawStill(); return; }
     window.addEventListener('mousemove', onMove, { passive: true });
@@ -5277,7 +5647,36 @@ const SharkSwim = (function(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  return { start, stop };
+  // รูปตัวอย่างขนาดเล็กแบบพิกเซลหยาบ สำหรับปุ่มเลือกในหน้า Login Progress (วาดจากชิ้นส่วนเดียวกับตัวจริง)
+  const previewSrc = {};
+  function previewSource(key){
+    if(previewSrc[key]) return previewSrc[key];
+    const A = BG_ANIMALS[key], pal = palOf(key);
+    const kc = { 1: pal[3], 2: pal[0], 3: '#111', 4: pal[6], 5: pal[1] };
+    const c = document.createElement('canvas'); c.width = 500; c.height = 300;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.scale(0.5, 0.5);
+    A.parts.forEach(part=>{ g.fillStyle = kc[part.kind]; g.strokeStyle = kc[part.kind]; g.lineCap = 'round'; g.lineJoin = 'round'; g.save(); part.draw(g); g.restore(); });
+    const d = g.getImageData(0, 0, 500, 300).data;
+    let x0 = 500, x1 = 0, y0 = 300, y1 = 0;
+    for(let y = 0; y < 300; y += 2) for(let x = 0; x < 500; x += 2) if(d[(y*500 + x)*4 + 3] > 40){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+    return (previewSrc[key] = { c, x0, y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) });
+  }
+  function drawPreview(cv, key){
+    const k = bgResolveKey(key);
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height);
+    if(k === 'off') return;
+    const src = previewSource(k);
+    const tiny = document.createElement('canvas'); tiny.width = 56; tiny.height = 34;       // ย่อให้เล็กแล้วขยายแบบไม่เกลี่ย → ได้ลุคพิกเซลหยาบ
+    const tg = tiny.getContext('2d');
+    const sc = Math.min(52/src.w, 30/src.h);
+    tg.drawImage(src.c, src.x0, src.y0, src.w, src.h, (56 - src.w*sc)/2, (34 - src.h*sc)/2, src.w*sc, src.h*sc);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(tiny, 0, 0, cv.width, cv.height);
+  }
+
+  return { start, stop, setAnimal, resolve: bgResolveKey, drawPreview };
 })();
 
 applyTranslations();
