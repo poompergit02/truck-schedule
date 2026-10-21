@@ -36,13 +36,6 @@ h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
   z-index:-1; pointer-events:none;
 }
 /* ปุ่มเลือกภาพพื้นหลัง (หน้า Login Progress — admin) */
-.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.bg-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px 12px;background:var(--white);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;font-family:inherit;color:var(--ink);transition:border-color .15s,box-shadow .15s,transform .15s}
-.bg-tile:hover{border-color:var(--plum-600);transform:translateY(-1px)}
-.bg-tile.on{border-color:var(--plum-700);box-shadow:0 0 0 3px rgba(85,46,140,.16);background:#FBF9FF}
-.bg-tile canvas{width:100%;max-width:132px;height:auto;aspect-ratio:132/80;background:var(--cream);border-radius:8px;image-rendering:pixelated}
-.bg-tile-name{font-size:.8rem;font-weight:600;text-align:center;line-height:1.3}
-.bg-tile-sub{font-size:.72rem;color:var(--text-dim);text-align:center}
 
 /* ══════════ LOGIN SCREEN ══════════ */
 #loginScreen{
@@ -914,8 +907,8 @@ tr:hover td{background:var(--cream)}
       </div>
       <div class="card">
         <h3 data-i18n="bg_title">🎨 Background Art</h3>
-        <p class="hint" style="margin-bottom:16px" data-i18n="bg_hint">Pick the animal shown swimming in the background of LOI for everyone. "Auto" follows the current month. People see a change the next time they sign in or reload.</p>
-        <div class="bg-grid" id="bgPickerGrid"></div>
+        <p class="hint" style="margin-bottom:16px" data-i18n="bg_hint">Choose the animal swimming in the background of LOI for everyone. People see a change the next time they sign in or reload.</p>
+        <select id="bgSelect" class="exp-select" onchange="selectBgAnimal(this.value)" style="min-width:240px"></select>
       </div>
     </div>
 
@@ -2272,8 +2265,8 @@ const I18N = {
     cf_ny_sched:'Schedule the transfer for {d} (00:01)? The saved quotas will replace the live quotas for year {y} at that time.',
     cf_ny_now:'The date {d} has already arrived, so the transfer runs NOW and replaces the live quotas for year {y} immediately. Continue?',
     cf_ny_cancel:'Cancel the scheduled transfer?', loading_ny:'Saving...',
-    bg_title:'🎨 Background Art', bg_hint:'Pick the animal shown swimming in the background of LOI for everyone. "Auto" follows the current month. People see a change the next time they sign in or reload.',
-    bg_auto:'Auto — current month', bg_off:'Off (no background)', bg_saved:'✅ Background saved',
+    bg_title:'🎨 Background Art', bg_hint:'Choose the animal swimming in the background of LOI for everyone. People see a change the next time they sign in or reload.',
+    bg_off:'Off (no background)', bg_saved:'✅ Background saved',
     set_curyear_title:'Leave only within the current year', set_curyear_desc:'When ON, both the start and end date must fall in the current calendar year. Use this until next year\'s quotas are in place.',
     dot_pending:'{n} request(s) waiting for your approval',
     msg_pick_one_date:'⚠️ Please pick at least one date', msg_multi_ok:'✅ Submitted {ok} of {total} date(s)', msg_multi_fail:'⚠️ {n} failed: {err}',
@@ -2441,8 +2434,8 @@ const I18N = {
     cf_ny_sched:'ตั้งเวลาย้ายข้อมูลวันที่ {d} (00:01 น.)? โควตาที่บันทึกไว้จะไปแทนที่โควตาจริงของปี {y} ตอนนั้น',
     cf_ny_now:'วันที่ {d} มาถึงแล้ว ระบบจะย้ายข้อมูล "ทันที" และแทนที่โควตาจริงของปี {y} ทันที ต้องการดำเนินการต่อหรือไม่?',
     cf_ny_cancel:'ยกเลิกการตั้งเวลาย้ายข้อมูล?', loading_ny:'กำลังบันทึก...',
-    bg_title:'🎨 ภาพพื้นหลัง', bg_hint:'เลือกสัตว์ที่ว่ายเป็นพื้นหลังของ LOI สำหรับทุกคน "อัตโนมัติ" จะเปลี่ยนตามเดือนปัจจุบัน ผู้ใช้จะเห็นการเปลี่ยนแปลงเมื่อเข้าสู่ระบบหรือโหลดหน้าใหม่ครั้งถัดไป',
-    bg_auto:'อัตโนมัติ — ตามเดือนปัจจุบัน', bg_off:'ปิด (ไม่มีพื้นหลัง)', bg_saved:'✅ บันทึกภาพพื้นหลังแล้ว',
+    bg_title:'🎨 ภาพพื้นหลัง', bg_hint:'เลือกสัตว์ที่ว่ายเป็นพื้นหลังของ LOI สำหรับทุกคน ผู้ใช้จะเห็นการเปลี่ยนแปลงเมื่อเข้าสู่ระบบหรือโหลดหน้าใหม่ครั้งถัดไป',
+    bg_off:'ปิด (ไม่มีพื้นหลัง)', bg_saved:'✅ บันทึกภาพพื้นหลังแล้ว',
     set_curyear_title:'ลาได้เฉพาะภายในปีปัจจุบัน', set_curyear_desc:'เมื่อเปิด วันเริ่มและวันสิ้นสุดการลาต้องอยู่ในปีปัจจุบันเท่านั้น (ใช้ระหว่างที่ยังไม่ได้ย้ายโควตาปีหน้า)',
     dot_pending:'มี {n} คำขอรอการอนุมัติจากคุณ',
     msg_pick_one_date:'⚠️ กรุณาเลือกอย่างน้อย 1 วัน', msg_multi_ok:'✅ ยื่นสำเร็จ {ok} จาก {total} วัน', msg_multi_fail:'⚠️ ล้มเหลว {n} รายการ: {err}',
@@ -4345,43 +4338,29 @@ async function cancelYearTransfer(){
   }catch(e){ showToast(e.message,'err'); }
 }
 
-// ── ADMIN: BACKGROUND ART PICKER (เลือกสัตว์ประจำเดือนที่ว่ายเป็นพื้นหลัง) ──
-const BG_MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const BG_MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-function bgLabel(key){
-  const A = BG_ANIMALS[key], th = currentLang === 'th';
-  const name = th ? A.th : A.en;
-  return A.month ? (th ? BG_MONTHS_TH : BG_MONTHS_EN)[A.month - 1] + ' · ' + name : name;
-}
+// ── ADMIN: BACKGROUND ART PICKER (เลือกสัตว์ที่ว่ายเป็นพื้นหลัง — dropdown) ──
+function bgLabel(key){ return currentLang === 'th' ? BG_ANIMALS[key].th : BG_ANIMALS[key].en; }
 async function loadBgPicker(){
   try{
     const d = await callApi('get_settings');
     appSettingsCache = d.settings || appSettingsCache;
   }catch(e){ /* ใช้ค่าที่จำไว้ */ }
-  renderBgPicker(appSettingsCache['bg_animal'] || 'auto');
+  renderBgPicker(appSettingsCache['bg_animal']);
 }
 function renderBgPicker(cur){
-  const grid = document.getElementById('bgPickerGrid');
-  if(!grid) return;
-  const auto = BgArt.resolve('auto');
-  const items = [{ key:'auto', label:t('bg_auto'), sub:bgLabel(auto), prev:auto }]
-    .concat(BG_ORDER.map(k=>({ key:k, label:bgLabel(k), prev:k })))
-    .concat([{ key:'off', label:t('bg_off'), prev:'off' }]);
-  grid.innerHTML = items.map(it=>`
-    <button type="button" class="bg-tile${it.key===cur?' on':''}" onclick="selectBgAnimal('${it.key}')">
-      <canvas width="132" height="80" data-prev="${it.prev}"></canvas>
-      <span class="bg-tile-name">${escHtml(it.label)}</span>${it.sub?`<span class="bg-tile-sub">${escHtml(it.sub)}</span>`:''}
-    </button>`).join('');
-  grid.querySelectorAll('canvas[data-prev]').forEach(cv=>BgArt.drawPreview(cv, cv.dataset.prev));
+  const sel = document.getElementById('bgSelect');
+  if(!sel) return;
+  const val = BgArt.resolve(cur);
+  sel.innerHTML = BG_ORDER.map(k=>`<option value="${k}">${escHtml(bgLabel(k))}</option>`).join('') + `<option value="off">${escHtml(t('bg_off'))}</option>`;
+  sel.value = val;
 }
 async function selectBgAnimal(key){
   try{
     await callApi('update_setting', { key:'bg_animal', value:key });
     appSettingsCache['bg_animal'] = key;
     BgArt.setAnimal(key);
-    renderBgPicker(key);
     showToast(t('bg_saved'));
-  }catch(e){ showToast(e.message,'err'); }
+  }catch(e){ showToast(e.message,'err'); loadBgPicker(); }
 }
 
 // ── ADMIN: LOI LOGS ──
@@ -4876,7 +4855,7 @@ function setT24(id, val){
 }
 
 
-// ══════════ BG ANIMALS — สัตว์ประจำเดือน 12 ตัว + ฉลามหัวค้อน (มุมมองจากด้านบน หันหัวไปทางขวา) ══════════
+// ══════════ BG ANIMALS — ฉลามหัวค้อน แมงกะพรุน วาฬ ปูแมงมุมญี่ปุ่น วาฬนาร์วาล หอยเชลล์ (มุมมองจากด้านบน หันหัวไปทางขวา) ══════════
 // แต่ละตัวประกอบจาก "ชิ้นส่วน" (parts) วาดลงกล่อง 1000×600 (กึ่งกลางลำตัว y=300) แล้วระบบสุ่มอนุภาคภายในรูป
 // kind: 1 = ผิวปกติ, 2 = ส่วนเข้ม (ขอ/เขา/แผงคอ/จมูก), 3 = ตา, 4 = ส่วนสว่าง (ท้อง/ปลายหาง/ลายบนปีก), 5 = เข้มกลาง (แผงคอสิงโต)
 // anim (ไม่ใส่ = ไม่ขยับเอง):
@@ -4908,236 +4887,7 @@ const bgFlat = a => a.reduce((o, x)=> Array.isArray(x) ? o.concat(bgFlat(x)) : o
 
 const BG_ANIMALS = {};
 
-// ─── 1) มกราคม · แพะภูเขา · เทาเงิน ───
-BG_ANIMALS['1'] = { month: 1, th: 'แพะภูเขา', en: 'Mountain Goat', colors: ['#323A45', '#808C9A', '#E4E9EE'], sz: 1, speed: 0.8, wob: 1,
-  wave: { amp: 12, exp: 0.6, base: 0.5 }, tb: 0.24,
-  parts: bgFlat([
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 692, 196, 38, 20); g.fill(); }, { t:'slide', dx: 22, spd: 1, ph: 0, alt: true }),
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 300, 198, 40, 21); g.fill(); }, { t:'slide', dx: 22, spd: 1, ph: Math.PI, alt: true }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 232, 300, 36, 20); g.fill(); }, { t:'swing', px: 262, py: 300, amp: 0.3, spd: 1.2 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 470, 300, 236, 92); bgEll(g, 330, 300, 118, 98); bgEll(g, 625, 300, 118, 102); g.fill(); }, null, { spine: [820, 70] }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 722, 300, 74, 60); g.fill(); }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 806, 300, 86, 54); bgEll(g, 876, 300, 44, 34); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 916, 300, 14, 12); g.fill(); }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 856, 336, 10, 30); g.fill(); }),
-    bgPM(2, g=>{ g.beginPath(); g.moveTo(820, 268); g.bezierCurveTo(814, 218, 782, 178, 716, 158); g.bezierCurveTo(756, 192, 776, 232, 786, 276); g.closePath(); g.fill(); }, { t:'swing', px: 812, py: 270, amp: 0.04, spd: 1 }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 774, 244, 32, 12, -0.5); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 832, 280, 6, 5); g.fill(); }),
-  ]) };
-
-// ─── 2) กุมภาพันธ์ · กระต่าย · ชมพู ───
-BG_ANIMALS['2'] = { month: 2, th: 'กระต่าย', en: 'Rabbit', colors: ['#7A2F4C', '#E58FB0', '#FFE8F0'], sz: 1, speed: 0.95, wob: 1.2,
-  wave: { amp: 10, exp: 0.6, base: 0.5 }, tb: 0.3,
-  parts: bgFlat([
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 290, 178, 72, 21, -0.1); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0 }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 730, 214, 40, 17); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 430, 300, 200, 124); bgEll(g, 565, 300, 150, 98); bgEll(g, 665, 300, 100, 78); g.fill(); }, null, { spine: [700, 90] }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 228, 300, 42, 40); g.fill(); }, { t:'swing', px: 250, py: 300, amp: 0.25, spd: 1.5 }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 712, 214, 126, 29, 0.46); g.fill(); }, { t:'swing', px: 822, py: 268, amp: 0.08, spd: 1.3 }),
-    bgPM(4, g=>{ g.beginPath(); bgEll(g, 712, 214, 104, 13, 0.46); g.fill(); }, { t:'swing', px: 822, py: 268, amp: 0.08, spd: 1.3 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 786, 300, 94, 68); bgEll(g, 862, 300, 42, 33); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 898, 300, 11, 9); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 812, 272, 7, 6); g.fill(); }),
-  ]) };
-
-// ─── 3) มีนาคม · ปลาคู่ · น้ำเงิน ───
-(function(){
-  function fish(cx, cy, ph){
-    return [
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx + 80, cy - 78, 56, 16, 0.5); g.fill(); }, { t:'swing', px: cx + 120, py: cy - 56, amp: 0.3, spd: 1, ph: ph }),
-      bgP(1, g=>{ g.beginPath(); g.moveTo(cx - 165, cy - 12); g.quadraticCurveTo(cx - 230, cy - 30, cx - 300, cy - 92); g.quadraticCurveTo(cx - 262, cy, cx - 300, cy + 92); g.quadraticCurveTo(cx - 230, cy + 30, cx - 165, cy + 12); g.closePath(); g.fill(); }, { t:'swing', px: cx - 170, py: cy, amp: 0.45, spd: 1, ph: ph }),
-      bgP(1, g=>{ g.beginPath(); g.moveTo(cx + 285, cy); g.bezierCurveTo(cx + 250, cy - 62, cx + 120, cy - 84, cx - 20, cy - 54); g.bezierCurveTo(cx - 90, cy - 38, cx - 140, cy - 22, cx - 175, cy - 12); g.lineTo(cx - 175, cy + 12); g.bezierCurveTo(cx - 140, cy + 22, cx - 90, cy + 38, cx - 20, cy + 54); g.bezierCurveTo(cx + 120, cy + 84, cx + 250, cy + 62, cx + 285, cy); g.closePath(); g.fill(); }, null, { spine: [cx + 200, 52] }),
-      bgP(4, g=>{ g.beginPath(); bgEll(g, cx + 20, cy, 150, 22); g.fill(); }),
-      bgPM(3, g=>{ g.beginPath(); bgEll(g, cx + 215, cy - 22, 8, 8); g.fill(); }),
-    ];
-  }
-  BG_ANIMALS['3'] = { month: 3, th: 'ปลาคู่', en: 'Twin Fish', colors: ['#12306B', '#3F7FD0', '#D8E9FF'], sz: 1, speed: 1, wob: 1,
-    wave: { amp: 40, exp: 1.8, base: 0.05 }, tb: 0.3,
-    parts: bgFlat([
-      bgP(4, g=>{ g.beginPath(); g.moveTo(282, 172); g.bezierCurveTo(110, 205, 120, 395, 350, 430); g.lineWidth = 11; g.lineCap = 'round'; g.stroke(); }),
-      fish(600, 168, 0), fish(670, 432, 1.6),
-    ]) };
-})();
-
-// ─── 4) เมษายน · เม่น · ขาวทอง ───
-BG_ANIMALS['4'] = { month: 4, th: 'เม่น', en: 'Hedgehog', colors: ['#5C4414', '#CDB26E', '#FFFDF4'], sz: 0.95, speed: 0.55, wob: 1,
-  wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.26,
-  parts: bgFlat([
-    bgPM(4, g=>{ g.beginPath(); bgEll(g, 790, 206, 36, 18); g.fill(); }, { t:'slide', dx: 12, spd: 1, ph: 0, alt: true }),
-    bgP(1, g=>{
-      g.beginPath();
-      const N = 52, cx = 440, cy = 300, rx = 282, ry = 186;
-      for(let i = 0; i < N*2; i++){
-        const a = (i/(N*2))*BG_TAU, front = Math.cos(a) > 0.72;
-        const f = (front || i % 2 === 0) ? 1 : 1.16 + 0.05*Math.sin(i*1.7);
-        const x = cx + rx*f*Math.cos(a), y = cy + ry*f*Math.sin(a);
-        if(i === 0) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.closePath(); g.fill();
-    }, null, { spine: [700, 110] }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 745, 300, 128, 90); bgEll(g, 848, 300, 72, 48); g.fill(); }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 706, 222, 28, 22); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 918, 300, 17, 14); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 818, 266, 8, 8); g.fill(); }),
-  ]) };
-
-// ─── 5) พฤษภาคม · กระทิง · น้ำตาล ───
-BG_ANIMALS['5'] = { month: 5, th: 'กระทิง', en: 'Bison', colors: ['#2E1A0C', '#7A4B2A', '#D9B48A'], sz: 1, speed: 0.7, wob: 0.8,
-  wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.3,
-  parts: bgFlat([
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 700, 184, 44, 22); g.fill(); }, { t:'slide', dx: 18, spd: 0.9, ph: 0, alt: true }),
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 300, 190, 50, 24); g.fill(); }, { t:'slide', dx: 18, spd: 0.9, ph: Math.PI, alt: true }),
-    bgP(1, g=>{ g.beginPath(); g.moveTo(190, 300); g.quadraticCurveTo(132, 322, 106, 372); g.lineWidth = 12; g.lineCap = 'round'; g.stroke(); }, { t:'swing', px: 190, py: 300, amp: 0.3, spd: 1.1 }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 98, 388, 20, 36, 0.4); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.3, spd: 1.1 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 360, 300, 176, 122); bgEll(g, 510, 300, 190, 130); bgEll(g, 640, 300, 142, 150); bgEll(g, 730, 300, 92, 100); g.fill(); }, null, { spine: [820, 90] }),
-    bgP(5, g=>{ g.beginPath(); bgEll(g, 690, 300, 48, 92); g.fill(); }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 806, 300, 76, 68); bgEll(g, 876, 300, 42, 46); g.fill(); }),
-    bgP(5, g=>{ g.beginPath(); bgEll(g, 792, 300, 26, 42); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 914, 300, 12, 20); g.fill(); }),
-    bgPM(2, g=>{ g.beginPath(); g.moveTo(792, 252); g.bezierCurveTo(768, 188, 790, 130, 872, 92); g.bezierCurveTo(836, 140, 836, 192, 840, 246); g.closePath(); g.fill(); }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 770, 226, 34, 15, -0.4); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 830, 270, 6, 6); g.fill(); }),
-  ]) };
-
-// ─── 6) มิถุนายน · จิ้งจอกคู่ · ส้มขาว ───
-(function(){
-  function fox(cx, cy, ph){
-    return [
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx + 92, cy - 56, 36, 15); g.fill(); }, { t:'slide', dx: 12, spd: 1.2, ph: ph, alt: true }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, cx - 96, cy - 56, 38, 15); g.fill(); }, { t:'slide', dx: 12, spd: 1.2, ph: ph + Math.PI, alt: true }),
-      bgP(1, g=>{ g.beginPath(); g.moveTo(cx - 100, cy - 20); g.bezierCurveTo(cx - 190, cy - 92, cx - 300, cy - 80, cx - 396, cy); g.bezierCurveTo(cx - 300, cy + 80, cx - 190, cy + 92, cx - 100, cy + 20); g.closePath(); g.fill(); }, { t:'swing', px: cx - 100, py: cy, amp: 0.26, spd: 1, ph: ph }),
-      bgP(4, g=>{ g.beginPath(); g.moveTo(cx - 318, cy - 34); g.bezierCurveTo(cx - 350, cy - 32, cx - 378, cy - 18, cx - 398, cy); g.bezierCurveTo(cx - 378, cy + 18, cx - 350, cy + 32, cx - 318, cy + 34); g.bezierCurveTo(cx - 336, cy + 14, cx - 336, cy - 14, cx - 318, cy - 34); g.closePath(); g.fill(); }, { t:'swing', px: cx - 100, py: cy, amp: 0.26, spd: 1, ph: ph }),
-      bgP(1, g=>{ g.beginPath(); bgEll(g, cx - 10, cy, 128, 58); bgEll(g, cx + 80, cy, 70, 52); g.fill(); }, null, { spine: [cx + 140, 38] }),
-      bgP(4, g=>{ g.beginPath(); bgEll(g, cx + 70, cy, 70, 26); g.fill(); }),
-      bgP(1, g=>{ g.beginPath(); bgEll(g, cx + 160, cy, 62, 52); bgPoly(g, [[cx + 190, cy - 36], [cx + 285, cy], [cx + 190, cy + 36]]); g.fill(); }),
-      bgP(4, g=>{ g.beginPath(); bgPoly(g, [[cx + 196, cy - 24], [cx + 280, cy], [cx + 196, cy + 24]]); g.fill(); }),
-      bgP(2, g=>{ g.beginPath(); bgEll(g, cx + 285, cy, 10, 9); g.fill(); }),
-      bgPM(2, g=>{ g.beginPath(); bgPoly(g, [[cx + 132, cy - 40], [cx + 106, cy - 112], [cx + 186, cy - 58]]); g.fill(); }),
-      bgPM(3, g=>{ g.beginPath(); bgEll(g, cx + 190, cy - 24, 6, 5); g.fill(); }),
-    ];
-  }
-  BG_ANIMALS['6'] = { month: 6, th: 'จิ้งจอกคู่', en: 'Twin Foxes', colors: ['#6A2E0C', '#E8803A', '#FFF6EC'], sz: 1.02, speed: 1.1, wob: 1.2,
-    wave: { amp: 14, exp: 1.0, base: 0.3 }, tb: 0.3,
-    parts: bgFlat([ fox(520, 170, 0), fox(560, 430, 2.4) ]) };
-})();
-
-// ─── 7) กรกฎาคม · ปู · แดงส้ม ───
-(function(){
-  const legs = [];
-  [570, 510, 450, 390].forEach((x, i)=>{
-    const ey = 300 - 150*Math.sqrt(Math.max(0, 1 - Math.pow((x - 470)/210, 2)));
-    legs.push(bgPM(1, g=>{ bgLine(g, [[x, ey + 14], [x - 18, ey - 56], [x - 74, ey - 96]], 22); }, { t:'swing', px: x, py: ey + 10, amp: 0.22, spd: 1.3, ph: i*0.9, alt: true }));
-  });
-  BG_ANIMALS['7'] = { month: 7, th: 'ปู', en: 'Crab', colors: ['#6B1A10', '#E2573A', '#FFD9C4'], sz: 1, speed: 0.5, wob: 1,
-    wave: { amp: 6, exp: 0.6, base: 0.5 }, tb: 0.3,
-    parts: bgFlat([
-      legs,
-      bgPM(1, g=>{ bgLine(g, [[600, 210], [694, 150]], 38); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 742, 138, 62, 50); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 836, 82, 70, 21, -0.62); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 838, 154, 66, 20, -0.12); g.fill(); }, { t:'swing', px: 606, py: 208, amp: 0.16, spd: 1 }),
-      bgP(1, g=>{ g.beginPath(); bgEll(g, 470, 300, 212, 150); g.fill(); }, null, { spine: [700, 110] }),
-      bgP(4, g=>{ g.beginPath(); bgEll(g, 480, 300, 120, 78); g.fill(); }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 672, 252, 11, 28, 0.2); g.fill(); }),
-      bgPM(3, g=>{ g.beginPath(); bgEll(g, 678, 228, 8, 8); g.fill(); }),
-    ]) };
-})();
-
-// ─── 8) สิงหาคม · สิงโต · ทอง ───
-BG_ANIMALS['8'] = { month: 8, th: 'สิงโต', en: 'Lion', colors: ['#6B430A', '#D4A12C', '#FBE9B0'], sz: 1, speed: 0.75, wob: 0.9,
-  wave: { amp: 10, exp: 0.6, base: 0.5 }, tb: 0.3,
-  parts: bgFlat([
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 268, 196, 58, 26); g.fill(); }, { t:'slide', dx: 16, spd: 0.9, ph: 0, alt: true }),
-    bgP(1, g=>{ g.beginPath(); bgChain(g, [[190, 300], [120, 300], [84, 340], [70, 402]], 15, 8, 14); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.32, spd: 1 }),
-    bgP(5, g=>{ g.beginPath(); bgEll(g, 64, 424, 24, 36, -0.2); g.fill(); }, { t:'swing', px: 190, py: 300, amp: 0.32, spd: 1 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 400, 300, 220, 96); bgEll(g, 300, 300, 112, 108); g.fill(); }, null, { spine: [600, 70] }),
-    bgP(5, g=>{
-      g.beginPath();
-      const N = 34, cx = 660, cy = 300, rx = 206, ry = 198;
-      for(let i = 0; i < N*2; i++){
-        const a = (i/(N*2))*BG_TAU, f = (i % 2 === 0) ? 1 : 0.8;
-        const x = cx + rx*f*Math.cos(a), y = cy + ry*f*Math.sin(a);
-        if(i === 0) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.closePath(); g.fill();
-    }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 802, 300, 86, 78); g.fill(); }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 876, 300, 44, 36); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 914, 300, 14, 11); g.fill(); }),
-    bgPM(1, g=>{ g.beginPath(); bgEll(g, 748, 222, 28, 24); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 824, 272, 7, 6); g.fill(); }),
-  ]) };
-
-// ─── 9) กันยายน · หงส์ · ขาวเงิน ───
-BG_ANIMALS['9'] = { month: 9, th: 'หงส์', en: 'Swan', colors: ['#34445C', '#A9B6C6', '#FFFFFF'], sz: 1.05, speed: 0.7, wob: 0.9,
-  wave: { amp: 8, exp: 0.8, base: 0.3 }, tb: 0.2,
-  parts: bgFlat([
-    bgP(1, g=>{ g.beginPath(); g.moveTo(150, 300); g.bezierCurveTo(230, 235, 360, 185, 500, 185); g.bezierCurveTo(610, 185, 680, 235, 706, 300); g.bezierCurveTo(680, 365, 610, 415, 500, 415); g.bezierCurveTo(360, 415, 230, 365, 150, 300); g.closePath(); g.fill(); }, null, { spine: [700, 110] }),
-    bgPM(4, g=>{ g.beginPath(); g.moveTo(196, 288); g.bezierCurveTo(300, 218, 430, 198, 566, 216); g.bezierCurveTo(596, 248, 566, 284, 504, 298); g.bezierCurveTo(404, 302, 296, 300, 196, 288); g.closePath(); g.fill(); }, { t:'swing', px: 570, py: 236, amp: 0.045, spd: 1.4 }),
-    bgP(1, g=>{ g.beginPath(); bgChain(g, [[690, 300], [770, 300], [790, 246], [850, 246]], 31, 22, 12); bgChain(g, [[850, 246], [900, 246], [920, 285], [908, 322]], 22, 18, 10); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 912, 330, 30, 24); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
-    bgP(2, g=>{ g.beginPath(); bgPoly(g, [[934, 320], [988, 334], [934, 346]]); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
-    bgP(3, g=>{ g.beginPath(); bgEll(g, 918, 322, 5, 5); g.fill(); }, { t:'swing', px: 690, py: 300, amp: 0.1, spd: 1 }),
-  ]) };
-
-// ─── 10) ตุลาคม · ผีเสื้อ · ฟ้าม่วง ───
-(function(){
-  const flapA = { t: 'flap', py: 300, lo: 0.22, spd: 2.6, ph: 0 };
-  const fore = g=>{ g.beginPath(); g.moveTo(602, 290); g.bezierCurveTo(644, 200, 706, 110, 772, 44); g.bezierCurveTo(694, 22, 560, 28, 498, 96); g.bezierCurveTo(448, 152, 470, 234, 522, 296); g.closePath(); g.fill(); };
-  const hind = g=>{ g.beginPath(); g.moveTo(528, 304); g.bezierCurveTo(470, 252, 402, 168, 332, 134); g.bezierCurveTo(250, 100, 176, 152, 198, 218); g.bezierCurveTo(214, 268, 330, 302, 424, 312); g.closePath(); g.fill(); };
-  const inner = (draw, cx, cy)=> g=>{ g.save(); g.translate(cx, cy); g.scale(0.84, 0.84); g.translate(-cx, -cy); draw(g); g.restore(); };
-  BG_ANIMALS['10'] = { month: 10, th: 'ผีเสื้อ', en: 'Butterfly', colors: ['#2B2A78', '#7B8CE8', '#EAF0FF'], sz: 0.95, speed: 1.15, wob: 2.4,
-    wave: { amp: 6, exp: 0.6, base: 0.4 }, tb: 0.3,
-    parts: bgFlat([
-      bgPM(2, hind, flapA), bgPM(1, inner(hind, 340, 215), flapA),
-      bgPM(4, g=>{ g.beginPath(); bgEll(g, 296, 176, 36, 26, 0.4); bgEll(g, 380, 232, 20, 15, 0.3); g.fill(); }, flapA),
-      bgPM(2, fore, flapA), bgPM(1, inner(fore, 560, 130), flapA),
-      bgPM(4, g=>{ g.beginPath(); bgEll(g, 664, 96, 34, 22, -0.95); bgEll(g, 566, 82, 22, 14, -0.5); bgEll(g, 548, 170, 18, 12, 0.5); g.fill(); }, flapA),
-      bgP(2, g=>{ g.beginPath(); bgEll(g, 480, 300, 160, 15); bgEll(g, 610, 300, 52, 24); bgEll(g, 672, 300, 26, 24); g.fill(); }, { t:'swing', px: 330, py: 300, amp: 0.03, spd: 2.6 }),
-      bgPM(2, g=>{ g.beginPath(); g.moveTo(676, 290); g.quadraticCurveTo(730, 250, 796, 236); g.lineWidth = 5; g.lineCap = 'round'; g.stroke(); g.beginPath(); bgEll(g, 800, 235, 10, 7, -0.2); g.fill(); }, { t:'swing', px: 676, py: 290, amp: 0.1, spd: 1.8 }),
-    ]) };
-})();
-
-// ─── 11) พฤศจิกายน · แมงป่อง · ม่วงเข้ม ───
-(function(){
-  const legs = [];
-  [740, 690, 640, 590].forEach((x, i)=>{
-    legs.push(bgPM(1, g=>{ bgLine(g, [[x, 236], [x - 16, 176], [x - 70, 138]], 15); }, { t:'swing', px: x, py: 232, amp: 0.22, spd: 1.4, ph: i*0.8, alt: true }));
-  });
-  const tailBez = [[410, 300], [150, 330], [70, 110], [300, 80]];
-  const tailAnim = { t: 'swing', px: 410, py: 300, amp: 0.09, spd: 0.8 };
-  BG_ANIMALS['11'] = { month: 11, th: 'แมงป่อง', en: 'Scorpion', colors: ['#1F0B3A', '#5A2A86', '#D6BDF0'], sz: 1, speed: 0.55, wob: 1,
-    wave: { amp: 8, exp: 0.6, base: 0.5 }, tb: 0.3,
-    parts: bgFlat([
-      legs,
-      bgP(1, g=>{ g.beginPath(); bgChain(g, tailBez, 30, 14, 22); g.fill(); }, tailAnim),
-      bgP(2, g=>{ g.beginPath(); bgPoly(g, [[322, 54], [352, 92], [296, 108]]); g.fill(); }, tailAnim),
-      bgP(1, g=>{ g.beginPath(); bgEll(g, 572, 300, 74, 64); bgEll(g, 496, 300, 60, 54); bgEll(g, 434, 300, 48, 44); g.fill(); }, null, { spine: [640, 40] }),
-      bgP(1, g=>{ g.beginPath(); bgEll(g, 690, 300, 108, 80); g.fill(); }),
-      bgPM(1, g=>{ bgLine(g, [[770, 256], [842, 218]], 28); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 888, 196, 58, 42, -0.5); g.fill(); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
-      bgPM(1, g=>{ g.beginPath(); bgEll(g, 940, 150, 52, 16, -0.95); g.fill(); }, { t:'swing', px: 770, py: 256, amp: 0.18, spd: 1 }),
-      bgPM(3, g=>{ g.beginPath(); bgEll(g, 752, 282, 6, 6); g.fill(); }),
-    ]) };
-})();
-
-// ─── 12) ธันวาคม · ม้าป่า · น้ำตาลทอง ───
-BG_ANIMALS['12'] = { month: 12, th: 'ม้าป่า', en: 'Wild Horse', colors: ['#3A200C', '#B07A3A', '#F0D8A8'], sz: 1.02, speed: 1.15, wob: 1,
-  wave: { amp: 12, exp: 0.8, base: 0.4 }, tb: 0.3,
-  parts: bgFlat([
-    bgP(2, g=>{ g.beginPath(); bgChain(g, [[200, 300], [130, 296], [80, 350], [34, 430]], 30, 11, 18); g.fill(); }, { t:'swing', px: 200, py: 300, amp: 0.3, spd: 1.1 }),
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 706, 168, 74, 16, -0.5); g.fill(); }, { t:'slide', dx: 26, spd: 1.3, ph: 0, alt: true }),
-    bgPM(2, g=>{ g.beginPath(); bgEll(g, 236, 168, 76, 17, 0.55); g.fill(); }, { t:'slide', dx: 26, spd: 1.3, ph: Math.PI, alt: true }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 430, 300, 226, 104); bgEll(g, 290, 300, 124, 108); bgEll(g, 606, 300, 116, 100); g.fill(); }, null, { spine: [760, 70] }),
-    bgP(1, g=>{ g.beginPath(); bgPoly(g, [[650, 240], [808, 268], [808, 332], [650, 360]]); g.fill(); }),
-    bgP(2, g=>{ g.beginPath(); bgEll(g, 590, 300, 250, 13); bgEll(g, 745, 300, 62, 22); g.fill(); }),
-    bgP(1, g=>{ g.beginPath(); bgEll(g, 866, 300, 78, 44); bgEll(g, 930, 300, 44, 32); g.fill(); }),
-    bgP(4, g=>{ g.beginPath(); bgEll(g, 944, 300, 24, 18); g.fill(); }),
-    bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[826, 266], [806, 200], [864, 252]]); g.fill(); }),
-    bgPM(3, g=>{ g.beginPath(); bgEll(g, 876, 278, 6, 5); g.fill(); }),
-  ]) };
-
-// ─── (เพิ่มเติม) ฉลามหัวค้อน — ตัวเดิมที่ทำไว้ เลือกได้จาก "ภาพพื้นหลัง" ───
+// ─── ฉลามหัวค้อน (ค่าเริ่มต้น) ───
 (function(){
   const TOP = [
     [972,260, 968,200, 960,150], [958,138, 945,130, 925,132], [912,138, 892,220, 862,248], [820,238, 750,222, 690,222],
@@ -5154,7 +4904,7 @@ BG_ANIMALS['12'] = { month: 12, th: 'ม้าป่า', en: 'Wild Horse', colo
     for(let i = TOP.length - 1; i >= 0; i--){ const s = TOP[i], f = pts[i]; g.bezierCurveTo(s[2], m(s[3]), s[0], m(s[1]), f[0], m(f[1])); }
     g.closePath(); g.fill();
   }
-  BG_ANIMALS['shark'] = { month: 0, th: 'ฉลามหัวค้อน', en: 'Hammerhead Shark', colors: ['#1B2A44', '#6F85A3', '#EEF2F7'], sz: 1, speed: 1, wob: 1,
+  BG_ANIMALS['shark'] = { th: 'ฉลามหัวค้อน', en: 'Hammerhead Shark', colors: ['#1B2A44', '#6F85A3', '#EEF2F7'], sz: 1, speed: 1, wob: 1,
     wave: { amp: 66, exp: 2.2, base: 0.04 }, tb: 0.16, finFlap: true,
     parts: bgFlat([
       bgP(1, bodyPath, null, { spine: [800, 80], fin: (x, y)=>{ const vy = Math.abs(y - 300); return (x > 300 && x < 700 && vy > 84) ? Math.min(1, (vy - 84)/90) : 0; } }),
@@ -5163,7 +4913,101 @@ BG_ANIMALS['12'] = { month: 12, th: 'ม้าป่า', en: 'Wild Horse', colo
     ]) };
 })();
 
-const BG_ORDER = ['1','2','3','4','5','6','7','8','9','10','11','12','shark'];
+
+// ─── ตัวช่วยวาดลำตัวสมมาตร (ครึ่งบนเป็นเส้นโค้ง แล้วสะท้อนลงล่างอัตโนมัติ) เริ่มที่ปลายหัว (sx,sy=300) จบที่ปลายหาง (y=300) ───
+function bgSym(g, sx, sy, segs){
+  g.beginPath(); g.moveTo(sx, sy);
+  const pts = [[sx, sy]];
+  segs.forEach(s=>{ g.bezierCurveTo(s[0], s[1], s[2], s[3], s[4], s[5]); pts.push([s[4], s[5]]); });
+  for(let i = segs.length - 1; i >= 0; i--){ const s = segs[i], f = pts[i]; g.bezierCurveTo(s[2], 600 - s[3], s[0], 600 - s[1], f[0], 600 - f[1]); }
+  g.closePath(); g.fill();
+}
+
+// ─── แมงกะพรุน · ชมพูม่วง (ระฆังพองหดเบาๆ หนวดลู่ไปด้านหลัง) ───
+(function(){
+  const CX = 700, CY = 300, R = 226;
+  const pulse = { t:'flap', py: 300, lo: 0.8, spd: 0.5, ph: 0 };
+  const tent = (roots, amp, ph)=> bgP(4, g=>{ g.beginPath(); roots.forEach(r=> bgChain(g, r, 8, 3, 22)); g.fill(); }, { t:'swing', px: 480, py: 300, amp: amp, spd: 1, ph: ph });
+  BG_ANIMALS['jellyfish'] = { th: 'แมงกะพรุน', en: 'Jellyfish', colors: ['#4A1A66', '#C06BD8', '#FBE3FF'], sz: 1, speed: 0.55, wob: 1.3,
+    wave: { amp: 18, exp: 1.2, base: 0.35 }, tb: 0.34,
+    parts: bgFlat([
+      bgP(1, g=>{ g.beginPath(); bgEll(g, CX, CY, R, R); for(let k = 0; k < 26; k++){ const a = k*BG_TAU/26; bgEll(g, CX + Math.cos(a)*R, CY + Math.sin(a)*R, 17, 17); } g.fill(); }, pulse),
+      bgP(4, g=>{ g.beginPath(); g.lineWidth = 12; g.arc(CX, CY, R - 24, 0, BG_TAU); g.stroke(); }, pulse),
+      bgP(2, g=>{ g.lineWidth = 6; g.lineCap = 'round'; for(let k = 0; k < 8; k++){ const a = k*BG_TAU/8 + 0.2; g.beginPath(); g.moveTo(CX + Math.cos(a)*46, CY + Math.sin(a)*46); g.lineTo(CX + Math.cos(a)*(R - 56), CY + Math.sin(a)*(R - 56)); g.stroke(); } }, pulse),
+      bgP(4, g=>{ g.lineWidth = 12; for(let k = 0; k < 4; k++){ const a = k*BG_TAU/4 + Math.PI/4; g.beginPath(); g.arc(CX + Math.cos(a)*82, CY + Math.sin(a)*82, 30, 0, BG_TAU); g.stroke(); } }, pulse),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, CX, CY, 22, 22); g.fill(); }, pulse),
+      tent([[[520,238],[420,200],[330,270],[210,230]], [[500,262],[400,250],[300,320],[170,290]]], 0.16, 0),
+      tent([[[490,290],[390,300],[290,250],[150,310]], [[490,312],[400,330],[300,380],[190,350]]], 0.2, 1.2),
+      tent([[[500,338],[400,360],[310,320],[170,380]], [[520,362],[420,400],[330,340],[220,420]]], 0.16, 2.4),
+      tent([[[560,190],[470,150],[380,190],[300,120]], [[560,410],[470,450],[380,410],[300,480]]], 0.12, 3.6),
+    ]) };
+})();
+
+// ─── วาฬ · น้ำเงินเทา (ลำตัวอ้วนใหญ่ ตัวโค้งตามคลื่น หางสะบัด ครีบข้างยาว) ───
+(function(){
+  BG_ANIMALS['whale'] = { th: 'วาฬ', en: 'Whale', colors: ['#14233B', '#3E5C86', '#CBDAEE'], sz: 1, speed: 0.6, wob: 0.8,
+    wave: { amp: 46, exp: 2, base: 0.03 }, tb: 0.2,
+    parts: bgFlat([
+      bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[228, 300], [190, 262], [120, 212], [34, 148], [98, 154], [152, 182], [198, 224], [236, 276]]); g.fill(); }),
+      bgP(1, g=>bgSym(g, 985, 300, [[985, 262, 965, 214, 890, 206], [800, 198, 690, 190, 590, 200], [470, 212, 360, 250, 270, 284], [250, 292, 225, 298, 205, 300]]), null, { spine: [900, 95] }),
+      bgPM(4, g=>{ g.beginPath(); bgEll(g, 730, 158, 108, 20, 0.66); g.fill(); }, { t:'swing', px: 812, py: 222, amp: 0.1, spd: 1, ph: 0 }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 430, 300, 34, 9); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 800, 300, 20, 6); bgEll(g, 940, 300, 36, 3); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 862, 240, 6, 6); g.fill(); }),
+    ]) };
+})();
+
+// ─── วาฬนาร์วาล · เทาอมฟ้า ลายจุด มีงาเกลียวยาวที่หัว ───
+(function(){
+  const spots = [[640,262,13,9],[600,290,10,8],[560,254,14,10],[520,282,11,8],[480,262,13,9],[450,300,9,7],[410,272,11,8],[380,296,9,7],[350,268,10,7],[320,284,8,6],[590,326,9,7],[500,330,10,7],[430,334,8,6],[670,300,8,6],[700,280,7,5]];
+  BG_ANIMALS['narwhal'] = { th: 'วาฬนาร์วาล', en: 'Narwhal', colors: ['#25303F', '#8190A6', '#EEF2F7'], sz: 1, speed: 0.75, wob: 1,
+    wave: { amp: 38, exp: 1.8, base: 0.04 }, tb: 0.22,
+    parts: bgFlat([
+      bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[190, 300], [160, 272], [100, 236], [44, 184], [96, 190], [140, 212], [176, 248], [198, 284]]); g.fill(); }),
+      bgP(1, g=>bgSym(g, 775, 300, [[777, 262, 745, 224, 685, 220], [610, 212, 500, 214, 400, 238], [330, 256, 270, 276, 215, 292], [200, 296, 190, 299, 180, 300]]), null, { spine: [700, 80] }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 655, 190, 50, 12, 0.69); g.fill(); }, { t:'swing', px: 690, py: 228, amp: 0.12, spd: 1, ph: 0 }),
+      bgP(2, g=>{ g.beginPath(); spots.forEach(s=>{ bgEll(g, s[0], s[1], s[2], s[3]); bgEll(g, s[0], 600 - s[1], s[2], s[3]); }); g.fill(); }),
+      bgP(4, g=>{ g.beginPath(); bgChain(g, [[745, 300], [830, 300], [910, 300], [992, 300]], 13, 4, 24); g.fill(); }, { t:'swing', px: 760, py: 300, amp: 0.03, spd: 0.8, ph: 0 }),
+      bgP(2, g=>{ g.lineWidth = 4; g.lineCap = 'butt'; for(let k = 0; k < 9; k++){ const x = 790 + k*22; g.beginPath(); g.moveTo(x, 290); g.lineTo(x + 14, 310); g.stroke(); } }, { t:'swing', px: 760, py: 300, amp: 0.03, spd: 0.8, ph: 0 }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 720, 262, 6, 6); g.fill(); }),
+    ]) };
+})();
+
+// ─── ปูแมงมุมญี่ปุ่น · แดงส้ม (ขายาวเดินสลับ ก้ามยาวไปด้านหน้า) ───
+(function(){
+  const leg = (pts, ph)=> bgPM(1, g=>{ bgLine(g, pts, 24); }, { t:'swing', px: pts[0][0], py: pts[0][1], amp: 0.13, spd: 1, ph: ph, alt: true });
+  const claw = ()=> bgPM(1, g=>{ bgLine(g, [[660, 262], [790, 222], [880, 196]], 26); g.beginPath(); bgEll(g, 902, 196, 34, 22, -0.18); g.fill(); }, { t:'swing', px: 650, py: 270, amp: 0.05, spd: 1, ph: 1 });
+  const finger = (a, ph)=> bgPM(1, g=>{ bgLine(g, a, 14); }, { t:'swing', px: a[0][0], py: a[0][1], amp: 0.16, spd: 1.4, ph: ph });
+  BG_ANIMALS['crab'] = { th: 'ปูแมงมุมญี่ปุ่น', en: 'Japanese Spider Crab', colors: ['#6E1D10', '#E0603A', '#FFD8BA'], sz: 1, speed: 0.5, wob: 0.8,
+    wave: { amp: 5, exp: 1, base: 1 }, tb: 0.24,
+    parts: bgFlat([
+      leg([[612, 224], [672, 130], [770, 36]], 0), leg([[576, 216], [604, 112], [616, 16]], Math.PI),
+      leg([[536, 216], [520, 112], [470, 24]], 0), leg([[496, 228], [430, 156], [330, 76]], Math.PI),
+      claw(), finger([[925, 190], [988, 176]], 0), finger([[925, 204], [988, 202]], Math.PI),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 560, 300, 112, 88); bgEll(g, 650, 300, 52, 46); g.fill(); }, null, { spine: [700, 60] }),
+      bgP(2, g=>{ g.beginPath(); bgPoly(g, [[690, 282], [756, 300], [690, 318]]); g.fill(); }),
+      bgPM(4, g=>{ g.beginPath(); bgEll(g, 520, 250, 17, 12); bgEll(g, 582, 246, 15, 11); bgEll(g, 548, 282, 12, 10); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 674, 266, 7, 7); g.fill(); }),
+    ]) };
+})();
+
+// ─── หอยเชลล์ · ส้มทอง (เปลือกพัดกางสลับหุบ มีตาเรียงริมเปลือก) ───
+(function(){
+  const CX = 610, CY = 300, R = 262, HX = 362;
+  const rim = a=>{ const bx = HX - CX, c = bx*bx - R*R, b = 2*bx*Math.cos(a), d = (-b + Math.sqrt(b*b - 4*c))/2; return [HX + d*Math.cos(a), CY + d*Math.sin(a)]; };
+  const ang = []; for(let k = -6; k <= 6; k++) ang.push(k*0.2);
+  const clap = { t:'flap', py: 300, lo: 0.58, spd: 0.7, ph: 0 };
+  BG_ANIMALS['scallop'] = { th: 'หอยเชลล์', en: 'Scallop', colors: ['#7A3416', '#E8A23C', '#FFF1C8'], sz: 1, speed: 0.5, wob: 1.4,
+    wave: { amp: 0, exp: 1, base: 1 }, tb: 0.28,
+    parts: bgFlat([
+      bgP(1, g=>{ g.beginPath(); bgEll(g, CX, CY, R, R); ang.forEach(a=>{ const q = rim(a); bgEll(g, q[0], q[1], 22, 22); }); g.fill(); }, clap),
+      bgP(4, g=>{ g.lineWidth = 8; g.lineCap = 'round'; ang.forEach(a=>{ const q = rim(a); g.beginPath(); g.moveTo(HX + 34*Math.cos(a), CY + 34*Math.sin(a)); g.lineTo(q[0] - 8*Math.cos(a), q[1] - 8*Math.sin(a)); g.stroke(); }); }, clap),
+      bgP(2, g=>{ g.beginPath(); bgPoly(g, [[316, 176], [396, 232], [396, 368], [316, 424]]); g.fill(); }),
+      bgP(3, g=>{ g.beginPath(); for(let k = -5; k <= 5; k++){ const a = k*0.22, q = rim(a); bgEll(g, q[0] - 22*Math.cos(a), q[1] - 22*Math.sin(a), 6, 6); } g.fill(); }, clap),
+    ]) };
+})();
+
+const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop'];  // ลำดับในรายการเลือก (dropdown)
 
 
 // ══════════ BG ART — ภาพพื้นหลังอนุภาคพิกเซล สัตว์ประจำเดือน (ว่ายอยู่ด้านหลังเนื้อหา) ══════════
@@ -5172,9 +5016,9 @@ const BG_ORDER = ['1','2','3','4','5','6','7','8','9','10','11','12','shark'];
 // อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และสัตว์หลบเมาส์
 // ปรับแต่งทุกอย่างได้ที่ BG_CONFIG ด้านล่างที่เดียว (สีและรูปร่างของสัตว์แต่ละตัวแก้ที่ BG_ANIMALS)
 const BG_CONFIG = {
-  // ── เลือกสัตว์: 'auto' = ตามเดือนปัจจุบัน | '1'–'12' = เดือนนั้น | 'shark' = ฉลามหัวค้อน | 'off' = ปิด ──
+  // ── เลือกสัตว์: 'shark' | 'jellyfish' | 'whale' | 'crab' | 'narwhal' | 'scallop' | 'off' = ปิด ──
   // (ค่านี้ admin ตั้งได้ในหน้า "ความคืบหน้าการล็อกอิน" → ภาพพื้นหลัง และถูกเก็บใน Settings ของระบบ ค่าด้านล่างใช้เมื่อยังไม่เคยตั้ง)
-  animal: 'auto',
+  animal: 'shark',
 
   // ── จำนวนอนุภาค (ยิ่งมากยิ่งละเอียดแต่ใช้เครื่องมากขึ้น) ──
   mainParticles:   2800,   // ตัวหลัก (desktop)
@@ -5195,6 +5039,9 @@ const BG_CONFIG = {
 
   // ── อนุภาค ──
   opacity:      0.92,      // ความทึบรวม 0–1
+  edgeTwinkle:  1,         // พิกเซลริมขอบกะพริบช้าๆ เป็นคลื่นไหลไปทางหาง (0 = ปิด)
+  twinkleSpeed: 1.3,       // ความเร็วการกะพริบ (rad/วินาที)
+  twinkleWave:  7,         // ความถี่คลื่นตามลำตัว (มาก = เป็นลอนถี่)
   particleSize: 0.82,      // ขนาดจุดเทียบกับระยะห่างระหว่างจุด (0.5 เล็กละเอียด – 1.0 ติดกัน)
 
   // ── เอฟเฟกต์อนุภาค ──
@@ -5220,16 +5067,16 @@ function bgPalette(c){
   }
   return out;
 }
-// 'auto' → เดือนปัจจุบัน (1–12) | ค่าที่ไม่รู้จัก → auto
+// ค่าที่ไม่รู้จัก (รวมค่าเก่า 'auto' / '1'–'12') → ฉลามหัวค้อน
 function bgResolveKey(key){
   if(key === 'off') return 'off';
   if(key && BG_ANIMALS[key]) return key;
-  return String(new Date().getMonth() + 1);
+  return 'shark';
 }
 
 const BgArt = (function(){
   const canvas = document.getElementById('bgArtLayer');
-  if(!canvas) return { start(){}, stop(){}, setAnimal(){}, resolve: bgResolveKey, drawPreview(){} };
+  if(!canvas) return { start(){}, stop(){}, setAnimal(){}, resolve: bgResolveKey };
   const ctx = canvas.getContext('2d');
   const prefersReduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const MOTION_MODE = prefersReduced ? BG_CONFIG.reducedMotion : 'ignore';
@@ -5281,7 +5128,7 @@ const BgArt = (function(){
     pts.forEach(p=>{ const b = bb[p.pid - 1]; b.n++; if(p.y < b.y0) b.y0 = p.y; if(p.y > b.y1) b.y1 = p.y; });
     // ระยะถึงขอบ (depth) — ขอบสว่าง แกนกลางเข้ม และหาอนุภาคริมขอบสำหรับทำฝุ่น
     const dirs = []; for(let k = 0; k < 8; k++) dirs.push([Math.cos(k*TAU/8), Math.sin(k*TAU/8)]);
-    const step = sp*0.5, P = 8, n = pts.length, nb = P*3;
+    const step = sp*0.5, P = 8, n = pts.length, nb = P*3;      // nb = กลุ่มสีปกติ, กลุ่มที่ nb = พิกเซลริมขอบ (กะพริบ)
     const tb = A.tb !== undefined ? A.tb : 0.3;
     const x0 = new Float32Array(n), y0 = new Float32Array(n), fin = new Float32Array(n), sz = new Float32Array(n);
     const edge = new Uint8Array(n), bucket = new Uint16Array(n), pid8 = new Uint8Array(n);
@@ -5307,26 +5154,27 @@ const BgArt = (function(){
       const sh = Math.round(t*(P - 1));
       const lvl = (kind === 2 || kind === 3) ? 2 : (depth < 2 ? (al < 0.5 ? 0 : 1) : (al < 0.18 ? 0 : (al < 0.5 ? 1 : 2)));
       bucket[i] = sh*3 + lvl;
+      if(depth < 3 && (kind === 1 || kind === 4 || kind === 5)) bucket[i] = nb;
       x0[i] = p.x; y0[i] = p.y; pid8[i] = p.pid;
       fin[i] = part.fin ? part.fin(p.x, p.y) : 0;
       edge[i] = (depth < 2 && kind !== 3) ? 1 : 0;
       sz[i] = rand(0.78, 1.12);
     }
     // เรียงตามกลุ่มสี เพื่อวาดทีละกลุ่มด้วยคำสั่งเดียว (เร็วกว่าตั้งสีทีละจุดมาก)
-    const counts = new Uint32Array(nb + 1);
+    const counts = new Uint32Array(nb + 2);
     for(let i = 0; i < n; i++) counts[bucket[i] + 1]++;
-    for(let b = 0; b < nb; b++) counts[b + 1] += counts[b];
+    for(let b = 0; b <= nb; b++) counts[b + 1] += counts[b];
     const start = Uint32Array.from(counts), fill = Uint32Array.from(counts);
     const order = new Uint32Array(n);
     for(let i = 0; i < n; i++) order[fill[bucket[i]]++] = i;
     const bw = Math.max(1, maxX - minX);
     const S = { key, n, sp, bw, cx: (minX + maxX)/2, minX, start, bucketCount: nb,
       x0: new Float32Array(n), y0: new Float32Array(n), u: new Float32Array(n), pid: new Uint8Array(n),
-      fin: new Float32Array(n), sz: new Float32Array(n), edge: new Uint8Array(n) };
+      fin: new Float32Array(n), sz: new Float32Array(n), edge: new Uint8Array(n), tw: new Float32Array(n) };
     for(let j = 0; j < n; j++){
       const i = order[j];
       S.x0[j] = x0[i]; S.y0[j] = y0[i]; S.u[j] = clamp((x0[i] - minX)/bw, 0, 1);
-      S.pid[j] = pid8[i]; S.fin[j] = fin[i]; S.sz[j] = sz[i]; S.edge[j] = edge[i];
+      S.pid[j] = pid8[i]; S.fin[j] = fin[i]; S.sz[j] = sz[i]; S.edge[j] = edge[i]; S.tw[j] = Math.random()*1.3;
     }
     return (shapeCache[ck] = S);
   }
@@ -5368,7 +5216,7 @@ const BgArt = (function(){
       alpha: role === 'main' ? 1 : 0.62,                    // ตัวเล็ก = อยู่ไกลกว่า จางกว่า
       fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
       ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
-      px: new Float32Array(n), py: new Float32Array(n),
+      px: new Float32Array(n), py: new Float32Array(n), el: new Uint8Array(n),
       m: new Float32Array(np*6),                            // เมทริกซ์ขยับของแต่ละชิ้นส่วน (m11,m12,m21,m22,tx,ty)
     };
     s.scale = scaleOf(s);
@@ -5567,6 +5415,20 @@ const BgArt = (function(){
       }
       ctx.fill();
     }
+    // พิกเซลริมขอบ: กะพริบช้าๆ เป็นคลื่นไหลจากหัวไปหาง (ดูเหมือนน้ำเคลื่อนไหวตามตัว)
+    const e0 = start[S.bucketCount], e1 = start[S.bucketCount + 1];
+    if(e1 > e0){
+      const tt = simT*C.twinkleSpeed*(calm ? 0.5 : 1), K = C.twinkleWave, uA = S.u, tw = S.tw, el = s.el;
+      if(C.edgeTwinkle > 0) for(let i = e0; i < e1; i++){ const v = Math.sin(tt + uA[i]*K + tw[i]); el[i] = v > 0.45 ? 2 : (v > -0.25 ? 1 : 0); }
+      else for(let i = e0; i < e1; i++) el[i] = 2;
+      const cols = [pal[3], pal[4], pal[6]], als = [0.2, 0.62, 1];
+      for(let L = 0; L < 3; L++){
+        ctx.fillStyle = cols[L]; ctx.globalAlpha = als[L]*op;
+        ctx.beginPath();
+        for(let i = e0; i < e1; i++) if(el[i] === L){ const q = ps*sz[i]; ctx.rect(px[i], py[i], q, q); }
+        ctx.fill();
+      }
+    }
   }
 
   function frame(now){
@@ -5610,7 +5472,7 @@ const BgArt = (function(){
   }
   let zoneTimer = null;
 
-  // เปลี่ยนสัตว์ระหว่างใช้งาน (admin เลือกจากหน้า Login Progress) — 'auto' | '1'–'12' | 'shark' | 'off'
+  // เปลี่ยนสัตว์ระหว่างใช้งาน (admin เลือกจากหน้า Login Progress)
   function setAnimal(key){
     currentKey = bgResolveKey(key);
     if(!running) return;
@@ -5647,36 +5509,7 @@ const BgArt = (function(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  // รูปตัวอย่างขนาดเล็กแบบพิกเซลหยาบ สำหรับปุ่มเลือกในหน้า Login Progress (วาดจากชิ้นส่วนเดียวกับตัวจริง)
-  const previewSrc = {};
-  function previewSource(key){
-    if(previewSrc[key]) return previewSrc[key];
-    const A = BG_ANIMALS[key], pal = palOf(key);
-    const kc = { 1: pal[3], 2: pal[0], 3: '#111', 4: pal[6], 5: pal[1] };
-    const c = document.createElement('canvas'); c.width = 500; c.height = 300;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    g.scale(0.5, 0.5);
-    A.parts.forEach(part=>{ g.fillStyle = kc[part.kind]; g.strokeStyle = kc[part.kind]; g.lineCap = 'round'; g.lineJoin = 'round'; g.save(); part.draw(g); g.restore(); });
-    const d = g.getImageData(0, 0, 500, 300).data;
-    let x0 = 500, x1 = 0, y0 = 300, y1 = 0;
-    for(let y = 0; y < 300; y += 2) for(let x = 0; x < 500; x += 2) if(d[(y*500 + x)*4 + 3] > 40){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
-    return (previewSrc[key] = { c, x0, y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) });
-  }
-  function drawPreview(cv, key){
-    const k = bgResolveKey(key);
-    const g = cv.getContext('2d');
-    g.clearRect(0, 0, cv.width, cv.height);
-    if(k === 'off') return;
-    const src = previewSource(k);
-    const tiny = document.createElement('canvas'); tiny.width = 56; tiny.height = 34;       // ย่อให้เล็กแล้วขยายแบบไม่เกลี่ย → ได้ลุคพิกเซลหยาบ
-    const tg = tiny.getContext('2d');
-    const sc = Math.min(52/src.w, 30/src.h);
-    tg.drawImage(src.c, src.x0, src.y0, src.w, src.h, (56 - src.w*sc)/2, (34 - src.h*sc)/2, src.w*sc, src.h*sc);
-    g.imageSmoothingEnabled = false;
-    g.drawImage(tiny, 0, 0, cv.width, cv.height);
-  }
-
-  return { start, stop, setAnimal, resolve: bgResolveKey, drawPreview };
+  return { start, stop, setAnimal, resolve: bgResolveKey };
 })();
 
 applyTranslations();
