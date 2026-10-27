@@ -1198,7 +1198,13 @@ tr:hover td{background:var(--cream)}
       <input type="text" id="ebTypeLabel" disabled style="font-weight:600;color:var(--plum-700)"/>
     </div>
     <div class="form-grid">
-      <div class="field"><label data-i18n="eb_total">Total Days</label><input type="number" step="0.5" id="ebTotal"/></div>
+      <div class="field"><label data-i18n="eb_total">Total Days</label>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="number" min="0" step="1" id="ebTotalDays" style="width:84px"/><span data-i18n="tk_unit_days">days</span>
+          <input type="number" min="0" max="7" step="1" id="ebTotalHours" style="width:72px"/><span data-i18n="tk_unit_hours">hours</span>
+        </div>
+        <p class="hint" style="margin-top:6px" data-i18n="eb_hint_hours">1 day = 8 hours</p>
+      </div>
       <div class="field"><label data-i18n="eb_used">Used So Far</label><input type="text" id="ebUsed" disabled/></div>
     </div>
     <div class="err-text" id="ebErr"></div>
@@ -2201,7 +2207,7 @@ const I18N = {
     eb_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
     eb_title:'Leave Balances', eb_th_type:'Type', eb_th_total:'Total', eb_th_used:'Used', eb_th_remaining:'Remaining',
     eb_none:'No balances to show', eb_edit_title:'✏️ Edit Leave Balance', eb_type:'Leave Type', eb_total:'Total Days', eb_used:'Used So Far',
-    eb_invalid:'Please enter a valid number of days',
+    eb_invalid:'Please enter a valid number of days', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
     set_notifybalance_title:'Notify employee when admin adjusts their balance',
     set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
@@ -2372,7 +2378,7 @@ const I18N = {
     eb_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
     eb_title:'โควตาวันลา', eb_th_type:'ประเภท', eb_th_total:'รวม', eb_th_used:'ใช้ไปแล้ว', eb_th_remaining:'คงเหลือ',
     eb_none:'ไม่มีโควตาให้แสดง', eb_edit_title:'✏️ แก้ไขโควตาวันลา', eb_type:'ประเภทการลา', eb_total:'จำนวนวันรวม', eb_used:'ใช้ไปแล้ว',
-    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง',
+    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
     set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
     set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
@@ -3937,9 +3943,9 @@ function renderEditBalancesList(){
     const remaining = Math.round((total-used)*100)/100;
     return `<tr>
       <td>${getLeaveTypeLabel(ty)}</td>
-      <td class="mono">${total}</td>
-      <td class="mono">${used}</td>
-      <td class="mono">${remaining}</td>
+      <td class="mono">${escHtml(formatDaysHoursNice(total).text)}</td>
+      <td class="mono">${escHtml(formatDaysHoursNice(used).text)}</td>
+      <td class="mono">${escHtml(formatDaysHoursNice(remaining).text)}</td>
       <td><button class="btn btn-sm btn-outline" onclick="openEditOneBalanceModal('${ty}')">${escHtml(t('c_edit'))}</button></td>
     </tr>`;
   }).join('');
@@ -3952,16 +3958,19 @@ function openEditOneBalanceModal(leaveType){
   const used = b ? Number(b.used_days) : 0;
   editingBalanceType = leaveType;
   document.getElementById('ebTypeLabel').value = getLeaveTypeLabel(leaveType);
-  document.getElementById('ebTotal').value = total;
-  document.getElementById('ebUsed').value = `${used} ${t('eb_used_so_far')}`;
+  { let d = Math.floor(total + 1e-9), hr = Math.round((total - d)*8); if(hr >= 8){ d += 1; hr = 0; }
+    document.getElementById('ebTotalDays').value = d; document.getElementById('ebTotalHours').value = hr; }
+  document.getElementById('ebUsed').value = `${formatDaysHoursNice(used).text} ${t('eb_used_so_far')}`;
   document.getElementById('ebErr').textContent = '';
   openModal('editOneBalanceModal');
 }
 
 async function submitEditOneBalance(){
   const errEl = document.getElementById('ebErr');
-  const total = Number(document.getElementById('ebTotal').value);
-  if(!Number.isFinite(total) || total < 0){ errEl.textContent = t('eb_invalid'); return; }
+  const dd = Number(document.getElementById('ebTotalDays').value || 0), hh = Number(document.getElementById('ebTotalHours').value || 0);
+  if(!Number.isFinite(dd) || !Number.isFinite(hh) || dd < 0 || hh < 0){ errEl.textContent = t('eb_invalid'); return; }
+  if(hh >= 8){ errEl.textContent = t('eb_hours_max'); return; }
+  const total = Math.round((dd + hh/8)*1000)/1000;   // 1 วัน = 8 ชั่วโมง (เก็บเป็นทศนิยมของวัน เช่น 2 วัน 1 ชม. = 2.125)
   if(editingBalanceType==='annual_prev' && total > 3){ errEl.textContent = t('eb_prev_max'); return; }
   try{
     const res = await callApi('update_balance', { employee_id: editingEmployeeId, leave_type: editingBalanceType, total_days: total });
