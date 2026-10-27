@@ -2207,7 +2207,7 @@ const I18N = {
     eb_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
     eb_title:'Leave Balances', eb_th_type:'Type', eb_th_total:'Total', eb_th_used:'Used', eb_th_remaining:'Remaining',
     eb_none:'No balances to show', eb_edit_title:'✏️ Edit Leave Balance', eb_type:'Leave Type', eb_total:'Total Days', eb_used:'Used So Far',
-    eb_invalid:'Please enter a valid number of days', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
+    eb_invalid:'Please enter a valid number of days', ny_unit_d:'d', ny_unit_h:'h', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
     set_notifybalance_title:'Notify employee when admin adjusts their balance',
     set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
@@ -2378,7 +2378,7 @@ const I18N = {
     eb_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
     eb_title:'โควตาวันลา', eb_th_type:'ประเภท', eb_th_total:'รวม', eb_th_used:'ใช้ไปแล้ว', eb_th_remaining:'คงเหลือ',
     eb_none:'ไม่มีโควตาให้แสดง', eb_edit_title:'✏️ แก้ไขโควตาวันลา', eb_type:'ประเภทการลา', eb_total:'จำนวนวันรวม', eb_used:'ใช้ไปแล้ว',
-    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
+    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', ny_unit_d:'วัน', ny_unit_h:'ชม.', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
     set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
     set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
@@ -4289,16 +4289,39 @@ async function loadNextYearPlan(){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// แปลงจำนวนวัน (ทศนิยม) ↔ วัน + ชั่วโมง  (1 วัน = 8 ชั่วโมง) ใช้กับช่องโควตาในหน้านี้
+function nySplit(total){
+  let d = Math.floor(Number(total) + 1e-9), hr = Math.round((Number(total) - d)*8);
+  if(hr >= 8){ d += 1; hr = 0; }
+  return { d, hr };
+}
+// อ่านค่าจากช่อง วัน+ชม. ของเซลล์: คืน null ถ้าว่างทั้งคู่, NaN ถ้ากรอกไม่ถูกต้อง, ไม่เช่นนั้นคืนจำนวนวัน (ทศนิยม)
+function nyRead(td){
+  const ds = td.querySelector('.ny-d').value.trim(), hs = td.querySelector('.ny-h').value.trim();
+  if(ds==='' && hs==='') return null;
+  const d = Number(ds||0), hr = Number(hs||0);
+  if(!Number.isFinite(d) || !Number.isFinite(hr) || d < 0 || hr < 0 || hr >= 8) return NaN;
+  return Math.round((d + hr/8)*1000)/1000;
+}
+function nyWrite(td, total){
+  const s = nySplit(total);
+  td.querySelector('.ny-d').value = s.d; td.querySelector('.ny-h').value = s.hr;
+}
+
 function renderNextYearTable(){
   const body = document.getElementById('nyBody');
   if(!nyState.employees.length){ body.innerHTML = '<tr><td colspan="7" class="empty-msg">—</td></tr>'; return; }
+  const st = "width:54px;padding:6px 6px;border:1.5px solid var(--line);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.84rem";
   body.innerHTML = nyState.employees.map(e=>{
     const search = escAttr(((e.employee_code||'')+' '+(e.name||'')+' '+(e.department||'')).toLowerCase());
     const cells = NY_TYPES.map(tp=>{
       const k = e.id+'|'+tp;
       const v = nyState.plan[k];
-      const ph = nyState.cur[k]!==undefined ? String(nyState.cur[k]) : '';
-      return `<td><input type="number" min="0"${tp==='annual_prev'?' max="3"':''} step="0.5" class="ny-input" data-emp="${e.id}" data-type="${tp}" value="${v!==undefined?v:''}" placeholder="${ph}" style="width:84px;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.84rem"/></td>`;
+      const sv = v!==undefined ? nySplit(v) : null;
+      const sc = nyState.cur[k]!==undefined ? nySplit(nyState.cur[k]) : null;
+      return `<td class="ny-cell" data-emp="${e.id}" data-type="${tp}" style="white-space:nowrap">
+        <input type="number" min="0"${tp==='annual_prev'?' max="3"':''} step="1" class="ny-d" value="${sv?sv.d:''}" placeholder="${sc?sc.d:''}" style="${st}" aria-label="days"/><span class="ny-u">${escHtml(t('ny_unit_d'))}</span>
+        <input type="number" min="0" max="7" step="1" class="ny-h" value="${sv?sv.hr:''}" placeholder="${sc?sc.hr:''}" style="${st}" aria-label="hours"/><span class="ny-u">${escHtml(t('ny_unit_h'))}</span></td>`;
     }).join('');
     return `<tr data-search="${search}"><td class="mono">${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${cells}</tr>`;
   }).join('');
@@ -4313,23 +4336,24 @@ function filterNextYearRows(){
 }
 
 function fillNextYearFromCurrent(){
-  document.querySelectorAll('#nyBody .ny-input').forEach(inp=>{
-    if(inp.value!=='' || inp.dataset.type==='annual_prev') return;   // annual_prev ไม่คัดลอกจากปีนี้ (ใช้ปุ่มคำนวณแยก)
-    const v = nyState.cur[inp.dataset.emp+'|'+inp.dataset.type];
-    if(v!==undefined) inp.value = v;
+  document.querySelectorAll('#nyBody .ny-cell').forEach(td=>{
+    if(td.dataset.type==='annual_prev') return;   // annual_prev ไม่คัดลอกจากปีนี้ (ใช้ปุ่มคำนวณแยก)
+    if(nyRead(td)!==null) return;                 // เติมเฉพาะช่องที่ว่าง
+    const v = nyState.cur[td.dataset.emp+'|'+td.dataset.type];
+    if(v!==undefined) nyWrite(td, v);
   });
 }
 
 // คำนวณ "ลาพักร้อนจากปีที่แล้ว" = min(3, พักร้อนคงเหลือของปีนี้) ให้ทุกคน (admin ไม่อยู่ในรายการ)
 function fillNextYearCarry(){
-  const inputs = [...document.querySelectorAll('#nyBody .ny-input[data-type="annual_prev"]')];
-  if(inputs.some(i=>i.value!=='') && !confirm(t('cf_ny_carry'))) return;
-  inputs.forEach(inp=>{
-    const k = inp.dataset.emp+'|annual';
+  const cells = [...document.querySelectorAll('#nyBody .ny-cell[data-type="annual_prev"]')];
+  if(cells.some(td=>nyRead(td)!==null) && !confirm(t('cf_ny_carry'))) return;
+  cells.forEach(td=>{
+    const k = td.dataset.emp+'|annual';
     const total = nyState.cur[k], used = nyState.curUsed[k] || 0;
-    if(total===undefined){ return; }
-    const rem = Math.max(0, Math.round((total-used)*100)/100);
-    inp.value = Math.min(3, rem);
+    if(total===undefined) return;
+    const rem = Math.max(0, Math.round((total-used)*1000)/1000);
+    nyWrite(td, Math.min(3, rem));
   });
   showToast(t('msg_ny_carry_done'));
 }
@@ -4337,13 +4361,15 @@ function fillNextYearCarry(){
 // คืนค่า true ถ้าบันทึกสำเร็จ (หรือไม่มีอะไรเปลี่ยน)
 async function saveNextYearPlan(silent){
   const rows = [];
-  document.querySelectorAll('#nyBody .ny-input').forEach(inp=>{
-    const k = inp.dataset.emp+'|'+inp.dataset.type;
+  for(const td of document.querySelectorAll('#nyBody .ny-cell')){
+    const k = td.dataset.emp+'|'+td.dataset.type;
     const old = nyState.plan[k];
-    const raw = inp.value.trim();
-    if(raw===''){ if(old!==undefined) rows.push({ employee_id: inp.dataset.emp, leave_type: inp.dataset.type, total_days: null }); }
-    else if(Number(raw)!==old){ rows.push({ employee_id: inp.dataset.emp, leave_type: inp.dataset.type, total_days: Number(raw) }); }
-  });
+    const val = nyRead(td);
+    if(Number.isNaN(val)){ showToast(t('eb_invalid'),'err'); return false; }
+    if(val!==null && td.dataset.type==='annual_prev' && val > 3){ showToast(t('eb_prev_max'),'err'); return false; }
+    if(val===null){ if(old!==undefined) rows.push({ employee_id: td.dataset.emp, leave_type: td.dataset.type, total_days: null }); }
+    else if(val!==old){ rows.push({ employee_id: td.dataset.emp, leave_type: td.dataset.type, total_days: val }); }
+  }
   if(!rows.length){ if(!silent) showToast(t('msg_ny_nochange')); return true; }
   try{
     await withLoading(()=>callApi('save_next_year_quotas', { rows }), t('loading_ny'));
