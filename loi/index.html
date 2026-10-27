@@ -402,6 +402,8 @@ tr:hover td{background:var(--cream)}
   .ticket{flex-direction:row}
   .modal.wide{width:100%}
 }
+#nyTable.ny-nohours .ny-h,#nyTable.ny-nohours .ny-hu{display:none}
+.ny-hours-toggle{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.88rem}
 </style>
 </head>
 <body>
@@ -973,11 +975,12 @@ tr:hover td{background:var(--cream)}
           <button class="btn btn-outline" onclick="fillNextYearCarry()" data-i18n="btn_ny_carry">Calculate carry-over from remaining annual</button>
           <button class="btn btn-primary" onclick="saveNextYearPlan()" data-i18n="btn_ny_save">💾 Save quotas</button>
         </div>
+        <div class="ny-hours-toggle"><label class="toggle-switch"><input type="checkbox" id="nyShowHours" onchange="toggleNyHours(this.checked)"/><span class="toggle-track"></span></label><span data-i18n="ny_show_hours">Show hours column (for partial days)</span></div>
         <p class="hint" style="margin-top:10px" data-i18n="hint_ny_table">Grey numbers show this year's quota. Leave a cell empty to keep that employee's quota unchanged.</p>
       </div>
 
       <div class="card" style="padding:0">
-        <div class="table-wrap" style="border:none"><table>
+        <div class="table-wrap" style="border:none"><table id="nyTable" class="ny-nohours">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
             <th data-i18n="ny_col_annual">Annual</th><th data-i18n="ny_col_sick">Sick</th><th data-i18n="ny_col_personal">Personal</th><th data-i18n="ny_col_prevannual">Annual from last year (max 3)</th>
@@ -2207,7 +2210,7 @@ const I18N = {
     eb_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
     eb_title:'Leave Balances', eb_th_type:'Type', eb_th_total:'Total', eb_th_used:'Used', eb_th_remaining:'Remaining',
     eb_none:'No balances to show', eb_edit_title:'✏️ Edit Leave Balance', eb_type:'Leave Type', eb_total:'Total Days', eb_used:'Used So Far',
-    eb_invalid:'Please enter a valid number of days', ny_unit_d:'d', ny_unit_h:'h', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
+    eb_invalid:'Please enter a valid number of days', ny_unit_d:'d', ny_unit_h:'h', ny_show_hours:'Show hours column (for partial days)', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
     set_notifybalance_title:'Notify employee when admin adjusts their balance',
     set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
@@ -2378,7 +2381,7 @@ const I18N = {
     eb_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
     eb_title:'โควตาวันลา', eb_th_type:'ประเภท', eb_th_total:'รวม', eb_th_used:'ใช้ไปแล้ว', eb_th_remaining:'คงเหลือ',
     eb_none:'ไม่มีโควตาให้แสดง', eb_edit_title:'✏️ แก้ไขโควตาวันลา', eb_type:'ประเภทการลา', eb_total:'จำนวนวันรวม', eb_used:'ใช้ไปแล้ว',
-    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', ny_unit_d:'วัน', ny_unit_h:'ชม.', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
+    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', ny_unit_d:'วัน', ny_unit_h:'ชม.', ny_show_hours:'แสดงช่องชั่วโมง (สำหรับโควตาที่มีเศษวัน)', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
     set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
     set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
@@ -4308,6 +4311,9 @@ function nyWrite(td, total){
   td.querySelector('.ny-d').value = s.d; td.querySelector('.ny-h').value = s.hr;
 }
 
+function toggleNyHours(on){
+  const t_ = document.getElementById('nyTable'); if(t_) t_.classList.toggle('ny-nohours', !on);
+}
 function renderNextYearTable(){
   const body = document.getElementById('nyBody');
   if(!nyState.employees.length){ body.innerHTML = '<tr><td colspan="7" class="empty-msg">—</td></tr>'; return; }
@@ -4321,10 +4327,14 @@ function renderNextYearTable(){
       const sc = nyState.cur[k]!==undefined ? nySplit(nyState.cur[k]) : null;
       return `<td class="ny-cell" data-emp="${e.id}" data-type="${tp}" style="white-space:nowrap">
         <input type="number" min="0"${tp==='annual_prev'?' max="3"':''} step="1" class="ny-d" value="${sv?sv.d:''}" placeholder="${sc?sc.d:''}" style="${st}" aria-label="days"/><span class="ny-u">${escHtml(t('ny_unit_d'))}</span>
-        <input type="number" min="0" max="7" step="1" class="ny-h" value="${sv?sv.hr:''}" placeholder="${sc?sc.hr:''}" style="${st}" aria-label="hours"/><span class="ny-u">${escHtml(t('ny_unit_h'))}</span></td>`;
+        <input type="number" min="0" max="7" step="1" class="ny-h" value="${sv?sv.hr:''}" placeholder="${sc?sc.hr:''}" style="${st}" aria-label="hours"/><span class="ny-u ny-hu">${escHtml(t('ny_unit_h'))}</span></td>`;
     }).join('');
     return `<tr data-search="${search}"><td class="mono">${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${cells}</tr>`;
   }).join('');
+  // ถ้ามีค่าที่มีเศษชั่วโมงอยู่แล้ว ให้เปิดช่องชั่วโมงอัตโนมัติ (ไม่ซ่อนข้อมูลที่ไม่ใช่วันเต็ม)
+  const hasHours = Object.values(nyState.plan).some(v=>nySplit(v).hr>0);
+  const sw = document.getElementById('nyShowHours');
+  if(hasHours && sw && !sw.checked){ sw.checked = true; toggleNyHours(true); }
   filterNextYearRows();
 }
 
