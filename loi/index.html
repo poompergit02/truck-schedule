@@ -229,7 +229,7 @@ main{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
 }
 .ticket-stub::before{top:-7px}
 .ticket-stub::after{bottom:-7px}
-.ticket-stub .num{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.7rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2)}
+.ticket-stub .num{font-family:'Inter','Noto Sans Thai',sans-serif;font-variant-numeric:lining-nums tabular-nums;font-weight:700;font-size:1.7rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2)}
 .ticket-stub .num.compact{font-size:.9rem;font-weight:600;line-height:1.3;text-align:center;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
 .ticket-stub .lbl{font-size:.64rem;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 
@@ -404,6 +404,13 @@ tr:hover td{background:var(--cream)}
 }
 #nyTable.ny-nohours .ny-h,#nyTable.ny-nohours .ny-hu{display:none}
 .ny-hours-toggle{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.88rem}
+#sendDocPicker.sd-pick,.sd-pick{max-height:240px;overflow:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--white);margin-top:6px}
+.sd-row{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;font-size:.88rem;border-bottom:1px solid var(--line)}
+.sd-row:last-child{border-bottom:none}
+.sd-row:hover{background:var(--cream)}
+.sd-row input{width:auto;margin:0}
+.sd-row .sd-code{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);font-size:.8rem}
+.sd-row .sd-dept{color:var(--text-dim);font-size:.78rem;margin-left:auto}
 </style>
 </head>
 <body>
@@ -846,10 +853,15 @@ tr:hover td{background:var(--cream)}
         <h3 data-i18n="h3_senddoc_new">Add a Document</h3>
         <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_new">Each recipient gets their own file — fill this in and click "+ Add to list" as many times as you need, then send the whole list together.</p>
         <div class="form-grid">
-          <div class="field">
-            <label data-i18n="lbl_emp_code">Employee code</label>
-            <input type="text" id="sendDocEmpCode" placeholder="e.g. 2410" data-i18n-ph="ph_emp_code" oninput="lookupSendDocEmployee()"/>
-            <p class="hint" id="sendDocEmpName" style="margin-top:4px"></p>
+          <div class="field" style="grid-column:1/-1">
+            <label data-i18n="lbl_doc_recipients">Recipients (tick one or more)</label>
+            <input type="text" id="sendDocSearch" oninput="renderSendDocPicker()" data-i18n-ph="ph_doc_search" placeholder="Search name or code"/>
+            <div class="sd-pick" id="sendDocPicker"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+              <button type="button" class="btn btn-sm btn-outline" onclick="sendDocSelectVisible()" data-i18n="btn_doc_select_all">Select all shown</button>
+              <button type="button" class="btn btn-sm btn-outline" onclick="sendDocClearSelection()" data-i18n="btn_doc_clear">Clear</button>
+              <span class="hint" id="sendDocSelCount"></span>
+            </div>
           </div>
           <div class="field">
             <label data-i18n="lbl_doc_label">Label (optional)</label>
@@ -1465,6 +1477,7 @@ const MSG_TH_TO_EN_EXACT = {
   'ลาประเภทนี้ไม่สามารถลารายชั่วโมงได้':'This leave type cannot be taken by the hour',
 };
 const MSG_TH_TO_EN_RULES = [
+  [/^คุณมีลาพักร้อนจากปีที่แล้วเหลือ (.*) วัน กรุณาใช้ให้หมดก่อนจึงจะลาพักร้อนปกติได้$/, 'You still have $1 day(s) of annual leave from last year — please use it up before requesting normal annual leave'],
   [/^ลาพักร้อนจากปีที่แล้วใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น \(หมดอายุวันที่ 1 เมษายน\)$/, 'Annual leave from last year can only be used until 31 March $1 (it expires on 1 April)'],
   [/^วันลาพักร้อนจากปีที่แล้วของคุณเหลือ (.*) วัน ไม่พอสำหรับคำขอนี้$/, 'Your annual leave from last year has only $1 day(s) left — not enough for this request'],
   [/^ลาพักร้อนจากปีที่แล้ว(?:ตั้ง|ยกยอด)ได้สูงสุด (\d+) วัน$/, 'Annual leave from last year can be at most $1 days'],
@@ -1810,7 +1823,7 @@ function showPage(id, el){
   if(id==='next_year') loadNextYearPlan();
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); loadBgPicker(); }
   if(id==='special_calendar') loadSpecialCalendar();
-  if(id==='send_document'){ renderSendDocQueue(); loadSendDocSchedules(); }
+  if(id==='send_document'){ initSendDocPicker(); renderSendDocQueue(); loadSendDocSchedules(); }
 }
 
 // ── MY LEAVE (balance only — history moved to Approvals/Reports tabs) ──
@@ -1865,6 +1878,17 @@ function refreshPrevAnnualOptions(balances){
     o.hidden = !show; o.disabled = !show;
     if(!show && o.parentElement && o.parentElement.value==='annual_prev') o.parentElement.value = 'annual';
   });
+  // ตั้งค่า "ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน": ปิดตัวเลือกลาพักร้อนปกติในฟอร์มขอลาของตัวเอง (backend ตรวจซ้ำอีกชั้น)
+  const sel = document.getElementById('reqType');
+  if(sel){
+    const annualOpt = sel.querySelector('option[value="annual"]');
+    const prevOpt = sel.querySelector('option[value="annual_prev"]');
+    const must = on && appSettingsCache['annual_prev_first']==='true' && remaining>0 && inTime && !(currentUser && currentUser.bypass_conditions);
+    if(annualOpt){
+      annualOpt.disabled = must;
+      if(must && sel.value==='annual' && prevOpt && !prevOpt.disabled){ sel.value = 'annual_prev'; if(typeof onLeaveTypeChange==='function') onLeaveTypeChange(); }
+    }
+  }
 }
 
 // ── MY LEAVE CALENDAR (personal, colored by leave type) ──
@@ -2266,7 +2290,7 @@ const I18N = {
     btn_send_document:'📤 Send Now',
     h3_senddoc_cleanup:'📤 Documents Sent by Admin', hint_senddoc_cleanup:'Documents sent via "Send Document". Tick any to delete, or delete one at a time.',
     h3_mydocs:'📄 Documents from the Company', btn_manual:'Guide', doc_untitled:'Document', c_view:'View',
-    doc_emp_not_found:'Employee not found for that code', doc_no_file:'Please choose a file', doc_bad_type:'File must be an image or PDF',
+    doc_emp_not_found:'No matching employee', lbl_doc_recipients:'Recipients (tick one or more)', ph_doc_search:'Search name or code', btn_doc_select_all:'Select all shown', btn_doc_clear:'Clear', doc_selected_n:'{n} selected', doc_pick_none:'Please tick at least one recipient', doc_people_unit:'people', doc_no_file:'Please choose a file', doc_bad_type:'File must be an image or PDF',
     doc_bad_day:'Day of month must be between 1 and 31', doc_sending:'Sending...', doc_sent_ok:'✅ Document sent',
     doc_scheduled_ok:'✅ Monthly schedule saved', doc_no_schedules:'No monthly schedules yet',
     doc_confirm_cancel_schedule:'Cancel this monthly schedule? Already-sent documents are not affected.', th_date:'Date',
@@ -2276,7 +2300,7 @@ const I18N = {
     btn_send_now:'Send Now', doc_no_recipients:'Please add at least one recipient', doc_no_date:'Please choose a send date',
     doc_confirm_send_now:'Send this document right now instead of waiting for its scheduled date?',
     hint_mydocs:'Documents sent to you by Admin. They stay here until Admin removes them.', doc_none_received:'No documents yet.',
-    hint_senddoc_new:'Each recipient gets their own file — fill this in and click "+ Add to list" as many times as you need, then send the whole list together.',
+    hint_senddoc_new:'Tick the recipients (one or many), choose the file and click "+ Add to list". Everyone ticked gets the same file. Repeat for different files, then send the whole list together.',
     btn_add_to_list:'+ Add to list', h3_senddoc_queue:'📋 Ready to Send',
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
@@ -2288,6 +2312,7 @@ const I18N = {
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
     leave_personal_unpaid:'Unpaid Personal Leave', leave_wfh:'🏠 Work From Home', leave_annual_prev:'Annual leave from last year',
+    set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used until 31 March only and disappears on 1 April.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the filled “Annual from last year” cells with the calculated values?', msg_ny_carry_done:'✅ Calculated (max 3 days) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
     lbl_unit_half:'Half day (morning / afternoon)', lbl_half_session:'Session', opt_half_am:'Morning (3.5 hrs)', opt_half_pm:'Afternoon (4.5 hrs)',
@@ -2437,7 +2462,7 @@ const I18N = {
     btn_send_document:'📤 ส่งทันที',
     h3_senddoc_cleanup:'📤 เอกสารที่ Admin ส่งไป', hint_senddoc_cleanup:'เอกสารที่ส่งผ่านเมนู "ส่งไฟล์เอกสาร" ติ๊กเพื่อลบทีละหลายไฟล์ หรือลบทีละไฟล์ก็ได้',
     h3_mydocs:'📄 เอกสารจากบริษัท', btn_manual:'คู่มือ', doc_untitled:'เอกสาร', c_view:'ดู',
-    doc_emp_not_found:'ไม่พบพนักงานรหัสนี้', doc_no_file:'กรุณาเลือกไฟล์', doc_bad_type:'ไฟล์ต้องเป็นรูปภาพหรือ PDF เท่านั้น',
+    doc_emp_not_found:'ไม่พบพนักงานที่ตรงกัน', lbl_doc_recipients:'ผู้รับ (ติ๊กเลือกได้หลายคน)', ph_doc_search:'ค้นหาชื่อหรือรหัสพนักงาน', btn_doc_select_all:'เลือกทั้งหมดที่แสดง', btn_doc_clear:'ล้างที่เลือก', doc_selected_n:'เลือกแล้ว {n} คน', doc_pick_none:'กรุณาติ๊กเลือกผู้รับอย่างน้อย 1 คน', doc_people_unit:'คน', doc_no_file:'กรุณาเลือกไฟล์', doc_bad_type:'ไฟล์ต้องเป็นรูปภาพหรือ PDF เท่านั้น',
     doc_bad_day:'วันที่ต้องอยู่ระหว่าง 1-31', doc_sending:'กำลังส่ง...', doc_sent_ok:'✅ ส่งเอกสารแล้ว',
     doc_scheduled_ok:'✅ บันทึกกำหนดการส่งซ้ำแล้ว', doc_no_schedules:'ยังไม่มีกำหนดการส่งซ้ำ',
     doc_confirm_cancel_schedule:'ยกเลิกกำหนดการส่งซ้ำนี้? เอกสารที่ส่งไปแล้วจะไม่ได้รับผลกระทบ', th_date:'วันที่',
@@ -2447,7 +2472,7 @@ const I18N = {
     btn_send_now:'ส่งเลย', doc_no_recipients:'กรุณาเพิ่มผู้รับอย่างน้อย 1 คน', doc_no_date:'กรุณาเลือกวันที่จะส่ง',
     doc_confirm_send_now:'ส่งเอกสารนี้ทันทีเลยไหม ไม่ต้องรอถึงวันที่ตั้งไว้?',
     hint_mydocs:'เอกสารที่ Admin ส่งให้คุณ จะอยู่ที่นี่จนกว่า Admin จะลบออก', doc_none_received:'ยังไม่มีเอกสาร',
-    hint_senddoc_new:'แต่ละคนได้ไฟล์ของตัวเอง — กรอกแล้วกด "+ เพิ่มลง list" ได้เรื่อยๆ ตามจำนวนคน แล้วค่อยส่งทั้ง list พร้อมกัน',
+    hint_senddoc_new:'ติ๊กเลือกผู้รับ (หนึ่งคนหรือหลายคน) เลือกไฟล์ แล้วกด "+ เพิ่มลงรายการ" ทุกคนที่ติ๊กจะได้ไฟล์เดียวกัน ถ้ามีไฟล์อื่นให้เพิ่มรอบใหม่ แล้วค่อยส่งทั้งรายการพร้อมกัน',
     btn_add_to_list:'+ เพิ่มลง list', h3_senddoc_queue:'📋 พร้อมส่ง',
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
@@ -2459,6 +2484,7 @@ const I18N = {
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
     leave_personal_unpaid:'ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'🏠 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'ลาพักร้อนจากปีที่แล้ว',
+    set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึง 31 มีนาคมเท่านั้น และจะหายไปในวันที่ 1 เมษายน',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ที่กรอกไว้ด้วยค่าที่คำนวณหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (สูงสุด 3 วัน) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
     lbl_unit_half:'ครึ่งวัน (เช้า / บ่าย)', lbl_half_session:'ช่วงเวลา', opt_half_am:'เช้า (3.5 ชม.)', opt_half_pm:'บ่าย (4.5 ชม.)',
@@ -2856,36 +2882,47 @@ async function viewMyDocument(id){
 }
 
 // ── ADMIN: SEND DOCUMENT — เพิ่มทีละคนลง list (คนละไฟล์ คนละชื่อเอกสารได้) แล้วค่อยส่งทั้ง list พร้อมกัน ──
-let sendDocQueueId = null;
-function lookupSendDocEmployee(){
-  const code = document.getElementById('sendDocEmpCode').value.trim();
-  const nameEl = document.getElementById('sendDocEmpName');
-  sendDocQueueId = null;
-  if(!code){ nameEl.textContent=''; return; }
-  const emp = employeesCache.find(e=>e.employee_code===code);
-  if(emp){ sendDocQueueId = emp.id; nameEl.textContent = `✓ ${emp.name}`; }
-  else { nameEl.textContent = t('doc_emp_not_found'); }
+const sendDocSelected = new Set();   // id พนักงานที่ติ๊กไว้ในช่อง "ผู้รับ"
+async function initSendDocPicker(){
+  if(!employeesCache.length){ try{ await loadEmployees(); }catch(e){} }
+  renderSendDocPicker();
 }
+function sendDocVisibleEmployees(){
+  const q = (document.getElementById('sendDocSearch').value||'').trim().toLowerCase();
+  return employeesCache.filter(e=>e.active!==false && (!q || ((e.name||'')+' '+(e.employee_code||'')+' '+(e.department||'')).toLowerCase().includes(q)));
+}
+function renderSendDocPicker(){
+  const box = document.getElementById('sendDocPicker'); if(!box) return;
+  const list = sendDocVisibleEmployees();
+  box.innerHTML = list.length ? list.map(e=>`
+    <label class="sd-row"><input type="checkbox" ${sendDocSelected.has(e.id)?'checked':''} onchange="toggleSendDocEmp('${e.id}', this.checked)"/>
+      <span>${escHtml(e.name||'')}</span><span class="sd-code">(${escHtml(e.employee_code||'')})</span>
+      <span class="sd-dept">${escHtml(e.department||'')}</span></label>`).join('') : `<div class="empty-msg">${escHtml(t('doc_emp_not_found'))}</div>`;
+  updateSendDocCount();
+}
+function toggleSendDocEmp(id, on){ if(on) sendDocSelected.add(id); else sendDocSelected.delete(id); updateSendDocCount(); }
+function sendDocSelectVisible(){ sendDocVisibleEmployees().forEach(e=>sendDocSelected.add(e.id)); renderSendDocPicker(); }
+function sendDocClearSelection(){ sendDocSelected.clear(); renderSendDocPicker(); }
+function updateSendDocCount(){ const el = document.getElementById('sendDocSelCount'); if(el) el.textContent = t('doc_selected_n').replace('{n}', sendDocSelected.size); }
 
-let sendDocQueue = []; // [{localId, employeeId, code, name, label, file}]
+let sendDocQueue = []; // [{localId, employeeIds:[], people:[{code,name}], label, file}]
 async function addSendDocQueueItem(){
   const errEl = document.getElementById('sendDocErr');
   errEl.textContent = '';
   if(!employeesCache.length) await loadEmployees();
-  lookupSendDocEmployee();
-  if(!sendDocQueueId){ errEl.textContent = t('doc_emp_not_found'); return; }
-  const emp = employeesCache.find(e=>e.id===sendDocQueueId);
+  if(!sendDocSelected.size){ errEl.textContent = t('doc_pick_none'); return; }
   const fileInput = document.getElementById('sendDocFile');
   const file = fileInput.files && fileInput.files[0];
   if(!file){ errEl.textContent = t('doc_no_file'); return; }
   if(!file.type.startsWith('image/') && file.type!=='application/pdf'){ errEl.textContent = t('doc_bad_type'); return; }
   const label = document.getElementById('sendDocLabel').value.trim();
-  sendDocQueue.push({ localId: 'q'+Date.now()+Math.random(), employeeId: emp.id, code: emp.employee_code, name: emp.name, label, file });
-  document.getElementById('sendDocEmpCode').value='';
-  document.getElementById('sendDocEmpName').textContent='';
+  const emps = employeesCache.filter(e=>sendDocSelected.has(e.id));
+  sendDocQueue.push({ localId: 'q'+Date.now()+Math.random(), employeeIds: emps.map(e=>e.id), people: emps.map(e=>({ code:e.employee_code, name:e.name })), label, file });
+  sendDocSelected.clear();
+  document.getElementById('sendDocSearch').value='';
   document.getElementById('sendDocLabel').value='';
   fileInput.value='';
-  sendDocQueueId = null;
+  renderSendDocPicker();
   renderSendDocQueue();
 }
 function removeSendDocQueueItem(localId){
@@ -2899,8 +2936,8 @@ function renderSendDocQueue(){
     <div class="doc-row">
       <div class="doc-ico">${q.file.type==='application/pdf' ? '📄' : '🖼️'}</div>
       <div class="doc-info">
-        <div class="doc-label">${escHtml(q.name)} (${escHtml(q.code)}) — ${escHtml(q.label || q.file.name)}</div>
-        <div class="doc-meta">${escHtml(q.file.name)}</div>
+        <div class="doc-label">${escHtml(q.label || q.file.name)} → ${q.people.length} ${escHtml(t('doc_people_unit'))}</div>
+        <div class="doc-meta">${escHtml(q.people.slice(0,4).map(x=>x.name+' ('+x.code+')').join(', '))}${q.people.length>4?' …+'+(q.people.length-4):''} · ${escHtml(q.file.name)}</div>
       </div>
       <button class="btn btn-sm btn-outline" onclick="removeSendDocQueueItem('${q.localId}')">✕ ${escHtml(t('c_delete'))}</button>
     </div>`).join('');
@@ -2910,7 +2947,7 @@ async function submitSendDocument(schedule){
   const errEl = document.getElementById('sendDocErr');
   errEl.textContent = '';
   // ถ้ายังกรอกแถวค้างไว้ในฟอร์มแต่ลืมกด "+ Add to list" ให้เติมเข้า list ให้อัตโนมัติก่อนส่ง
-  if(document.getElementById('sendDocEmpCode').value.trim() || (document.getElementById('sendDocFile').files||[]).length){
+  if(sendDocSelected.size || (document.getElementById('sendDocFile').files||[]).length){
     await addSendDocQueueItem();
     if(errEl.textContent) return; // เติมอัตโนมัติไม่สำเร็จ (เช่น หารหัสไม่เจอ) ให้หยุดตรงนี้
   }
@@ -2921,8 +2958,8 @@ async function submitSendDocument(schedule){
     await withLoading(async ()=>{
       for(const q of sendDocQueue){
         const dataUrl = q.file.type==='application/pdf' ? await readFileAsDataUrl(q.file) : await compressImageFile(q.file);
-        if(schedule) await callApi('admin_schedule_document', { employee_ids: [q.employeeId], file_base64: dataUrl, original_name: q.file.name, label: q.label, send_date: sendDate });
-        else await callApi('admin_send_document', { employee_ids: [q.employeeId], file_base64: dataUrl, original_name: q.file.name, label: q.label });
+        if(schedule) await callApi('admin_schedule_document', { employee_ids: q.employeeIds, file_base64: dataUrl, original_name: q.file.name, label: q.label, send_date: sendDate });
+        else await callApi('admin_send_document', { employee_ids: q.employeeIds, file_base64: dataUrl, original_name: q.file.name, label: q.label });
       }
     }, t('doc_sending'));
     showToast(schedule ? t('doc_scheduled_ok') : t('doc_sent_ok'));
@@ -4242,6 +4279,7 @@ const SETTING_DEFS = [
   { key: 'wfh_requires_photo', titleKey: 'set_wfhphoto_title', descKey: 'set_wfhphoto_desc' },
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
+  { key: 'annual_prev_first', titleKey: 'set_prevfirst_title', descKey: 'set_prevfirst_desc' },
 ];
 
 async function loadSettings(){
