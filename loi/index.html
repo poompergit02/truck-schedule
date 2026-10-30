@@ -1857,7 +1857,7 @@ function refreshPrevAnnualOptions(balances){
   const b = (balances||[]).find(x=>x.leave_type==='annual_prev');
   const remaining = b ? Number(b.total_days)-Number(b.used_days) : 0;
   const todayIso = new Date().toISOString().slice(0,10);
-  const inTime = todayIso <= `${new Date().getFullYear()}-03-31`;
+  const inTime = todayIso <= `${new Date().getFullYear()}-03-31` || !!(currentUser && currentUser.bypass_conditions);   // Emergency ข้ามเงื่อนไขวันหมดอายุ
   document.querySelectorAll('option[value="annual_prev"]').forEach(o=>{
     const own = o.parentElement && o.parentElement.id==='reqType';
     const show = on && (!own || (remaining>0 && inTime));
