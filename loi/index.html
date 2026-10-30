@@ -1817,6 +1817,7 @@ function showPage(id, el){
 async function loadMyLeave(){
   try{
     const data = await callApi('get_my_data');
+    if(data.employee && currentUser) currentUser.bypass_conditions = !!data.employee.bypass_conditions;   // ข้อมูลตอนล็อกอินไม่มีฟิลด์นี้ → ดึงจาก get_my_data
     renderBalances(data.balances);
     myLeaveRequestsCache = data.requests || [];
     await fetchHolidaysCache();
