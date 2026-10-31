@@ -2623,6 +2623,7 @@ function updateDateConfirm(inputId, confirmId){
   const val = document.getElementById(inputId).value;
   const el = document.getElementById(confirmId);
   el.textContent = val ? `📅 ${formatDMY(val)}` : '';
+  if(['reqStart','reqEnd','reqHourDate','reqHalfDate'].includes(inputId)) checkAttachmentRequirement();   // ช่องแนบใบรับรองแพทย์/รูป ขึ้นตามวันที่ที่เลือก
 }
 
 function formatDuration(r){
@@ -2721,8 +2722,15 @@ function checkAttachmentRequirement(){
     wrap.style.display='none';
     return;
   }
-  const dow = new Date(dateVal+'T00:00:00Z').getUTCDay(); // 0=Sun 1=Mon 5=Fri
-  wrap.style.display = (dow===1 || dow===5) ? 'block' : 'none';
+  // ลารายวัน: ตรวจทุกวันตั้งแต่วันเริ่มถึงวันสิ้นสุด (เช่น พฤ–ศ มีวันศุกร์ → ต้องแนบ) / ลาครึ่งวัน-รายชั่วโมง: ตรวจวันเดียว
+  const endVal = unit==='day' ? (document.getElementById('reqEnd').value || dateVal) : dateVal;
+  let need = false;
+  const sd = new Date(dateVal+'T00:00:00Z'), ed = new Date(endVal+'T00:00:00Z');
+  for(let d = new Date(sd), i = 0; d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){
+    const w = d.getUTCDay(); // 0=Sun 1=Mon 5=Fri
+    if(w===1 || w===5){ need = true; break; }
+  }
+  wrap.style.display = need ? 'block' : 'none';
 }
 
 function readFileAsDataUrl(file){
