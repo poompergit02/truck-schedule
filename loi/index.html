@@ -191,7 +191,8 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .lp-count{font-family:'IBM Plex Mono',monospace;font-size:.82rem;text-align:right;font-weight:600;color:var(--plum-700)}
 @media(max-width:560px){.lp-stats{grid-template-columns:1fr}.lp-row{grid-template-columns:100px 1fr 34px}}
 /* ── special calendar bar chart ── */
-.sc-chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding:18px 4px 0;border-bottom:1px solid var(--line)}
+.sc-chart{display:block;width:100%;max-width:100%;overflow:hidden;padding:4px 0 0;border-bottom:1px solid var(--line)}
+.sc-chart svg{display:block;max-width:100%;height:auto}
 .sc-bar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
 .sc-bar-val{font-size:.62rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;height:14px;line-height:14px}
 .sc-bar{width:100%;max-width:26px;background:var(--plum-600);border-radius:4px 4px 0 0;min-height:0;transition:height .25s}
@@ -309,6 +310,7 @@ tr:hover td{background:var(--cream)}
 .cal-dot-priesthood{background:#C9A227}
 .cal-dot-personal_unpaid{background:#E58F2A}
 .cal-dot-annual_prev{background:#8B5CF6}
+.cal-dot-annual_urgent{background:#DC2626}
 .cal-dot-wfh{background:#6366F1}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
@@ -403,6 +405,17 @@ tr:hover td{background:var(--cream)}
   .modal.wide{width:100%}
 }
 #nyTable.ny-nohours .ny-h,#nyTable.ny-nohours .ny-hu{display:none}
+.nyq-neg{color:#DC2626;font-weight:700}
+.nyq-sub{color:#9ca3af;font-size:.74rem}
+.nyq-months{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.nyq-months label{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px solid var(--line);border-radius:999px;font-size:.82rem;cursor:pointer}
+.nyq-months input:checked + span{font-weight:700}
+.ny-mode{display:flex;flex-direction:column;gap:6px;margin:10px 0;font-size:.88rem}
+.ny-mode label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.ticket-nextyear-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#111827;color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+.next-year-block{margin-top:18px;padding-top:14px;border-top:2px dashed var(--line)}
+.next-year-block h3{margin:0 0 4px;font-size:1rem}
+.ticket-stub .num.neg{color:#DC2626}
 .ny-hours-toggle{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.88rem}
 #sendDocPicker.sd-pick,.sd-pick{max-height:240px;overflow:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--white);margin-top:6px}
 .sd-row{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;font-size:.88rem;border-bottom:1px solid var(--line)}
@@ -477,6 +490,7 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub" data-i18n="pg_myleave_sub">View your leave balance and submit new requests</div>
 
       <div class="balance-row" id="balanceRow"></div>
+      <div class="next-year-block" id="nextYearBlock" style="display:none"></div>
 
       <div class="card">
         <h3 data-i18n="h3_newrequest">➕ New Leave Request</h3>
@@ -486,6 +500,7 @@ tr:hover td{background:var(--cream)}
             <select id="reqType" onchange="onLeaveTypeChange()">
               <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
               <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+              <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
               <option value="sick" data-i18n="leave_sick">Sick Leave</option>
               <option value="personal" data-i18n="leave_personal">Personal Leave</option>
               <option value="other" data-i18n="leave_other">Other</option>
@@ -967,11 +982,35 @@ tr:hover td{background:var(--cream)}
       <div class="section-title" data-i18n="pg_ny_title">🗓️ Next Year Planning</div>
       <div class="section-sub" data-i18n="pg_ny_sub">Prepare next year's leave quotas now. Employees are loaded automatically; the quotas below replace the live quotas on the date you choose.</div>
 
+      <div class="card" id="nyqCard">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+          <h3 style="margin:0"><span data-i18n="h3_nyq">📊 Leave quotas for year</span> <select id="nyqYear" class="exp-select" onchange="loadYearQuotas()"></select></h3>
+          <input type="text" id="nyqSearch" oninput="renderYearQuotas()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:180px;max-width:320px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
+        </div>
+        <div class="ny-hours-toggle"><label class="toggle-switch"><input type="checkbox" id="nyqShowHours" onchange="renderYearQuotas()"/><span class="toggle-track"></span></label><span data-i18n="ny_show_hours">Show hours column (for partial days)</span></div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+          <div class="ny-hours-toggle" style="margin-top:0"><label class="toggle-switch"><input type="checkbox" id="nyqVisible" onchange="saveNyqVisibility()"/><span class="toggle-track"></span></label><b data-i18n="nyq_visible">Show next year's quotas to employees</b></div>
+          <p class="hint" style="margin:6px 0 0" data-i18n="nyq_visible_hint">Employees see next year's quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.</p>
+          <div class="nyq-months" id="nyqMonths"></div>
+        </div>
+        <div class="table-wrap" style="border:none;margin-top:10px"><table id="nyqTable">
+          <thead><tr>
+            <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
+            <th data-i18n="ny_col_annual">Annual</th><th data-i18n="ny_col_sick">Sick</th><th data-i18n="ny_col_personal">Personal</th><th data-i18n="ny_col_prevannual">Annual from last year (max 3)</th>
+          </tr></thead>
+          <tbody id="nyqBody"></tbody>
+        </table></div>
+      </div>
+
       <div class="card">
         <h3 data-i18n="h3_ny_transfer">🔄 Transfer to live quotas</h3>
         <p class="hint" data-i18n="hint_ny_transfer">At 00:01 (Thai time) on the effective date, the quotas below replace the employees' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.</p>
         <div class="form-grid">
           <div class="field"><label data-i18n="lbl_ny_date">Effective date</label><input type="date" id="nyEffectiveDate"/></div>
+        </div>
+        <div class="ny-mode">
+          <label><input type="radio" name="nyMode" value="replace" checked/><span data-i18n="ny_mode_replace">Replace — the prepared quota overwrites the live quota</span></label>
+          <label><input type="radio" name="nyMode" value="offset"/><span data-i18n="ny_mode_offset">Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)</span></label>
         </div>
         <div id="nyTransferStatus" style="margin:12px 0;font-size:.86rem"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1142,6 +1181,7 @@ tr:hover td{background:var(--cream)}
         <select id="erType">
           <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
           <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+          <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
           <option value="sick" data-i18n="leave_sick">Sick Leave</option>
           <option value="personal" data-i18n="leave_personal">Personal Leave</option>
           <option value="other" data-i18n="leave_other">Other</option>
@@ -1241,6 +1281,7 @@ tr:hover td{background:var(--cream)}
         <select id="emrType">
           <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
           <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+          <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
           <option value="sick" data-i18n="leave_sick">Sick Leave</option>
           <option value="personal" data-i18n="leave_personal">Personal Leave</option>
           <option value="other" data-i18n="leave_other">Other</option>
@@ -1343,7 +1384,7 @@ const API_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co/functions/v1/bright-en
 const SUPABASE_ANON_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
 
 const LEAVE_TYPE_LABEL = {
-  annual:'Annual / Vacation', annual_prev:'Annual leave from last year', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
+  annual:'Annual / Vacation', annual_prev:'Annual leave from last year', annual_urgent:'🚨 Emergency Annual Leave', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
   personal_unpaid:'Unpaid Personal Leave', wfh:'🏠 Work From Home',
 };
@@ -1461,6 +1502,8 @@ const MSG_TH_TO_EN_EXACT = {
   'ไม่มีข้อมูลพนักงานให้ import':'No employee data to import',
   'ข้อมูลไม่ครบ (ต้องมี employee_code, name, password)':'Incomplete data (employee_code, name, password required)',
   'จำนวนวันไม่ถูกต้อง':'Invalid number of days',
+  'ลาป่วยตั้งแต่ 3 วันขึ้นไปต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave of 3 days or more requires a medical certificate attachment',
+  'ลากิจต้องแนบไฟล์เอกสาร':'Personal leave requires an attached file',
   'ขณะนี้ปิดการใช้งานลาพักร้อนจากปีที่แล้ว':'Annual leave from last year is currently turned off',
   'คุณไม่มีวันลาพักร้อนจากปีที่แล้วคงเหลือ':'You have no annual leave from last year remaining',
   'ข้อมูลไม่ถูกต้อง':'Invalid data',
@@ -1477,6 +1520,7 @@ const MSG_TH_TO_EN_EXACT = {
   'ลาประเภทนี้ไม่สามารถลารายชั่วโมงได้':'This leave type cannot be taken by the hour',
 };
 const MSG_TH_TO_EN_RULES = [
+  [/^ลาพักร้อนรายชั่วโมงเลือกเวลาได้เฉพาะเป็นครึ่งชั่วโมง \(เช่น 08:30, 09:00, 09:30\)$/, 'Hourly annual leave can only be chosen in 30-minute steps (e.g. 08:30, 09:00, 09:30)'],
   [/^คุณมีลาพักร้อนจากปีที่แล้วเหลือ (.*) วัน กรุณาใช้ให้หมดก่อนจึงจะลาพักร้อนปกติได้$/, 'You still have $1 day(s) of annual leave from last year — please use it up before requesting normal annual leave'],
   [/^ลาพักร้อนจากปีที่แล้วใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น \(หมดอายุวันที่ 1 เมษายน\)$/, 'Annual leave from last year can only be used until 31 March $1 (it expires on 1 April)'],
   [/^วันลาพักร้อนจากปีที่แล้วของคุณเหลือ (.*) วัน ไม่พอสำหรับคำขอนี้$/, 'Your annual leave from last year has only $1 day(s) left — not enough for this request'],
@@ -1820,7 +1864,7 @@ function showPage(id, el){
   if(id==='settings') loadSettings();
   if(id==='logs') loadLogs();
   if(id==='holidays') loadHolidays();
-  if(id==='next_year') loadNextYearPlan();
+  if(id==='next_year'){ initYearQuotas(); loadNextYearPlan(); }
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); loadBgPicker(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ initSendDocPicker(); renderSendDocQueue(); loadSendDocSchedules(); }
@@ -1832,6 +1876,7 @@ async function loadMyLeave(){
     const data = await callApi('get_my_data');
     if(data.employee && currentUser) currentUser.bypass_conditions = !!data.employee.bypass_conditions;   // ข้อมูลตอนล็อกอินไม่มีฟิลด์นี้ → ดึงจาก get_my_data
     renderBalances(data.balances);
+    renderNextYearBlock(data.next_year);
     myLeaveRequestsCache = data.requests || [];
     await fetchHolidaysCache();
     renderMyCalendar();
@@ -1884,9 +1929,11 @@ function refreshPrevAnnualOptions(balances){
     const annualOpt = sel.querySelector('option[value="annual"]');
     const prevOpt = sel.querySelector('option[value="annual_prev"]');
     const must = on && appSettingsCache['annual_prev_first']==='true' && remaining>0 && inTime && !(currentUser && currentUser.bypass_conditions);
+    const urgentOpt = sel.querySelector('option[value="annual_urgent"]');
+    if(urgentOpt) urgentOpt.disabled = must;
     if(annualOpt){
       annualOpt.disabled = must;
-      if(must && sel.value==='annual' && prevOpt && !prevOpt.disabled){ sel.value = 'annual_prev'; if(typeof onLeaveTypeChange==='function') onLeaveTypeChange(); }
+      if(must && (sel.value==='annual' || sel.value==='annual_urgent') && prevOpt && !prevOpt.disabled){ sel.value = 'annual_prev'; if(typeof onLeaveTypeChange==='function') onLeaveTypeChange(); }
     }
   }
 }
@@ -1989,11 +2036,44 @@ const TICKET_ACCENTS = {
   personal_unpaid:{a:'#FB923C', b:'#C2410C' },
   wfh:{a:'#818CF8', b:'#4F46E5' },
   annual_prev:{a:'#A78BFA', b:'#6D28D9' },
+  annual_urgent:{a:'#F87171', b:'#B91C1C' },
 };
 function getTicketAccent(leaveType){
   if(TICKET_ACCENTS[leaveType]) return TICKET_ACCENTS[leaveType];
   if(/^annual_carry_/.test(leaveType)) return { a:'#818CF8', b:'#4F46E5' }; // ครามอ่อน — โควตายกยอด
   return { a:'#A78BFA', b:'#7C3AED' }; // ค่าเริ่มต้น (ม่วงอ่อน)
+}
+
+// ตัวเลขมีเครื่องหมาย (ใช้กับโควตาปีหน้าที่อาจติดลบ)
+function fmtSignedDH(n){
+  const v = Number(n)||0, f = formatDaysHoursNice(Math.abs(v));
+  const txt = f.compact ? f.text : `${f.text} ${t(f.text==='1' ? 'tk_unit_day' : 'tk_unit_days')}`;
+  return { neg: v < -1e-9, text: (v < -1e-9 ? '−' : '') + (f.compact ? f.text : f.text), full: (v < -1e-9 ? '−' : '') + txt };
+}
+// ตารางโควตาปีหน้าของพนักงาน (ใต้ตารางปีปัจจุบัน) — เห็นเฉพาะเดือนที่ admin เลือก
+function renderNextYearBlock(ny){
+  const box = document.getElementById('nextYearBlock');
+  if(!box) return;
+  if(!ny || !ny.balances){ box.style.display='none'; box.innerHTML=''; return; }
+  const order=['annual','annual_prev','sick','personal'];
+  const rows = ny.balances.filter(b=>order.includes(b.leave_type)).sort((a,b)=>order.indexOf(a.leave_type)-order.indexOf(b.leave_type));
+  box.style.display = 'block';
+  box.innerHTML = `<h3>${escHtml(t('ny_emp_title').replace('{y}', ny.year))} <span class="ticket-nextyear-badge">${escHtml(t('ny_emp_badge').replace('{y}', ny.year))}</span></h3>
+    <p class="hint" style="margin:0 0 10px">${escHtml(t('ny_emp_hint').replace('{y}', ny.year))}</p>
+    <div class="balance-row">` + rows.map(b=>{
+      const rem = Number(b.total_days) - Number(b.used_days);
+      const f = fmtSignedDH(rem);
+      const pct = b.total_days>0 ? Math.min(100,(b.used_days/b.total_days)*100) : 0;
+      const acc = getTicketAccent(b.leave_type);
+      return `<div class="ticket" style="--tk-a:${acc.a};--tk-b:${acc.b}">
+        <div class="ticket-main">
+          <div class="ticket-type">${getLeaveTypeLabel(b.leave_type)} <span class="ticket-nextyear-badge">${ny.year}</span></div>
+          <div class="ticket-bar"><div class="ticket-bar-fill" style="width:${pct}%"></div></div>
+          <div class="ticket-nums"><span>${escHtml(t('tk_used_fmt').replace('{v}', formatDaysHoursNice(b.used_days).text))}</span><span>${escHtml(t('tk_total_fmt').replace('{v}', formatDaysHoursNice(b.total_days).text))}</span></div>
+        </div>
+        <div class="ticket-stub"><div class="num${f.text.length>4?' compact':''}${f.neg?' neg':''}">${escHtml(f.text)}</div><div class="lbl">${escHtml(t('tk_left'))}</div></div>
+      </div>`;
+    }).join('') + '</div>';
 }
 
 function renderBalances(balances){
@@ -2264,8 +2344,12 @@ const I18N = {
     set_nosameday_desc:"Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
     set_nopast_title:'Block backdated leave requests',
     set_nopast_desc:"Employees can't submit a leave request for a date before today — except Sick Leave, which is always allowed.",
-    set_attach_title:'Require certificate for Mon/Fri sick leave',
-    set_attach_desc:'Sick leave requests that fall on a Monday or Friday must attach a photo of a medical certificate.',
+    set_attach_title:'Require medical certificate for sick leave (Mon/Fri or 3+ days)',
+    set_attach_desc:'Sick leave that includes a Monday or Friday, or lasts 3 or more working days (e.g. Tue–Thu), must attach a photo of a medical certificate.',
+    set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
+    h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
+    ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
+    ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
     set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
     h3_newrequest:'New Leave Request', lbl_unit_multi:'Multiple specific dates',
@@ -2311,7 +2395,7 @@ const I18N = {
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
-    leave_personal_unpaid:'Unpaid Personal Leave', leave_wfh:'🏠 Work From Home', leave_annual_prev:'Annual leave from last year',
+    leave_personal_unpaid:'Unpaid Personal Leave', leave_wfh:'🏠 Work From Home', leave_annual_prev:'Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used until 31 March only and disappears on 1 April.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the filled “Annual from last year” cells with the calculated values?', msg_ny_carry_done:'✅ Calculated (max 3 days) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
@@ -2436,8 +2520,12 @@ const I18N = {
     set_nosameday_desc:'พนักงานยื่นคำขอลาที่รวมวันที่ปัจจุบันไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
     set_nopast_title:'ห้ามลาย้อนหลัง',
     set_nopast_desc:'พนักงานยื่นคำขอลาสำหรับวันที่ผ่านมาแล้วไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
-    set_attach_title:'ลาป่วยวันจันทร์/ศุกร์ต้องแนบใบรับรองแพทย์',
-    set_attach_desc:'คำขอลาป่วยที่ตกวันจันทร์หรือวันศุกร์ ต้องแนบรูปใบรับรองแพทย์',
+    set_attach_title:'ลาป่วยวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วัน ต้องแนบใบรับรองแพทย์',
+    set_attach_desc:'คำขอลาป่วยที่มีวันจันทร์หรือวันศุกร์อยู่ในช่วงที่ลา หรือลาตั้งแต่ 3 วันทำงานขึ้นไป (เช่น อังคาร–พฤหัสบดี) ต้องแนบรูปใบรับรองแพทย์',
+    set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
+    h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
+    ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
+    ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
     set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
     h3_newrequest:'ยื่นคำขอลาใหม่', lbl_unit_multi:'หลายวันที่ไม่ติดกัน',
@@ -2483,7 +2571,7 @@ const I18N = {
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
-    leave_personal_unpaid:'ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'🏠 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'ลาพักร้อนจากปีที่แล้ว',
+    leave_personal_unpaid:'ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'🏠 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึง 31 มีนาคมเท่านั้น และจะหายไปในวันที่ 1 เมษายน',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ที่กรอกไว้ด้วยค่าที่คำนวณหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (สูงสุด 3 วัน) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
@@ -2569,6 +2657,7 @@ function refreshLangDependentConstants(){
   if(typeof LEAVE_TYPE_LABEL !== 'undefined'){
     LEAVE_TYPE_LABEL.annual = d.leave_annual;
     LEAVE_TYPE_LABEL.annual_prev = d.leave_annual_prev;
+    LEAVE_TYPE_LABEL.annual_urgent = d.leave_annual_urgent;
     LEAVE_TYPE_LABEL.sick = d.leave_sick;
     LEAVE_TYPE_LABEL.personal = d.leave_personal;
     LEAVE_TYPE_LABEL.other = d.leave_other;
@@ -2666,7 +2755,7 @@ function rebuildUnitOptions(){
   const sel = document.getElementById('reqUnit');
   const prev = sel.value;
   const opts = [['day','eo_unit_day']];
-  if(type==='annual') opts.push(['hour','eo_unit_hour']);
+  if(['annual','annual_prev','annual_urgent'].includes(type)) opts.push(['hour','eo_unit_hour']);
   else if(HALF_DAY_TYPES.includes(type)) opts.push(['half','lbl_unit_half']);
   opts.push(['multi','lbl_unit_multi']);
   sel.innerHTML = opts.map(([v,k])=>`<option value="${v}" data-i18n="${k}">${escHtml(t(k))}</option>`).join('');
@@ -2713,6 +2802,12 @@ function checkAttachmentRequirement(){
     input.accept = 'image/*';
     return;
   }
+  if(leaveType==='personal'){
+    wrap.style.display = appSettingsCache['personal_leave_requires_attachment']==='true' ? 'block' : 'none';
+    label.setAttribute('data-i18n','lbl_personal_attach'); label.textContent = t('lbl_personal_attach');
+    input.accept = 'image/*,application/pdf';
+    return;
+  }
   label.setAttribute('data-i18n','lbl_medcert'); label.textContent = t('lbl_medcert');
   input.accept = 'image/*,application/pdf';
   const dateVal = unit==='hour' ? document.getElementById('reqHourDate').value
@@ -2730,7 +2825,22 @@ function checkAttachmentRequirement(){
     const w = d.getUTCDay(); // 0=Sun 1=Mon 5=Fri
     if(w===1 || w===5){ need = true; break; }
   }
+  // ลาป่วยตั้งแต่ 3 วันทำงานขึ้นไป (ไม่นับเสาร์-อาทิตย์/วันหยุด) ก็ต้องแนบ
+  if(!need && unit==='day' && clientWorkingDays(dateVal, endVal) >= 3) need = true;
   wrap.style.display = need ? 'block' : 'none';
+}
+
+// นับวันทำงานในช่วงวันที่ (ตัดเสาร์-อาทิตย์และวันหยุดบริษัทที่โหลดไว้) — ใช้เดาว่าลาป่วยครบ 3 วันหรือยัง (backend นับจริงอีกครั้ง)
+function clientWorkingDays(startIso, endIso){
+  const sd = new Date(startIso+'T00:00:00Z'), ed = new Date((endIso||startIso)+'T00:00:00Z');
+  let n = 0;
+  for(let d = new Date(sd), i = 0; d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){
+    const w = d.getUTCDay(); if(w===0 || w===6) continue;
+    const iso = d.toISOString().slice(0,10);
+    if(holidaysCache.some(x=>x.holiday_date===iso)) continue;
+    n++;
+  }
+  return n;
 }
 
 function readFileAsDataUrl(file){
@@ -4281,6 +4391,7 @@ const SETTING_DEFS = [
   { key: 'no_same_day_leave_except_sick', titleKey: 'set_nosameday_title', descKey: 'set_nosameday_desc' },
   { key: 'no_past_date_leave_except_sick', titleKey: 'set_nopast_title', descKey: 'set_nopast_desc' },
   { key: 'sick_leave_monfri_requires_attachment', titleKey: 'set_attach_title', descKey: 'set_attach_desc' },
+  { key: 'personal_leave_requires_attachment', titleKey: 'set_pattach_title', descKey: 'set_pattach_desc' },
   { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
   { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
@@ -4318,6 +4429,65 @@ async function toggleSetting(key, checked){
     if(key==='leave_prev_year_annual') refreshPrevAnnualOptions();
     showToast(checked ? '✅ Enabled' : '✅ Disabled');
   }catch(e){ showToast(e.message,'err'); loadSettings(); }
+}
+
+// ── ADMIN: โควตาวันลาปี (ดูโควตาจริงของปีที่เลือก + ตั้งเดือนที่ให้พนักงานเห็นโควตาปีหน้า) ──
+let nyqState = { year: null, employees: [], balances: [], ready: false };
+async function initYearQuotas(){
+  const sel = document.getElementById('nyqYear');
+  const cy = new Date().getFullYear();
+  if(!sel.options.length){
+    sel.innerHTML = [cy-1, cy, cy+1, cy+2].map(y=>`<option value="${y}">${y}</option>`).join('');
+    sel.value = String(cy);
+  }
+  try{ const d = await callApi('get_settings'); appSettingsCache = d.settings || appSettingsCache; }catch(e){}
+  document.getElementById('nyqVisible').checked = appSettingsCache['next_year_quota_visible']==='true';
+  const on = new Set(String(appSettingsCache['next_year_quota_months']||'').split(',').map(x=>Number(x.trim())).filter(Boolean));
+  const names = currentLang==='th' ? MONTH_NAMES_TH_LONG() : MONTH_NAMES_EN;
+  document.getElementById('nyqMonths').innerHTML = names.map((n,i)=>`<label><input type="checkbox" value="${i+1}" ${on.has(i+1)?'checked':''} onchange="saveNyqVisibility()"/><span>${escHtml(n)}</span></label>`).join('');
+  loadYearQuotas();
+}
+function MONTH_NAMES_TH_LONG(){ return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; }
+async function saveNyqVisibility(){
+  const vis = document.getElementById('nyqVisible').checked;
+  const months = [...document.querySelectorAll('#nyqMonths input:checked')].map(i=>i.value).join(',');
+  try{
+    await callApi('update_setting', { key:'next_year_quota_visible', value: vis?'true':'false' });
+    await callApi('update_setting', { key:'next_year_quota_months', value: months });
+    appSettingsCache['next_year_quota_visible'] = vis?'true':'false';
+    appSettingsCache['next_year_quota_months'] = months;
+    showToast(t('msg_nyq_saved'));
+  }catch(e){ showToast(e.message,'err'); }
+}
+async function loadYearQuotas(){
+  try{
+    const y = Number(document.getElementById('nyqYear').value);
+    const d = await callApi('get_year_quotas', { year: y });
+    nyqState = { year: d.year, employees: d.employees||[], balances: d.balances||[], ready: true };
+    renderYearQuotas();
+  }catch(e){ showToast(e.message,'err'); }
+}
+function renderYearQuotas(){
+  const body = document.getElementById('nyqBody');
+  if(!body || !nyqState.ready) return;
+  const showH = document.getElementById('nyqShowHours').checked;
+  const q = (document.getElementById('nyqSearch').value||'').trim().toLowerCase();
+  const map = {};
+  nyqState.balances.forEach(b=>{ map[b.employee_id+'|'+b.leave_type] = b; });
+  const cell = (emp, type)=>{
+    const b = map[emp.id+'|'+type];
+    if(!b) return '<td><span class="nyq-sub">–</span></td>';
+    const total = Number(b.total_days), used = Number(b.used_days), rem = total-used;
+    const fmt = v=>{
+      if(showH){ const f = fmtSignedDH(v); return f.text; }
+      const r = Math.round(Math.abs(v)*1000)/1000, d = Math.floor(r+1e-9), frac = r-d>1e-6;
+      return (v<-1e-9?'−':'') + d + (frac?'+':'');
+    };
+    return `<td><span class="${rem<-1e-9?'nyq-neg':''}">${escHtml(fmt(rem))}</span> <span class="nyq-sub">/ ${escHtml(fmt(total))}</span></td>`;
+  };
+  const rows = nyqState.employees.filter(e=>!q || [e.employee_code,e.name,e.department].some(x=>String(x||'').toLowerCase().includes(q)));
+  body.innerHTML = rows.length ? rows.map(e=>`<tr><td>${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${NY_TYPES.map(tp=>cell(e,tp)).join('')}</tr>`).join('')
+    : `<tr><td colspan="7" class="empty-msg">${escHtml(t('tk_none'))}</td></tr>`;
 }
 
 // ── ADMIN: NEXT YEAR PLANNING ──
@@ -4442,7 +4612,7 @@ function renderTransferStatus(){
   const pending = nyState.transfers.find(x=>x.status==='pending');
   const last = nyState.transfers.find(x=>x.status==='done'||x.status==='failed');
   const lines = [];
-  if(pending) lines.push(`⏳ ${t('ny_status_pending').replace('{d}', formatDMY(pending.effective_date)).replace('{y}', pending.target_year)}`);
+  if(pending) lines.push(`⏳ ${t('ny_status_pending').replace('{d}', formatDMY(pending.effective_date)).replace('{y}', pending.target_year)}${pending.mode==='offset' ? ' '+t('ny_mode_tag') : ''}`);
   else lines.push(`${t('ny_status_none')}`);
   if(last){
     const when = last.executed_at ? formatDMY(String(last.executed_at).slice(0,10)) : '';
@@ -4468,7 +4638,7 @@ async function confirmYearTransfer(){
   if(!confirm(msg)) return;
   try{
     if(!(await saveNextYearPlan(true))) return;
-    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date }), t('loading_ny'));
+    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date, mode: (document.querySelector('input[name="nyMode"]:checked')||{}).value || 'replace' }), t('loading_ny'));
     showToast(res.executed ? t('msg_ny_done_ok').replace('{n}', res.applied).replace('{y}', res.target_year)
                            : t('msg_ny_sched_ok').replace('{d}', formatDMY(date)));
     loadNextYearPlan();
@@ -4985,8 +5155,9 @@ function initTime24(){
   document.querySelectorAll('.t24').forEach(el=>{
     if(el.dataset.ready) return;
     const pad = n => String(n).padStart(2,'0');
-    const opts = (count) => '<option value="">--</option>' + Array.from({length:count},(_,i)=>`<option value="${pad(i)}">${pad(i)}</option>`).join('');
-    el.innerHTML = `<select id="${el.id}_h" aria-label="hour">${opts(24)}</select><span class="t24-sep">:</span><select id="${el.id}_m" aria-label="minute">${opts(60)}</select>`;
+    const opts = (count, step) => '<option value="">--</option>' + Array.from({length:Math.ceil(count/step)},(_,i)=>`<option value="${pad(i*step)}">${pad(i*step)}</option>`).join('');
+    // นาทีเลือกได้เฉพาะ 00 หรือ 30 (ลาเป็นช่วงครึ่งชั่วโมง เช่น 08:30 09:00 09:30)
+    el.innerHTML = `<select id="${el.id}_h" aria-label="hour">${opts(24,1)}</select><span class="t24-sep">:</span><select id="${el.id}_m" aria-label="minute">${opts(60,30)}</select>`;
     el.dataset.ready = '1';
   });
 }
@@ -4997,7 +5168,9 @@ function getT24(id){
 function setT24(id, val){
   const parts = val ? String(val).slice(0,5).split(':') : ['',''];
   document.getElementById(id+'_h').value = parts[0] || '';
-  document.getElementById(id+'_m').value = parts[1] || '';
+  const mSel = document.getElementById(id+'_m'), mv = parts[1] || '';
+  if(mv && ![...mSel.options].some(o=>o.value===mv)){ const o = document.createElement('option'); o.value = mv; o.textContent = mv; mSel.appendChild(o); }   // ค่าเดิมที่ไม่ใช่ :00/:30 ยังแสดงได้
+  mSel.value = mv;
 }
 
 
