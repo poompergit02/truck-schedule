@@ -330,6 +330,18 @@ tr:hover td{background:var(--cream)}
 .setting-subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;font-size:.88rem;border-bottom:1px dashed var(--line-soft)}
 .setting-subrow:last-child{border-bottom:none}
 .setting-subrow small{display:block;color:var(--text-dim);font-size:.74rem;margin-top:1px}
+.toggle-switch.sm{width:34px;height:19px}
+.toggle-switch.sm .toggle-track::before{width:13px;height:13px;left:3px;top:3px}
+.toggle-switch.sm input:checked + .toggle-track::before{transform:translateX(15px)}
+details.setting-details{margin:0 0 0 14px}
+details.setting-details > summary{cursor:pointer;font-size:.8rem;font-weight:600;color:var(--plum-700);padding:4px 0;list-style:none;user-select:none}
+details.setting-details > summary::-webkit-details-marker{display:none}
+details.setting-details > summary::before{content:'▸ ';display:inline-block;transition:transform .15s}
+details.setting-details[open] > summary::before{content:'▾ '}
+details.setting-details .setting-sublist{margin:4px 0 0;padding:4px 10px;font-size:.8rem;background:transparent;border:none;border-left:3px solid var(--line);border-radius:0}
+details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bottom:none}
+.ny-pick{max-height:220px;overflow-y:auto;border:1px solid var(--line-soft);border-radius:10px;padding:6px 10px;margin:6px 0}
+.ny-pick label{display:flex;gap:8px;align-items:center;padding:3px 0;font-size:.84rem;cursor:pointer}
 .dotcolor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 18px;margin-top:10px}
 .dotcolor-row{display:flex;align-items:center;gap:10px;font-size:.88rem}
 .dotcolor-row input[type=color]{width:38px;height:28px;padding:0;border:1.5px solid var(--line);border-radius:6px;background:none;cursor:pointer}
@@ -1013,6 +1025,7 @@ tr:hover td{background:var(--cream)}
           <p class="hint" style="margin:6px 0 0" data-i18n="nyq_visible_hint">Employees see next year's quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.</p>
           <div class="nyq-months" id="nyqMonths"></div>
         </div>
+        <div style="margin-top:14px"><button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
         <div class="table-wrap" style="border:none;margin-top:10px"><table id="nyqTable">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
@@ -1027,6 +1040,18 @@ tr:hover td{background:var(--cream)}
         <p class="hint" data-i18n="hint_ny_transfer">At 00:01 (Thai time) on the effective date, the quotas below replace the employees' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.</p>
         <div class="form-grid">
           <div class="field"><label data-i18n="lbl_ny_date">Effective date</label><input type="date" id="nyEffectiveDate"/></div>
+        </div>
+        <div class="ny-mode">
+          <label><input type="radio" name="nyScope" value="all" checked onchange="renderNyPick()"/><span data-i18n="ny_scope_all">Transfer for everyone</span></label>
+          <label><input type="radio" name="nyScope" value="some" onchange="renderNyPick()"/><span data-i18n="ny_scope_some">Transfer only selected employees</span></label>
+        </div>
+        <div id="nyPickBox" style="display:none">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="nyPickSearch" oninput="renderNyPick()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:.84rem"/>
+            <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.84rem"><input type="checkbox" id="nyPickAll" onchange="toggleNyPickAll(this.checked)"/> <span data-i18n="lbl_select_all">Select All</span></label>
+            <span class="hint" id="nyPickCount" style="margin:0"></span>
+          </div>
+          <div class="ny-pick" id="nyPickList"></div>
         </div>
         <div class="ny-mode">
           <label><input type="radio" name="nyMode" value="replace" checked/><span data-i18n="ny_mode_replace">Replace — the prepared quota overwrites the live quota</span></label>
@@ -1181,9 +1206,13 @@ tr:hover td{background:var(--cream)}
     <p class="hint" data-i18n="el_hint">Editing here does not automatically adjust the employee's leave balance — use Edit Balances separately if needed. Every edit is logged.</p>
     <div class="table-wrap" style="max-height:360px;overflow-y:auto">
       <table>
-        <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_amount">Amount</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
+        <thead><tr><th style="width:30px"><input type="checkbox" id="selectAllEditLeave" onchange="toggleSelectAllEditLeave(this)" title="Select All"/></th><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_amount">Amount</th><th data-i18n="th_status">Status</th><th data-i18n="th_action">Action</th></tr></thead>
         <tbody id="editLeaveListBody"></tbody>
       </table>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <span class="hint" id="editLeaveSelCount" style="margin:0"></span>
+      <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSelectedLeaveRequests()" data-i18n="btn_delete_sel_req">Delete Selected</button>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('editLeaveListModal')" data-i18n="c_close">Close</button>
@@ -2292,6 +2321,7 @@ const I18N = {
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
     h3_attachcleanup:'🗑 Clean Up Old Attachments', h3_dangerzone:'⚠️ Danger Zone — Testing Only',
+    btn_delete_sel_req:'Delete Selected', el_sel_count:'{n} selected', el_sel_none:'Tick the requests to delete first', el_sel_confirm:'Delete {n} leave request(s)? Approved ones will have their deducted balance restored. This cannot be undone.', el_sel_loading:'Deleting…', el_sel_done:'✅ Deleted {n} request(s)',
     hint_carryover:'Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.',
     hint_specialaccess:'Grant hand-picked people (e.g. executives) access to the org-wide Special Leave Calendar, regardless of their role.',
     hint_attachcleanup:'Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.',
@@ -2377,11 +2407,13 @@ const I18N = {
     set_attach_desc:'Sick leave that includes a Monday or Friday, or lasts 3 or more working days (e.g. Tue–Thu), must attach a photo of a medical certificate.',
     set_grp_sameday_title:'Block same-day leave requests', set_grp_sameday_desc:'When ON, leave starting/including today cannot be requested — except the leave types switched ON in the exception list below.',
     set_grp_past_title:'Block backdated leave requests', set_grp_past_desc:'When ON, leave that starts in the past cannot be requested — except the leave types switched ON in the exception list below.',
-    set_exempt_hdr:'Exceptions (ON = this leave type is allowed)',
+    set_exempt_hdr:'Exceptions (ON = allowed)', set_att_list_hdr:'Leave types',
     set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
     set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
     h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
+    ny_scope_all:'Transfer for everyone', ny_scope_some:'Transfer only selected employees', ny_pick_count:'{n} selected', msg_ny_pick_none:'Select at least one employee', cf_ny_pick_note:'Only {n} selected employee(s) will be transferred.', ny_scope_tag:'(selected {n} people)',
+    btn_nyq_delete:'🗑️ Delete ALL leave quotas of this year', hint_nyq_delete:'For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.', cf_nyq_delete:'This deletes ALL leave quotas of year {y} for every employee. Leave requests are not deleted.\nType {y} to confirm:', msg_nyq_delete_mismatch:'Year does not match — nothing was deleted', msg_nyq_deleted:'✅ Deleted {n} quota row(s) of {y}', loading_nyq_delete:'Deleting quotas…',
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
     ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
     ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
@@ -2475,6 +2507,7 @@ const I18N = {
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
     h3_attachcleanup:'🗑 ล้างไฟล์แนบเก่า', h3_dangerzone:'⚠️ โซนอันตราย — สำหรับทดสอบเท่านั้น',
+    btn_delete_sel_req:'ลบที่เลือก', el_sel_count:'เลือกแล้ว {n} ใบ', el_sel_none:'ติ๊กใบลาที่ต้องการลบก่อน', el_sel_confirm:'ลบใบลา {n} ใบ? ใบที่อนุมัติแล้วจะคืนโควตาที่หักไป ย้อนกลับไม่ได้', el_sel_loading:'กำลังลบ…', el_sel_done:'✅ ลบแล้ว {n} ใบ',
     hint_carryover:'ระบบจะไม่โหลดข้อมูลอัตโนมัติ กด "ค้นหา" เพื่อดูว่าใครมีวันลาพักร้อนคงเหลือเกิน 3 วันในปีที่เลือก จากนั้นให้สิทธิ์ยกยอดและแจ้งเตือนทีละคน — ไม่มีการดำเนินการแบบรวมกลุ่ม',
     hint_specialaccess:'ให้สิทธิ์บุคคลที่คัดเลือก (เช่น ผู้บริหาร) เข้าดูปฏิทินลาพิเศษของทั้งองค์กรได้ โดยไม่ขึ้นกับตำแหน่ง/บทบาท',
     hint_attachcleanup:'ลบไฟล์จริง (รูป/PDF ใบรับรอง) ของใบลาเก่าออกจากที่เก็บข้อมูลเพื่อเพิ่มพื้นที่ — ประวัติใบลายังอยู่ครบ ลบเฉพาะไฟล์แนบ ระบบไม่โหลดอัตโนมัติ กด "ค้นหา" ก่อน',
@@ -2560,11 +2593,13 @@ const I18N = {
     set_attach_desc:'คำขอลาป่วยที่มีวันจันทร์หรือวันศุกร์อยู่ในช่วงที่ลา หรือลาตั้งแต่ 3 วันทำงานขึ้นไป (เช่น อังคาร–พฤหัสบดี) ต้องแนบรูปใบรับรองแพทย์',
     set_grp_sameday_title:'ห้ามลาวันปัจจุบัน', set_grp_sameday_desc:'เมื่อเปิด จะขอลาที่รวมวันนี้ไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
     set_grp_past_title:'ห้ามลาย้อนหลัง', set_grp_past_desc:'เมื่อเปิด จะขอลาที่เริ่มในอดีตไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
-    set_exempt_hdr:'ข้อยกเว้น (เปิด = ประเภทการลานี้ลาได้)',
+    set_exempt_hdr:'ข้อยกเว้น (เปิด = ลาได้)', set_att_list_hdr:'ประเภทการลา',
     set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
     set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
     h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
+    ny_scope_all:'ย้ายให้ทุกคน', ny_scope_some:'ย้ายเฉพาะคนที่เลือก', ny_pick_count:'เลือกแล้ว {n} คน', msg_ny_pick_none:'กรุณาเลือกพนักงานอย่างน้อย 1 คน', cf_ny_pick_note:'จะย้ายเฉพาะพนักงานที่เลือก {n} คน', ny_scope_tag:'(เฉพาะที่เลือก {n} คน)',
+    btn_nyq_delete:'🗑️ ลบโควตาวันลาทั้งหมดของปีนี้', hint_nyq_delete:'ไว้ล้างข้อมูลตอนเทส ใบลาไม่ถูกลบ ลบเฉพาะโควตาของปีที่เลือก', cf_nyq_delete:'จะลบโควตาวันลาของ "ทุกคน" ในปี {y} ทั้งหมด (ใบลาไม่ถูกลบ)\nพิมพ์ {y} เพื่อยืนยัน:', msg_nyq_delete_mismatch:'ปีไม่ตรงกัน — ยังไม่ได้ลบอะไร', msg_nyq_deleted:'✅ ลบโควตาปี {y} แล้ว {n} รายการ', loading_nyq_delete:'กำลังลบโควตา…',
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
     ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
     ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
@@ -4067,10 +4102,11 @@ async function openEditLeaveRequestsModal(){
 
 function renderEditLeaveList(){
   const body = document.getElementById('editLeaveListBody');
-  if(!editLeaveRequestsCache.length){ body.innerHTML = `<tr><td colspan="5" class="empty-msg">${escHtml(t('el_none'))}</td></tr>`; return; }
+  if(!editLeaveRequestsCache.length){ body.innerHTML = `<tr><td colspan="6" class="empty-msg">${escHtml(t('el_none'))}</td></tr>`; updateEditLeaveSelCount(); return; }
   body.innerHTML = editLeaveRequestsCache.map(r=>{
     const st = STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
     return `<tr>
+      <td><input type="checkbox" class="editLeaveSel" data-id="${r.id}" onchange="updateEditLeaveSelCount()"/></td>
       <td>${getLeaveTypeLabel(r.leave_type)}</td>
       <td class="mono">${formatDuration(r)}</td>
       <td>${formatAmount(r)}</td>
@@ -4082,6 +4118,35 @@ function renderEditLeaveList(){
       </td>
     </tr>`;
   }).join('');
+  updateEditLeaveSelCount();
+}
+function toggleSelectAllEditLeave(master){
+  document.querySelectorAll('.editLeaveSel').forEach(c=>{ c.checked = master.checked; });
+  updateEditLeaveSelCount();
+}
+function updateEditLeaveSelCount(){
+  const all = document.querySelectorAll('.editLeaveSel'), sel = document.querySelectorAll('.editLeaveSel:checked');
+  const el = document.getElementById('editLeaveSelCount');
+  if(el) el.textContent = sel.length ? t('el_sel_count').replace('{n}', sel.length) : '';
+  const m = document.getElementById('selectAllEditLeave');
+  if(m) m.checked = all.length>0 && sel.length===all.length;
+}
+async function deleteSelectedLeaveRequests(){
+  const ids = [...document.querySelectorAll('.editLeaveSel:checked')].map(c=>c.dataset.id);
+  if(!ids.length){ showToast(t('el_sel_none'),'err'); return; }
+  if(!confirm(t('el_sel_confirm').replace('{n}', ids.length))) return;
+  let done = 0;
+  await withLoading(async()=>{
+    for(const id of ids){
+      try{ await callApi('admin_delete_request', { request_id: id }); done++; }catch(e){ showToast(e.message,'err'); }
+    }
+  }, t('el_sel_loading'));
+  try{
+    const data = await callApi('get_employee_requests', { employee_id: editingEmployeeId });
+    editLeaveRequestsCache = data.requests || [];
+    renderEditLeaveList();
+  }catch(e){ showToast(e.message,'err'); }
+  if(done) showToast(t('el_sel_done').replace('{n}', done));
 }
 
 function toggleEditRequestUnit(){
@@ -4491,8 +4556,8 @@ const ATTACH_LIST = [
   { key:'personal_leave_requires_attachment', type:'personal', noteKey:'set_att_personal_note' },
   { key:'wfh_requires_photo', type:'wfh', noteKey:'set_att_wfh_note' },
 ];
-function settingsToggleHtml(checked, onchange){
-  return `<label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="${onchange}"/><span class="toggle-track"></span></label>`;
+function settingsToggleHtml(checked, onchange, small){
+  return `<label class="toggle-switch${small?' sm':''}"><input type="checkbox" ${checked?'checked':''} onchange="${onchange}"/><span class="toggle-track"></span></label>`;
 }
 function renderSettingsGroups(settings){
   const exemptHtml = EXEMPT_GROUPS.map(g=>{
@@ -4503,17 +4568,18 @@ function renderSettingsGroups(settings){
         <div class="setting-text"><h4>${escHtml(t(g.titleKey))}</h4><p>${escHtml(t(g.descKey))}</p></div>
         ${settingsToggleHtml(settings[g.masterKey]==='true', `toggleSetting('${g.masterKey}', this.checked)`)}
       </div>
+      <details class="setting-details"><summary>${escHtml(t('set_exempt_hdr'))} <span class="nyq-sub">(${on.size}/${EXEMPT_TYPES.length})</span></summary>
       <div class="setting-sublist" data-list="${g.listKey}">
-        <div class="setting-subhdr">${escHtml(t('set_exempt_hdr'))}</div>
-        ${EXEMPT_TYPES.map(ty=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(ty))}</span>${settingsToggleHtml(on.has(ty), `toggleExempt('${g.listKey}', this)`)}<input type="hidden" value="${ty}"/></div>`).join('')}
-      </div>
+        ${EXEMPT_TYPES.map(ty=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(ty))}</span>${settingsToggleHtml(on.has(ty), `toggleExempt('${g.listKey}', this)`, true)}<input type="hidden" value="${ty}"/></div>`).join('')}
+      </div></details>
     </div>`;
   }).join('');
   const attachHtml = `<div class="setting-group">
       <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_grp_attach_title'))}</h4><p>${escHtml(t('set_grp_attach_desc'))}</p></div></div>
+      <details class="setting-details" open><summary>${escHtml(t('set_att_list_hdr'))}</summary>
       <div class="setting-sublist">
-        ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`)}</div>`).join('')}
-      </div>
+        ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
+      </div></details>
     </div>`;
   return exemptHtml + attachHtml;
 }
@@ -4523,6 +4589,8 @@ async function toggleExempt(listKey, inputEl){
   try{
     await callApi('update_setting', { key: listKey, value: types.join(',') });
     appSettingsCache[listKey] = types.join(',');
+    const cnt = wrap.closest('details') && wrap.closest('details').querySelector('summary .nyq-sub');
+    if(cnt) cnt.textContent = `(${types.length}/${EXEMPT_TYPES.length})`;
     showToast(t('msg_nyq_saved'));
   }catch(e){ showToast(e.message,'err'); loadSettings(); }
 }
@@ -4614,6 +4682,43 @@ function renderYearQuotas(){
   const rows = nyqState.employees.filter(e=>!q || [e.employee_code,e.name,e.department].some(x=>String(x||'').toLowerCase().includes(q)));
   body.innerHTML = rows.length ? rows.map(e=>`<tr><td>${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${NY_TYPES.map(tp=>cell(e,tp)).join('')}</tr>`).join('')
     : `<tr><td colspan="7" class="empty-msg">${escHtml(t('tk_none'))}</td></tr>`;
+}
+
+async function deleteYearQuotas(){
+  const y = Number(document.getElementById('nyqYear').value);
+  const ans = prompt(t('cf_nyq_delete').replace(/\{y\}/g, y));
+  if(ans === null) return;
+  if(String(ans).trim() !== String(y)){ showToast(t('msg_nyq_delete_mismatch'),'err'); return; }
+  try{
+    const r = await withLoading(()=>callApi('delete_year_quotas', { year: y, confirm_year: y }), t('loading_nyq_delete'));
+    showToast(t('msg_nyq_deleted').replace('{n}', r.deleted||0).replace('{y}', y));
+    loadYearQuotas();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── เลือกคนที่จะย้ายโควตา (ไม่เลือก = ย้ายทุกคน) ──
+let nyPickSel = new Set();
+function nyScope(){ return (document.querySelector('input[name="nyScope"]:checked')||{}).value || 'all'; }
+function renderNyPick(){
+  const box = document.getElementById('nyPickBox');
+  if(!box) return;
+  box.style.display = nyScope()==='some' ? 'block' : 'none';
+  if(nyScope()!=='some') return;
+  const q = (document.getElementById('nyPickSearch').value||'').trim().toLowerCase();
+  const rows = (nyState.employees||[]).filter(e=>!q || [e.employee_code,e.name,e.department].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('nyPickList').innerHTML = rows.length ? rows.map(e=>`<label><input type="checkbox" ${nyPickSel.has(e.id)?'checked':''} onchange="toggleNyPick('${e.id}', this.checked)"/><span class="mono">${escHtml(e.employee_code||'')}</span> ${escHtml(e.name||'')} <span class="nyq-sub">${escHtml(e.department||'')}</span></label>`).join('') : `<div class="empty-msg">${escHtml(t('tk_none'))}</div>`;
+  updateNyPickCount();
+}
+function toggleNyPick(id, on){ if(on) nyPickSel.add(id); else nyPickSel.delete(id); updateNyPickCount(); }
+function toggleNyPickAll(on){
+  document.querySelectorAll('#nyPickList input[type=checkbox]').forEach(c=>{ c.checked = on; });
+  const q = (document.getElementById('nyPickSearch').value||'').trim().toLowerCase();
+  (nyState.employees||[]).filter(e=>!q || [e.employee_code,e.name,e.department].some(x=>String(x||'').toLowerCase().includes(q))).forEach(e=>{ if(on) nyPickSel.add(e.id); else nyPickSel.delete(e.id); });
+  updateNyPickCount();
+}
+function updateNyPickCount(){
+  const el = document.getElementById('nyPickCount');
+  if(el) el.textContent = t('ny_pick_count').replace('{n}', nyPickSel.size);
 }
 
 // ── ADMIN: NEXT YEAR PLANNING ──
@@ -4738,7 +4843,7 @@ function renderTransferStatus(){
   const pending = nyState.transfers.find(x=>x.status==='pending');
   const last = nyState.transfers.find(x=>x.status==='done'||x.status==='failed');
   const lines = [];
-  if(pending) lines.push(`⏳ ${t('ny_status_pending').replace('{d}', formatDMY(pending.effective_date)).replace('{y}', pending.target_year)}${pending.mode==='offset' ? ' '+t('ny_mode_tag') : ''}`);
+  if(pending) lines.push(`⏳ ${t('ny_status_pending').replace('{d}', formatDMY(pending.effective_date)).replace('{y}', pending.target_year)}${pending.mode==='offset' ? ' '+t('ny_mode_tag') : ''}${pending.employee_ids ? ' '+t('ny_scope_tag').replace('{n}', (()=>{ try{ return JSON.parse(pending.employee_ids).length; }catch(e){ return '?'; } })()) : ''}`);
   else lines.push(`${t('ny_status_none')}`);
   if(last){
     const when = last.executed_at ? formatDMY(String(last.executed_at).slice(0,10)) : '';
@@ -4748,6 +4853,7 @@ function renderTransferStatus(){
   }
   el.innerHTML = lines.map(l=>`<div>${escHtml(l)}</div>`).join('');
   cancelBtn.style.display = pending ? 'inline-block' : 'none';
+  renderNyPick();
 }
 
 function todayLocalIso(){
@@ -4759,12 +4865,14 @@ async function confirmYearTransfer(){
   const date = document.getElementById('nyEffectiveDate').value;
   if(!date){ showToast(t('msg_ny_pick_date'),'err'); return; }
   const year = date.slice(0,4);
+  const pickedIds = nyScope()==='some' ? [...nyPickSel] : null;
+  if(nyScope()==='some' && !pickedIds.length){ showToast(t('msg_ny_pick_none'),'err'); return; }
   const immediate = date <= todayLocalIso();
-  const msg = (immediate ? t('cf_ny_now') : t('cf_ny_sched')).replace('{y}', year).replace('{d}', formatDMY(date));
+  const msg = (immediate ? t('cf_ny_now') : t('cf_ny_sched')).replace('{y}', year).replace('{d}', formatDMY(date)) + (pickedIds ? '\n' + t('cf_ny_pick_note').replace('{n}', pickedIds.length) : '');
   if(!confirm(msg)) return;
   try{
     if(!(await saveNextYearPlan(true))) return;
-    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date, mode: (document.querySelector('input[name="nyMode"]:checked')||{}).value || 'replace' }), t('loading_ny'));
+    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date, employee_ids: pickedIds, mode: (document.querySelector('input[name="nyMode"]:checked')||{}).value || 'replace' }), t('loading_ny'));
     showToast(res.executed ? t('msg_ny_done_ok').replace('{n}', res.applied).replace('{y}', res.target_year)
                            : t('msg_ny_sched_ok').replace('{d}', formatDMY(date)));
     loadNextYearPlan();
