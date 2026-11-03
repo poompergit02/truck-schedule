@@ -1165,7 +1165,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
   <div class="modal">
     <h3 id="addEmpModalTitle">➕ Add Employee</h3>
     <div class="form-grid">
-      <div class="field"><label data-i18n="em_code">Employee Code *</label><input type="text" id="neCode"/></div>
+      <div class="field"><label data-i18n="em_code">Employee Code *</label><input type="text" id="neCode"/><small class="hint" id="neCodeHint" style="display:none" data-i18n="em_code_hint">Changing the code: the employee must log in with the new code. Not allowed if they have ever submitted a leave request or have requests waiting for their approval.</small></div>
       <div class="field"><label data-i18n="em_name">Name *</label><input type="text" id="neName"/></div>
       <div class="field"><label data-i18n="em_email">Email</label><input type="email" id="neEmail"/></div>
       <div class="field"><label data-i18n="em_dept">Department</label><input type="text" id="neDept"/></div>
@@ -1553,6 +1553,9 @@ const MSG_TH_TO_EN_EXACT = {
   'จำนวนวันไม่ถูกต้อง':'Invalid number of days',
   'ลาป่วยตั้งแต่ 3 วันขึ้นไปต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave of 3 days or more requires a medical certificate attachment',
   'ลากิจต้องแนบไฟล์เอกสาร':'Personal leave requires an attached file',
+  'รหัสพนักงานห้ามเป็นค่าว่าง':'Employee code cannot be empty',
+  'รหัสพนักงานห้ามมีช่องว่างหรือเครื่องหมายจุลภาค (,)':'Employee code cannot contain spaces or commas',
+  'ไม่พบพนักงานคนนี้':'Employee not found',
   'ขณะนี้ปิดการใช้งานลาพักร้อนจากปีที่แล้ว':'Annual leave from last year is currently turned off',
   'คุณไม่มีวันลาพักร้อนจากปีที่แล้วคงเหลือ':'You have no annual leave from last year remaining',
   'ข้อมูลไม่ถูกต้อง':'Invalid data',
@@ -1569,6 +1572,9 @@ const MSG_TH_TO_EN_EXACT = {
   'ลาประเภทนี้ไม่สามารถลารายชั่วโมงได้':'This leave type cannot be taken by the hour',
 };
 const MSG_TH_TO_EN_RULES = [
+  [/^รหัสพนักงาน (.+) มีผู้ใช้งานอยู่แล้ว$/, 'Employee code $1 is already in use'],
+  [/^ไม่สามารถเปลี่ยนรหัสพนักงานได้ เพราะพนักงานคนนี้เคยยื่นใบลาแล้ว (\d+) ใบ$/, 'Cannot change the employee code: this employee has already submitted $1 leave request(s)'],
+  [/^ไม่สามารถเปลี่ยนรหัสพนักงานได้ เพราะมีใบลา (\d+) ใบรอพนักงานคนนี้อนุมัติอยู่$/, 'Cannot change the employee code: $1 leave request(s) are waiting for this employee to approve'],
   [/^ลาพักร้อนรายชั่วโมงเลือกเวลาได้เฉพาะเป็นครึ่งชั่วโมง \(เช่น 08:30, 09:00, 09:30\)$/, 'Hourly annual leave can only be chosen in 30-minute steps (e.g. 08:30, 09:00, 09:30)'],
   [/^คุณมีลาพักร้อนจากปีที่แล้วเหลือ (.*) วัน กรุณาใช้ให้หมดก่อนจึงจะลาพักร้อนปกติได้$/, 'You still have $1 day(s) of annual leave from last year — please use it up before requesting normal annual leave'],
   [/^ลาพักร้อนจากปีที่แล้วใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น \(หมดอายุวันที่ 1 เมษายน\)$/, 'Annual leave from last year can only be used until 31 March $1 (it expires on 1 April)'],
@@ -2355,6 +2361,7 @@ const I18N = {
     lp_loading:'Loading…', lp_summary:'{n} of {total} employee(s) have never logged in', lp_all_in:'🎉 Everyone has logged in at least once',
     c_cancel:'Cancel', c_close:'Close', c_edit:'Edit', c_delete:'Delete', c_save_changes:'Save Changes',
     em_add_title:'➕ Add Employee', em_add_btn:'Add Employee', em_edit_prefix:'Edit',
+    em_code_hint:'Changing the code: the employee must log in with the new code. Not allowed if they have ever submitted a leave request or have requests waiting for their approval.', msg_code_empty:'Employee code cannot be empty', cf_code_change:'Change employee code {old} → {new}?\n\nThe employee must log in with the NEW code from now on. This is recorded in LOI Logs.', msg_code_changed:'✅ Code changed — tell the employee to log in with the new code {new}',
     em_code:'Employee Code *', em_name:'Name *', em_email:'Email', em_dept:'Department', em_position:'Position', em_role:'Role',
     em_role_employee:'Employee', em_role_manager:'Manager', em_role_admin:'Admin', em_mgr_codes:'Manager Code(s)',
     em_mgr_ph:'e.g. 2400,2401 (in approval order)', em_password:'Password *', em_password_ph:'Temporary password',
@@ -2541,6 +2548,7 @@ const I18N = {
     lp_loading:'กำลังโหลด…', lp_summary:'{n} จาก {total} คน ยังไม่เคยล็อกอิน', lp_all_in:'🎉 ทุกคนเคยล็อกอินอย่างน้อย 1 ครั้งแล้ว',
     c_cancel:'ยกเลิก', c_close:'ปิด', c_edit:'แก้ไข', c_delete:'ลบ', c_save_changes:'บันทึกการเปลี่ยนแปลง',
     em_add_title:'➕ เพิ่มพนักงาน', em_add_btn:'เพิ่มพนักงาน', em_edit_prefix:'แก้ไข',
+    em_code_hint:'การเปลี่ยนรหัส: พนักงานต้องล็อกอินด้วยรหัสใหม่ และเปลี่ยนไม่ได้ถ้าเคยยื่นใบลา หรือมีใบลารอเขาอนุมัติอยู่', msg_code_empty:'รหัสพนักงานห้ามเป็นค่าว่าง', cf_code_change:'เปลี่ยนรหัสพนักงาน {old} → {new} ?\n\nพนักงานต้องล็อกอินด้วยรหัสใหม่นับจากนี้ และจะบันทึกไว้ใน LOI Logs', msg_code_changed:'✅ เปลี่ยนรหัสแล้ว — แจ้งพนักงานให้ล็อกอินด้วยรหัสใหม่ {new}',
     em_code:'รหัสพนักงาน *', em_name:'ชื่อ *', em_email:'อีเมล', em_dept:'แผนก', em_position:'ตำแหน่ง', em_role:'บทบาท',
     em_role_employee:'พนักงาน', em_role_manager:'หัวหน้า', em_role_admin:'ผู้ดูแลระบบ', em_mgr_codes:'รหัสหัวหน้า',
     em_mgr_ph:'เช่น 2400,2401 (เรียงลำดับอนุมัติ)', em_password:'รหัสผ่าน *', em_password_ph:'รหัสผ่านชั่วคราว',
@@ -5097,6 +5105,7 @@ function openAddEmployeeModal(){
   editingEmployeeId = null;
   ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('neCode').disabled=false;
+  document.getElementById('neCodeHint').style.display='none';
   document.getElementById('neRole').value='employee';
   document.getElementById('neAnnual').value=10;
   document.getElementById('neSick').value=30;
@@ -5119,7 +5128,8 @@ function openEditEmployeeModal(id){
   editingEmployeeId = id;
 
   document.getElementById('neCode').value = emp.employee_code;
-  document.getElementById('neCode').disabled = true; // employee_code แก้ไม่ได้
+  document.getElementById('neCode').disabled = false;   // admin แก้รหัสได้ (backend เช็กซ้ำ/ว่าง และห้ามเปลี่ยนถ้าเคยมีใบลา)
+  document.getElementById('neCodeHint').style.display='block';
   document.getElementById('neName').value = emp.name || '';
   document.getElementById('neEmail').value = emp.email || '';
   document.getElementById('neDept').value = emp.department || '';
@@ -5147,8 +5157,16 @@ async function submitAddOrEditEmployee(){
   const errEl=document.getElementById('addEmpErr');
 
   if(editingEmployeeId){
+    const oldEmp = employeesCache.find(e=>e.id===editingEmployeeId) || {};
+    const newCode = document.getElementById('neCode').value.trim();
+    const codeChanged = newCode !== String(oldEmp.employee_code||'');
+    if(codeChanged){
+      if(!newCode){ errEl.textContent = t('msg_code_empty'); return; }
+      if(!confirm(t('cf_code_change').replace('{old}', oldEmp.employee_code||'').replace('{new}', newCode))) return;
+    }
     const payload={
       employee_id: editingEmployeeId,
+      ...(codeChanged ? { employee_code: newCode } : {}),
       name: document.getElementById('neName').value.trim(),
       email: document.getElementById('neEmail').value.trim(),
       department: document.getElementById('neDept').value.trim(),
@@ -5162,7 +5180,7 @@ async function submitAddOrEditEmployee(){
     try{
       const res = await callApi('update_employee', payload);
       closeModal('addEmpModal');
-      showToast('✅ Employee updated');
+      showToast(res.code_changed ? t('msg_code_changed').replace('{new}', newCode) : '✅ Employee updated');
       if(res.manager_codes_not_found && res.manager_codes_not_found.length){
         showToast(`⚠️ Manager code(s) not found, skipped: ${res.manager_codes_not_found.join(', ')}`,'err');
       }
