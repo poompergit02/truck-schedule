@@ -2083,6 +2083,7 @@ function renderNextYearBlock(ny){
   if(!box) return;
   if(!ny || !ny.balances){ box.style.display='none'; box.innerHTML=''; return; }
   const order=['annual','annual_prev','sick','personal'];
+  order.forEach(ty=>{ if(!ny.balances.some(b=>b.leave_type===ty)) ny.balances.push({leave_type:ty,total_days:0,used_days:0}); });   // ครบทุกประเภทเสมอ (รวมพักร้อนจากปีที่แล้ว) แม้ยังไม่มีข้อมูล
   const rows = ny.balances.filter(b=>order.includes(b.leave_type)).sort((a,b)=>order.indexOf(a.leave_type)-order.indexOf(b.leave_type));
   box.style.display = 'block';
   box.innerHTML = `<h3>${escHtml(t('ny_emp_title').replace('{y}', ny.year))} <span class="ticket-nextyear-badge">${escHtml(t('ny_emp_badge').replace('{y}', ny.year))}</span></h3>
