@@ -123,6 +123,7 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
   background:var(--white);border:1px solid var(--line);border-radius:10px;
   box-shadow:0 12px 30px rgba(59,31,99,.15);padding:6px;z-index:60;
 }
+.tab-dropdown.force-closed .tab-dropdown-menu{display:none !important}
 .tab-dropdown:hover .tab-dropdown-menu,
 .tab-dropdown:focus-within .tab-dropdown-menu,
 .tab-dropdown.open .tab-dropdown-menu{display:block}
@@ -323,6 +324,15 @@ tr:hover td{background:var(--cream)}
 .setting-row:last-child{border-bottom:none}
 .setting-text h4{font-size:.94rem;font-weight:600;color:var(--ink);margin-bottom:3px}
 .setting-text p{font-size:.8rem;color:var(--text-dim)}
+.setting-group{border-bottom:1px solid var(--line-soft);padding:6px 0 14px}
+.setting-sublist{margin:0 0 0 14px;padding:8px 12px;background:var(--cream);border:1px solid var(--line-soft);border-radius:10px}
+.setting-subhdr{font-size:.76rem;font-weight:700;color:var(--text-dim);margin-bottom:4px}
+.setting-subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;font-size:.88rem;border-bottom:1px dashed var(--line-soft)}
+.setting-subrow:last-child{border-bottom:none}
+.setting-subrow small{display:block;color:var(--text-dim);font-size:.74rem;margin-top:1px}
+.dotcolor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 18px;margin-top:10px}
+.dotcolor-row{display:flex;align-items:center;gap:10px;font-size:.88rem}
+.dotcolor-row input[type=color]{width:38px;height:28px;padding:0;border:1.5px solid var(--line);border-radius:6px;background:none;cursor:pointer}
 .toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0;cursor:pointer}
 .toggle-switch input{opacity:0;width:0;height:0;position:absolute}
 .toggle-track{position:absolute;inset:0;background:var(--line);border-radius:20px;transition:.2s}
@@ -498,16 +508,15 @@ tr:hover td{background:var(--cream)}
           <div class="field">
             <label data-i18n="lbl_leave_type">Leave Type</label>
             <select id="reqType" onchange="onLeaveTypeChange()">
-              <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
-              <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+              <option value="annual" data-i18n="leave_annual">🏖️ Annual / Vacation</option>
+              <option value="annual_prev" data-i18n="leave_annual_prev">📆 Annual leave from last year</option>
               <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
-              <option value="sick" data-i18n="leave_sick">Sick Leave</option>
-              <option value="personal" data-i18n="leave_personal">Personal Leave</option>
-              <option value="other" data-i18n="leave_other">Other</option>
+              <option value="sick" data-i18n="leave_sick">🤒 Sick Leave</option>
+              <option value="personal" data-i18n="leave_personal">📝 Personal Leave</option>
               <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
               <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
               <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
               <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
             </select>
           </div>
@@ -822,6 +831,13 @@ tr:hover td{background:var(--cream)}
       <div class="section-sub" data-i18n="pg_holidays_sub">Shown as colored days on everyone's leave calendar — pick a color for each holiday</div>
 
       <div class="card">
+        <h3 data-i18n="h3_dotcolors">🎨 Leave type dot colors</h3>
+        <p class="hint" data-i18n="hint_dotcolors">The dot color of each leave type on everyone's calendar. Change it if two colors look too similar.</p>
+        <div class="dotcolor-grid" id="dotColorGrid"></div>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="resetDotColors()" data-i18n="btn_dotcolors_reset">Reset to default colors</button>
+      </div>
+
+      <div class="card">
         <h3 data-i18n="h3_add_holiday">➕ Add a Holiday</h3>
         <div class="form-grid">
           <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="holDate"/></div>
@@ -919,7 +935,11 @@ tr:hover td{background:var(--cream)}
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <h3 style="margin:0" data-i18n="lp_history_title">📈 Login History</h3>
-          <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <select id="loginStatsMode" class="exp-select" onchange="loadLoginStats()">
+              <option value="unique" data-i18n="lp_mode_unique">Count unique users per day</option>
+              <option value="all" data-i18n="lp_mode_all">Count every login</option>
+            </select>
             <button class="btn btn-sm btn-outline" onclick="shiftLoginStatsMonth(-1)" data-i18n="btn_prev">← Prev</button>
             <div class="mono" id="loginStatsMonthLabel" style="font-weight:600;min-width:120px;text-align:center"></div>
             <button class="btn btn-sm btn-outline" onclick="shiftLoginStatsMonth(1)" data-i18n="btn_next">Next →</button>
@@ -1179,16 +1199,15 @@ tr:hover td{background:var(--cream)}
       <div class="field">
         <label data-i18n="eo_type">Leave Type</label>
         <select id="erType">
-          <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
-          <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+          <option value="annual" data-i18n="leave_annual">🏖️ Annual / Vacation</option>
+          <option value="annual_prev" data-i18n="leave_annual_prev">📆 Annual leave from last year</option>
           <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
-          <option value="sick" data-i18n="leave_sick">Sick Leave</option>
-          <option value="personal" data-i18n="leave_personal">Personal Leave</option>
-          <option value="other" data-i18n="leave_other">Other</option>
+          <option value="sick" data-i18n="leave_sick">🤒 Sick Leave</option>
+          <option value="personal" data-i18n="leave_personal">📝 Personal Leave</option>
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
               <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
@@ -1279,16 +1298,15 @@ tr:hover td{background:var(--cream)}
       <div class="field">
         <label>Leave Type</label>
         <select id="emrType">
-          <option value="annual" data-i18n="leave_annual">Annual / Vacation</option>
-          <option value="annual_prev" data-i18n="leave_annual_prev">Annual leave from last year</option>
+          <option value="annual" data-i18n="leave_annual">🏖️ Annual / Vacation</option>
+          <option value="annual_prev" data-i18n="leave_annual_prev">📆 Annual leave from last year</option>
           <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
-          <option value="sick" data-i18n="leave_sick">Sick Leave</option>
-          <option value="personal" data-i18n="leave_personal">Personal Leave</option>
-          <option value="other" data-i18n="leave_other">Other</option>
+          <option value="sick" data-i18n="leave_sick">🤒 Sick Leave</option>
+          <option value="personal" data-i18n="leave_personal">📝 Personal Leave</option>
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">Unpaid Personal Leave</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
               <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
@@ -1383,10 +1401,12 @@ tr:hover td{background:var(--cream)}
 const API_URL = 'https://gmilmskiwrhrgqfjlakt.supabase.co/functions/v1/bright-endpoint';
 const SUPABASE_ANON_KEY = 'sb_publishable_WyQKdaKZQbd1vx2cavFwJw_dK-TL6Ur';
 
+// ประเภท 'other' ยกเลิกแล้ว (ยังเก็บป้ายชื่อไว้แสดงผลใบลาเก่า) — ไม่แสดงในคำอธิบายสีปฏิทิน
+function legendLeaveTypes(){ return Object.keys(LEAVE_TYPE_LABEL).filter(k=>k!=='other'); }
 const LEAVE_TYPE_LABEL = {
-  annual:'Annual / Vacation', annual_prev:'Annual leave from last year', annual_urgent:'🚨 Emergency Annual Leave', sick:'Sick Leave', personal:'Personal Leave', other:'Other',
+  annual:'🏖️ Annual / Vacation', annual_prev:'📆 Annual leave from last year', annual_urgent:'🚨 Emergency Annual Leave', sick:'🤒 Sick Leave', personal:'📝 Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
-  personal_unpaid:'Unpaid Personal Leave', wfh:'🏠 Work From Home',
+  personal_unpaid:'💸 Unpaid Personal Leave', wfh:'💻 Work From Home',
 };
 // ── โควตาพักร้อนยกยอด (carryover) มี leave_type เป็น "annual_carry_YYYY" แบบไดนามิก ──
 function getLeaveTypeLabel(type){
@@ -1733,6 +1753,7 @@ async function enterApp(){
     appSettingsCache = s.settings || {};
   }catch(e){ /* non-fatal, server still enforces regardless */ }
   refreshPrevAnnualOptions();
+  applyLeaveDotColors();
   BgArt.start(appSettingsCache['bg_animal']);   // เริ่มภาพพื้นหลังหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง) — สัตว์ตามที่ admin เลือก หรือตามเดือนปัจจุบัน
 }
 
@@ -1777,7 +1798,7 @@ function buildTabs(){
     dropdownHtml = `<div class="tab-dropdown">
       <button type="button" class="tab-btn tab-dropdown-trigger" onclick="toggleTabDropdown(event)">${t('menu_iida_control')} ▾</button>
       <div class="tab-dropdown-menu">
-        ${dropdownTabs.map(tab=>`<button type="button" class="tab-dropdown-item" data-page="${tab.id}" onclick="showPage('${tab.id}',this); closeTabDropdown();">${tab.label}</button>`).join('')}
+        ${dropdownTabs.map(tab=>`<button type="button" class="tab-dropdown-item" data-page="${tab.id}" onclick="showPage('${tab.id}',this); closeTabDropdown(true);">${tab.label}</button>`).join('')}
       </div>
     </div>`;
   }
@@ -1798,6 +1819,7 @@ function toggleTabDropdown(event){
   if(!wrap) return;
   const wasOpen = wrap.classList.contains('open');
   closeTabDropdown();
+  wrap.classList.remove('force-closed');
   if(!wasOpen){
     wrap.classList.add('open');
     positionTabDropdownMenu(wrap, event.currentTarget);
@@ -1817,8 +1839,13 @@ function positionTabDropdownMenu(wrap, trigger){
   }
   menu.style.left = left + 'px';
 }
-function closeTabDropdown(){
-  document.querySelectorAll('.tab-dropdown.open').forEach(el=>el.classList.remove('open'));
+function closeTabDropdown(force){
+  document.querySelectorAll('.tab-dropdown').forEach(el=>{
+    el.classList.remove('open');
+    // เลือกเมนูแล้วให้หุบทันที แม้เมาส์ยังอยู่บนเมนู (:hover) หรือปุ่มยังโฟกัสอยู่ (:focus-within) — จะกลับมาแสดงอีกเมื่อเมาส์ออกไปแล้วชี้ใหม่
+    if(force) el.classList.add('force-closed');
+  });
+  if(force && document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 window.addEventListener('resize', ()=>{
   const openWrap = document.querySelector('.tab-dropdown.open');
@@ -1842,7 +1869,7 @@ document.addEventListener('mouseover', (e)=>{
 });
 document.addEventListener('mouseout', (e)=>{
   const wrap = e.target.closest('.tab-dropdown');
-  if(wrap && !wrap.contains(e.relatedTarget)) wrap.dataset.hoverPositioned='0';
+  if(wrap && !wrap.contains(e.relatedTarget)){ wrap.dataset.hoverPositioned='0'; wrap.classList.remove('force-closed'); }
 });
 
 function showPage(id, el){
@@ -2002,7 +2029,7 @@ function renderMyCalendar(){
   }
   document.getElementById('myCalGrid').innerHTML = html;
 
-  document.getElementById('myCalLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+  document.getElementById('myCalLegend').innerHTML = legendLeaveTypes().map(t=>
     `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
   ).join('');
 }
@@ -2258,8 +2285,8 @@ const I18N = {
     login_sub:'Leave Request Online IIDA', login_code_label:'Employee Code', login_password_label:'Password',
     login_signin_btn:'Sign In', login_footer:"Contact HR / Admin if you don't have login details",
     signout_btn:'Sign Out',
-    tab_myleave:'My Leave', tab_myrequests:'My Requests', tab_teamrequests:'My Team Requests',
-    tab_employees:'Employees', tab_reports:'Reports', tab_settings:'Settings', tab_logs:'LOI Logs',
+    tab_myleave:'🏠 My Leave', tab_myrequests:'📨 My Requests', tab_teamrequests:'👥 My Team Requests',
+    tab_employees:'🧑‍💼 Employees', tab_reports:'📊 Reports', tab_settings:'⚙️ Settings', tab_logs:'🧾 LOI Logs',
     tab_holidays:'🏖️ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
@@ -2291,6 +2318,7 @@ const I18N = {
     exp_req_desc:'Every leave request with dates, type, status and reason.', exp_emp_desc:'Everyone in the system with role, manager chain and permissions.',
     exp_req_btn:'Export Requests', exp_emp_btn:'Export Employees',
     lp_chart_title:'📊 Most frequent logins', lp_range_7:'Last 7 days', lp_range_30:'Last 30 days', lp_range_all:'All time',
+    lp_mode_unique:'Count unique users per day', lp_mode_all:'Count every login', lp_stat_logins_unique:'User-days (unique per day)',
     lp_stat_logins:'Total logins', lp_stat_active:'Active users', lp_stat_never:'Never logged in',
     lp_no_data:'No logins in this period', lp_top_note:'Top {n} users by number of logins', lp_never_title:'Never logged in',
     lp_loading:'Loading…', lp_summary:'{n} of {total} employee(s) have never logged in', lp_all_in:'🎉 Everyone has logged in at least once',
@@ -2336,7 +2364,7 @@ const I18N = {
     btn_export_employees:'📥 Export All Employees', btn_submit_request:'Submit Request', btn_add_holiday:'Add Holiday',
     btn_export_excel:'Export to Excel', btn_find:'🔍 Find',
     lbl_leave_type:'Leave Type', lbl_duration:'Duration', lbl_start_date:'Start Date', lbl_end_date:'End Date', lbl_reason:'Reason',
-    leave_annual:'Annual / Vacation', leave_sick:'Sick Leave', leave_personal:'Personal Leave', leave_other:'Other',
+    leave_annual:'🏖️ Annual / Vacation', leave_sick:'🤒 Sick Leave', leave_personal:'📝 Personal Leave', leave_other:'Other',
     leave_maternity:'🤱 Maternity Leave', leave_paternity:'🤝 Paternity Leave', leave_priesthood:'🙏 Priesthood Ordination Leave',
     st_pending_manager:'Pending Manager', st_pending_admin:'Pending Admin', st_approved:'Approved',
     st_rejected_manager:'Rejected (Manager)', st_rejected_admin:'Rejected (Admin)',
@@ -2346,7 +2374,13 @@ const I18N = {
     set_nopast_desc:"Employees can't submit a leave request for a date before today — except Sick Leave, which is always allowed.",
     set_attach_title:'Require medical certificate for sick leave (Mon/Fri or 3+ days)',
     set_attach_desc:'Sick leave that includes a Monday or Friday, or lasts 3 or more working days (e.g. Tue–Thu), must attach a photo of a medical certificate.',
+    set_grp_sameday_title:'Block same-day leave requests', set_grp_sameday_desc:'When ON, leave starting/including today cannot be requested — except the leave types switched ON in the exception list below.',
+    set_grp_past_title:'Block backdated leave requests', set_grp_past_desc:'When ON, leave that starts in the past cannot be requested — except the leave types switched ON in the exception list below.',
+    set_exempt_hdr:'Exceptions (ON = this leave type is allowed)',
+    set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
+    set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
+    h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
     ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
     ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
@@ -2367,7 +2401,7 @@ const I18N = {
     lp_history_title:'📈 Login History', lp_chart_sub:'Daily login count over the selected period',
     tk_days_left:'{n} days left', tk_use_by_mar:'use by 31 Mar', tk_used:'used', tk_total:'total', tk_left:'left',
     tk_none:'No leave balance set up yet. Contact Admin.',
-    tab_send_document:'Send Document', pg_senddoc_title:'Send Document',
+    tab_send_document:'📄 Send Document', pg_senddoc_title:'Send Document',
     pg_senddoc_sub:'Send an image or PDF to one employee — viewable in the system only, with an email notification',
     h3_senddoc_new:'New Document', lbl_emp_code:'Employee code', lbl_doc_label:'Label (optional)', lbl_doc_file:'File (image or PDF)',
     lbl_doc_recurring:'Repeat every month (e.g. send on day 30 of every month)', lbl_doc_day:'Day of month',
@@ -2389,13 +2423,13 @@ const I18N = {
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
-    tab_team_results:'Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
-    leave_personal_unpaid:'Unpaid Personal Leave', leave_wfh:'🏠 Work From Home', leave_annual_prev:'Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
+    leave_personal_unpaid:'💸 Unpaid Personal Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used until 31 March only and disappears on 1 April.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the filled “Annual from last year” cells with the calculated values?', msg_ny_carry_done:'✅ Calculated (max 3 days) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
@@ -2434,8 +2468,8 @@ const I18N = {
     login_sub:'ระบบขอลาออนไลน์ IIDA', login_code_label:'รหัสพนักงาน', login_password_label:'รหัสผ่าน',
     login_signin_btn:'เข้าสู่ระบบ', login_footer:'ติดต่อ HR / Admin หากไม่มีข้อมูลเข้าสู่ระบบ',
     signout_btn:'ออกจากระบบ',
-    tab_myleave:'วันลาของฉัน', tab_myrequests:'คำขอของฉัน', tab_teamrequests:'คำขอของทีม',
-    tab_employees:'พนักงาน', tab_reports:'รายงาน', tab_settings:'ตั้งค่า', tab_logs:'บันทึกการใช้งาน',
+    tab_myleave:'🏠 วันลาของฉัน', tab_myrequests:'📨 คำขอของฉัน', tab_teamrequests:'👥 คำขอของทีม',
+    tab_employees:'🧑‍💼 พนักงาน', tab_reports:'📊 รายงาน', tab_settings:'⚙️ ตั้งค่า', tab_logs:'🧾 บันทึกการใช้งาน',
     tab_holidays:'🏖️ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
@@ -2467,6 +2501,7 @@ const I18N = {
     exp_req_desc:'ใบลาทั้งหมดพร้อมวันที่ ประเภท สถานะ และเหตุผล', exp_emp_desc:'รายชื่อพนักงานทุกคน พร้อมบทบาท สายอนุมัติ และสิทธิ์พิเศษ',
     exp_req_btn:'Export ใบลา', exp_emp_btn:'Export พนักงาน',
     lp_chart_title:'📊 ผู้ที่ล็อกอินบ่อยที่สุด', lp_range_7:'7 วันล่าสุด', lp_range_30:'30 วันล่าสุด', lp_range_all:'ทั้งหมด',
+    lp_mode_unique:'นับคนไม่ซ้ำต่อวัน', lp_mode_all:'นับทุกครั้งที่ล็อกอิน', lp_stat_logins_unique:'จำนวนคน-วัน (ไม่ซ้ำในวันเดียวกัน)',
     lp_stat_logins:'จำนวนการล็อกอินรวม', lp_stat_active:'ผู้ใช้ที่ใช้งาน', lp_stat_never:'ยังไม่เคยล็อกอิน',
     lp_no_data:'ไม่มีการล็อกอินในช่วงเวลานี้', lp_top_note:'{n} อันดับแรกตามจำนวนครั้งที่ล็อกอิน', lp_never_title:'ยังไม่เคยล็อกอิน',
     lp_loading:'กำลังโหลด…', lp_summary:'{n} จาก {total} คน ยังไม่เคยล็อกอิน', lp_all_in:'🎉 ทุกคนเคยล็อกอินอย่างน้อย 1 ครั้งแล้ว',
@@ -2512,7 +2547,7 @@ const I18N = {
     btn_export_employees:'📥 Export พนักงานทั้งหมด', btn_submit_request:'ส่งคำขอลา', btn_add_holiday:'เพิ่มวันหยุด',
     btn_export_excel:'Export เป็น Excel', btn_find:'🔍 ค้นหา',
     lbl_leave_type:'ประเภทการลา', lbl_duration:'ระยะเวลา', lbl_start_date:'วันเริ่ม', lbl_end_date:'วันสิ้นสุด', lbl_reason:'เหตุผล',
-    leave_annual:'ลาพักร้อน', leave_sick:'ลาป่วย', leave_personal:'ลากิจ', leave_other:'อื่นๆ',
+    leave_annual:'🏖️ ลาพักร้อน', leave_sick:'🤒 ลาป่วย', leave_personal:'📝 ลากิจ', leave_other:'อื่นๆ',
     leave_maternity:'🤱 ลาคลอดบุตร', leave_paternity:'🤝 ลาดูแลภรรยาคลอดบุตร', leave_priesthood:'🙏 ลาอุปสมบท',
     st_pending_manager:'รอหัวหน้าอนุมัติ', st_pending_admin:'รอ Admin อนุมัติ', st_approved:'อนุมัติแล้ว',
     st_rejected_manager:'ไม่อนุมัติ (หัวหน้า)', st_rejected_admin:'ไม่อนุมัติ (Admin)',
@@ -2522,7 +2557,13 @@ const I18N = {
     set_nopast_desc:'พนักงานยื่นคำขอลาสำหรับวันที่ผ่านมาแล้วไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
     set_attach_title:'ลาป่วยวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วัน ต้องแนบใบรับรองแพทย์',
     set_attach_desc:'คำขอลาป่วยที่มีวันจันทร์หรือวันศุกร์อยู่ในช่วงที่ลา หรือลาตั้งแต่ 3 วันทำงานขึ้นไป (เช่น อังคาร–พฤหัสบดี) ต้องแนบรูปใบรับรองแพทย์',
+    set_grp_sameday_title:'ห้ามลาวันปัจจุบัน', set_grp_sameday_desc:'เมื่อเปิด จะขอลาที่รวมวันนี้ไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
+    set_grp_past_title:'ห้ามลาย้อนหลัง', set_grp_past_desc:'เมื่อเปิด จะขอลาที่เริ่มในอดีตไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
+    set_exempt_hdr:'ข้อยกเว้น (เปิด = ประเภทการลานี้ลาได้)',
+    set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
+    set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
+    h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
     ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
     ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
@@ -2543,7 +2584,7 @@ const I18N = {
     lp_history_title:'📈 ประวัติการ Login', lp_chart_sub:'จำนวนการล็อกอินต่อวันในช่วงเวลาที่เลือก',
     tk_days_left:'เหลือ {n} วัน', tk_use_by_mar:'ใช้ภายใน 31 มี.ค.', tk_used:'ใช้ไป', tk_total:'รวม', tk_left:'คงเหลือ',
     tk_none:'ยังไม่มีการตั้งโควตาวันลา ติดต่อแอดมิน',
-    tab_send_document:'ส่งไฟล์เอกสาร', pg_senddoc_title:'ส่งไฟล์เอกสาร',
+    tab_send_document:'📄 ส่งไฟล์เอกสาร', pg_senddoc_title:'ส่งไฟล์เอกสาร',
     pg_senddoc_sub:'ส่งรูปภาพหรือ PDF ให้พนักงานรายคน — เปิดดูได้ในระบบเท่านั้น พร้อมอีเมลแจ้งเตือน',
     h3_senddoc_new:'เอกสารใหม่', lbl_emp_code:'รหัสพนักงาน', lbl_doc_label:'ชื่อเอกสาร (ไม่บังคับ)', lbl_doc_file:'ไฟล์ (รูปภาพหรือ PDF)',
     lbl_doc_recurring:'ส่งซ้ำทุกเดือน (เช่น ส่งวันที่ 30 ของทุกเดือน)', lbl_doc_day:'วันที่ของเดือน',
@@ -2565,13 +2606,13 @@ const I18N = {
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
-    tab_team_results:'ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
-    leave_personal_unpaid:'ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'🏠 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
+    leave_personal_unpaid:'💸 ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึง 31 มีนาคมเท่านั้น และจะหายไปในวันที่ 1 เมษายน',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ที่กรอกไว้ด้วยค่าที่คำนวณหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (สูงสุด 3 วัน) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
@@ -3457,7 +3498,49 @@ async function updateHolidayColor(id, color){
   }catch(e){ showToast(e.message,'err'); }
 }
 
+// ── สีจุดประเภทการลาบนปฏิทิน (admin เปลี่ยนได้ เก็บใน loi_settings.leave_dot_colors เป็น JSON) ──
+const DOT_TYPES = ['annual','annual_prev','annual_urgent','sick','personal','personal_unpaid','wfh','maternity','paternity','priesthood'];
+const DOT_DEFAULTS = { annual:'#6B3FA0', sick:'#3F7D58', personal:'#2AA9A0', maternity:'#E0679A', paternity:'#3B82C4', priesthood:'#C9A227', personal_unpaid:'#E58F2A', annual_prev:'#8B5CF6', annual_urgent:'#DC2626', wfh:'#6366F1' };
+function dotColorMap(){
+  let m = {};
+  try{ m = JSON.parse(appSettingsCache['leave_dot_colors']||'{}') || {}; }catch(e){ m = {}; }
+  const out = {};
+  DOT_TYPES.forEach(k=>{ out[k] = /^#[0-9a-f]{6}$/i.test(m[k]||'') ? m[k] : DOT_DEFAULTS[k]; });
+  return out;
+}
+function applyLeaveDotColors(){
+  const m = dotColorMap();
+  let st = document.getElementById('dotColorStyle');
+  if(!st){ st = document.createElement('style'); st.id = 'dotColorStyle'; document.head.appendChild(st); }
+  st.textContent = DOT_TYPES.map(k=>`.cal-dot-${k}{background:${m[k]}}`).join('\n');
+}
+function renderDotColorEditor(){
+  const g = document.getElementById('dotColorGrid');
+  if(!g) return;
+  const m = dotColorMap();
+  g.innerHTML = DOT_TYPES.map(k=>`<div class="dotcolor-row"><input type="color" value="${m[k].toLowerCase()}" onchange="saveDotColor('${k}', this.value)"/><span class="cal-dot cal-dot-${k}"></span><span>${escHtml(getLeaveTypeLabel(k))}</span></div>`).join('');
+}
+async function saveDotColor(type, value){
+  const cur = dotColorMap(); cur[type] = value;
+  const json = JSON.stringify(cur);
+  try{
+    await callApi('update_setting', { key:'leave_dot_colors', value: json });
+    appSettingsCache['leave_dot_colors'] = json;
+    applyLeaveDotColors(); renderDotColorEditor();
+    showToast(t('msg_color_updated'));
+  }catch(e){ showToast(e.message,'err'); renderDotColorEditor(); }
+}
+async function resetDotColors(){
+  try{
+    await callApi('update_setting', { key:'leave_dot_colors', value:'' });
+    appSettingsCache['leave_dot_colors'] = '';
+    applyLeaveDotColors(); renderDotColorEditor();
+    showToast(t('msg_color_updated'));
+  }catch(e){ showToast(e.message,'err'); }
+}
+
 async function loadHolidays(){
+  renderDotColorEditor();
   try{
     const data = await callApi('get_company_holidays');
     holidaysCache = data.holidays || [];
@@ -3908,7 +3991,7 @@ function renderSpecialCalendar(requests){
     </div>`;
   }
   grid.innerHTML = html;
-  document.getElementById('specialCalLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+  document.getElementById('specialCalLegend').innerHTML = legendLeaveTypes().map(t=>
     `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
   ).join('');
 }
@@ -4388,24 +4471,66 @@ async function exportAllRequestsExcel(){
 
 // ── ADMIN: SETTINGS (toggle switches) ──
 const SETTING_DEFS = [
-  { key: 'no_same_day_leave_except_sick', titleKey: 'set_nosameday_title', descKey: 'set_nosameday_desc' },
-  { key: 'no_past_date_leave_except_sick', titleKey: 'set_nopast_title', descKey: 'set_nopast_desc' },
-  { key: 'sick_leave_monfri_requires_attachment', titleKey: 'set_attach_title', descKey: 'set_attach_desc' },
-  { key: 'personal_leave_requires_attachment', titleKey: 'set_pattach_title', descKey: 'set_pattach_desc' },
   { key: 'notify_on_admin_cancel', titleKey: 'set_notifycancel_title', descKey: 'set_notifycancel_desc' },
   { key: 'notify_on_balance_edit2', titleKey: 'set_notifybalance_title', descKey: 'set_notifybalance_desc' },
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
-  { key: 'wfh_requires_photo', titleKey: 'set_wfhphoto_title', descKey: 'set_wfhphoto_desc' },
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
   { key: 'annual_prev_first', titleKey: 'set_prevfirst_title', descKey: 'set_prevfirst_desc' },
 ];
 
+// ── กลุ่มเงื่อนไขที่มีรายการประเภทการลา (เปิด/ปิดรายประเภท) ──
+const EXEMPT_TYPES = ['sick','annual_urgent','annual','annual_prev','personal','personal_unpaid','wfh','maternity','paternity','priesthood'];
+const EXEMPT_GROUPS = [
+  { masterKey:'no_same_day_leave_except_sick', listKey:'same_day_exempt_types', def:'sick,annual_urgent', titleKey:'set_grp_sameday_title', descKey:'set_grp_sameday_desc' },
+  { masterKey:'no_past_date_leave_except_sick', listKey:'past_date_exempt_types', def:'sick', titleKey:'set_grp_past_title', descKey:'set_grp_past_desc' },
+];
+const ATTACH_LIST = [
+  { key:'sick_leave_monfri_requires_attachment', type:'sick', noteKey:'set_att_sick_note' },
+  { key:'personal_leave_requires_attachment', type:'personal', noteKey:'set_att_personal_note' },
+  { key:'wfh_requires_photo', type:'wfh', noteKey:'set_att_wfh_note' },
+];
+function settingsToggleHtml(checked, onchange){
+  return `<label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="${onchange}"/><span class="toggle-track"></span></label>`;
+}
+function renderSettingsGroups(settings){
+  const exemptHtml = EXEMPT_GROUPS.map(g=>{
+    const raw = settings[g.listKey]===undefined ? g.def : String(settings[g.listKey]);
+    const on = new Set(raw.split(',').map(s=>s.trim()).filter(Boolean));
+    return `<div class="setting-group">
+      <div class="setting-row" style="border-bottom:none;padding-bottom:6px">
+        <div class="setting-text"><h4>${escHtml(t(g.titleKey))}</h4><p>${escHtml(t(g.descKey))}</p></div>
+        ${settingsToggleHtml(settings[g.masterKey]==='true', `toggleSetting('${g.masterKey}', this.checked)`)}
+      </div>
+      <div class="setting-sublist" data-list="${g.listKey}">
+        <div class="setting-subhdr">${escHtml(t('set_exempt_hdr'))}</div>
+        ${EXEMPT_TYPES.map(ty=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(ty))}</span>${settingsToggleHtml(on.has(ty), `toggleExempt('${g.listKey}', this)`)}<input type="hidden" value="${ty}"/></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  const attachHtml = `<div class="setting-group">
+      <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_grp_attach_title'))}</h4><p>${escHtml(t('set_grp_attach_desc'))}</p></div></div>
+      <div class="setting-sublist">
+        ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`)}</div>`).join('')}
+      </div>
+    </div>`;
+  return exemptHtml + attachHtml;
+}
+async function toggleExempt(listKey, inputEl){
+  const wrap = inputEl.closest('.setting-sublist');
+  const types = [...wrap.querySelectorAll('.setting-subrow')].filter(r=>r.querySelector('input[type=checkbox]').checked).map(r=>r.querySelector('input[type=hidden]').value);
+  try{
+    await callApi('update_setting', { key: listKey, value: types.join(',') });
+    appSettingsCache[listKey] = types.join(',');
+    showToast(t('msg_nyq_saved'));
+  }catch(e){ showToast(e.message,'err'); loadSettings(); }
+}
+
 async function loadSettings(){
   try{
     const data = await callApi('get_settings');
     const card = document.getElementById('settingsCard');
-    card.innerHTML = SETTING_DEFS.map(def=>{
+    card.innerHTML = renderSettingsGroups(data.settings) + SETTING_DEFS.map(def=>{
       const on = data.settings[def.key] === 'true';
       return `
       <div class="setting-row">
@@ -4765,11 +4890,11 @@ async function loadLoginStats(){
   const barsEl = document.getElementById('loginBars');
   barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
   try{
-    const data = await callApi('get_login_stats', { year: loginStatsYear, month: loginStatsMonth });
+    const data = await callApi('get_login_stats', { year: loginStatsYear, month: loginStatsMonth, mode: (document.getElementById('loginStatsMode')||{}).value || 'unique' });
     const users = data.users || [];
     const daily = data.daily || [];
     statsEl.innerHTML =
-      `<div class="lp-stat"><b>${data.total_logins||0}</b><span>${escHtml(t('lp_stat_logins'))}</span></div>` +
+      `<div class="lp-stat"><b>${data.total_logins||0}</b><span>${escHtml(t(data.mode==='all' ? 'lp_stat_logins' : 'lp_stat_logins_unique'))}</span></div>` +
       `<div class="lp-stat"><b>${users.length}</b><span>${escHtml(t('lp_stat_active'))}</span></div>` +
       `<div class="lp-stat"><b>${neverLoggedInCache.length}</b><span>${escHtml(t('lp_stat_never'))}</span></div>`;
     if(!daily.some(d=>d.count>0)){ barsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_no_data'))}</div>`; return; }
@@ -5127,7 +5252,7 @@ function renderCalendar(requests){
     </div>`;
   }
   grid.innerHTML = html;
-  document.getElementById('calendarLegend').innerHTML = Object.keys(LEAVE_TYPE_LABEL).map(t=>
+  document.getElementById('calendarLegend').innerHTML = legendLeaveTypes().map(t=>
     `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
   ).join('');
 }
