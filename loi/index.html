@@ -332,6 +332,10 @@ tr:hover td{background:var(--cream)}
 .setting-subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;font-size:.88rem;border-bottom:1px dashed var(--line-soft)}
 .setting-subrow:last-child{border-bottom:none}
 .setting-subrow small{display:block;color:var(--text-dim);font-size:.74rem;margin-top:1px}
+.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.sortable:hover{color:var(--plum-700)}
+.sortable.asc::after{content:' ▲';font-size:.7em}
+.sortable.desc::after{content:' ▼';font-size:.7em}
 .toggle-switch.sm{width:34px;height:19px}
 .toggle-switch.sm .toggle-track::before{width:13px;height:13px;left:3px;top:3px}
 .toggle-switch.sm input:checked + .toggle-track::before{transform:translateX(15px)}
@@ -687,9 +691,27 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         </div>
       </div>
 
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="empSearch" oninput="renderEmployeesTable()" data-i18n-ph="ph_emp_search" placeholder="Search code, name or email" style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
+          <select id="empFDept" class="exp-select" onchange="renderEmployeesTable()"></select>
+          <select id="empFPosition" class="exp-select" onchange="renderEmployeesTable()"></select>
+          <select id="empFRole" class="exp-select" onchange="renderEmployeesTable()"></select>
+          <button class="btn btn-sm btn-outline" onclick="resetEmployeeFilters()" data-i18n="btn_emp_reset">Clear filters</button>
+          <span class="hint" id="empCount" style="margin:0"></span>
+        </div>
+      </div>
+
       <div class="card" style="padding:0">
-        <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th data-i18n="th_code">Code</th><th data-i18n="th_name">Name</th><th data-i18n="th_email">Email</th><th data-i18n="th_dept">Dept</th><th data-i18n="th_role">Role</th><th data-i18n="th_managers">Managers (in order)</th><th data-i18n="th_action">Action</th></tr></thead>
+        <div class="table-wrap" style="border:none"><table id="employeesTable">
+          <thead><tr>
+            <th class="sortable" data-sort="employee_code" onclick="sortEmployees('employee_code')" data-i18n="th_code">Code</th>
+            <th class="sortable" data-sort="name" onclick="sortEmployees('name')" data-i18n="th_name">Name</th>
+            <th class="sortable" data-sort="email" onclick="sortEmployees('email')" data-i18n="th_email">Email</th>
+            <th class="sortable" data-sort="department" onclick="sortEmployees('department')" data-i18n="th_dept">Dept</th>
+            <th class="sortable" data-sort="position" onclick="sortEmployees('position')" data-i18n="th_position">Position</th>
+            <th class="sortable" data-sort="role" onclick="sortEmployees('role')" data-i18n="th_role">Role</th>
+            <th data-i18n="th_managers">Managers (in order)</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
         </table></div>
       </div>
@@ -1027,7 +1049,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <p class="hint" style="margin:6px 0 0" data-i18n="nyq_visible_hint">Employees see next year's quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.</p>
           <div class="nyq-months" id="nyqMonths"></div>
         </div>
-        <div style="margin-top:14px"><button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
+        <div style="margin-top:14px"><button class="btn btn-sm btn-outline" onclick="exportYearQuotasExcel()" data-i18n="btn_nyq_export">⬇ Export quotas of this year (Excel)</button> <button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
         <div class="table-wrap" style="border:none;margin-top:10px"><table id="nyqTable">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
@@ -1078,6 +1100,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <input type="text" id="nySearch" oninput="filterNextYearRows()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
           <button class="btn btn-outline" onclick="fillNextYearFromCurrent()" data-i18n="btn_ny_fill">Fill empty cells from this year</button>
           <button class="btn btn-outline" onclick="fillNextYearCarry()" data-i18n="btn_ny_carry">Calculate carry-over from remaining annual</button>
+          <button class="btn btn-outline" onclick="exportNextYearPlanExcel()" data-i18n="btn_ny_export_plan">⬇ Export prepared quotas (Excel)</button>
           <button class="btn btn-primary" onclick="saveNextYearPlan()" data-i18n="btn_ny_save">💾 Save quotas</button>
         </div>
         <div class="ny-hours-toggle"><label class="toggle-switch"><input type="checkbox" id="nyShowHours" onchange="toggleNyHours(this.checked)"/><span class="toggle-track"></span></label><span data-i18n="ny_show_hours">Show hours column (for partial days)</span></div>
@@ -2366,6 +2389,8 @@ const I18N = {
     exp_loi_hint:'One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.',
     exp_loi_btn:'Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
+    emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
+    exp_unit_d:'days', exp_unit_h:'hours', exp_unit_m:'min', exp_col_total:'Quota', exp_col_current:'Current year', exp_col_plan:'Prepared', btn_ny_export_plan:'⬇ Export prepared quotas (Excel)', btn_nyq_export:'⬇ Export quotas of this year (Excel)', msg_export_none:'No data to export',
     exp_col_code:'Employee Code', exp_col_user:'User', exp_col_dept:'Department', exp_col_remaining:'Remaining', exp_col_used:'Used',
     exp_none:'No employees to export',
     exp_req_desc:'Every leave request with dates, type, status and reason.', exp_emp_desc:'Everyone in the system with role, manager chain and permissions.',
@@ -2555,6 +2580,8 @@ const I18N = {
     exp_loi_hint:'หนึ่งแถวต่อพนักงาน แต่ละประเภทการลามีคอลัมน์ "คงเหลือ" และ "ใช้ไปแล้ว" อยู่ติดกัน',
     exp_loi_btn:'Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
+    emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
+    exp_unit_d:'วัน', exp_unit_h:'ชั่วโมง', exp_unit_m:'นาที', exp_col_total:'โควตา', exp_col_current:'ปีปัจจุบัน', exp_col_plan:'ที่เตรียมไว้', btn_ny_export_plan:'⬇ Export โควตาที่เตรียมไว้ (Excel)', btn_nyq_export:'⬇ Export โควตาปีนี้ (Excel)', msg_export_none:'ไม่มีข้อมูลให้ export',
     exp_col_code:'รหัสพนักงาน', exp_col_user:'ผู้ใช้', exp_col_dept:'แผนก', exp_col_remaining:'คงเหลือ', exp_col_used:'ใช้ไปแล้ว',
     exp_none:'ไม่มีพนักงานให้ export',
     exp_req_desc:'ใบลาทั้งหมดพร้อมวันที่ ประเภท สถานะ และเหตุผล', exp_emp_desc:'รายชื่อพนักงานทุกคน พร้อมบทบาท สายอนุมัติ และสิทธิ์พิเศษ',
@@ -4065,21 +4092,66 @@ let managerChainsCache = {};
 async function loadEmployees(){
   try{
     const data = await callApi('list_employees');
-    const body=document.getElementById('employeesBody');
-    const byId={}; data.employees.forEach(e=>byId[e.id]=e);
-    const chains = data.manager_chains || {};
     employeesCache = data.employees;
-    managerChainsCache = chains;
-    body.innerHTML = data.employees.map(e=>{
-      const chain = chains[e.id] || [];
-      const managerNames = chain.map((mid,i)=>`${i+1}. ${byId[mid]?escHtml(byId[mid].name):'?'}`).join('<br/>');
-      return `
+    managerChainsCache = data.manager_chains || {};
+    populateEmployeeFilters();
+    renderEmployeesTable();
+  }catch(e){ showToast(e.message,'err'); }
+}
+
+// ── ตารางพนักงาน: กรองด้วย dropdown (แผนก/ตำแหน่ง/บทบาท) + ค้นหา + คลิกหัวตารางเพื่อเรียง (น้อย→มาก / A–Z และกลับด้าน) ──
+let empSort = { key:'employee_code', dir:'asc' };
+function populateEmployeeFilters(){
+  const fill = (id, field, allKey, extra) => {
+    const sel = document.getElementById(id); if(!sel) return;
+    const cur = sel.value;
+    const vals = [...new Set(employeesCache.map(e=>String(e[field]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th',{numeric:true}));
+    sel.innerHTML = `<option value="">${escHtml(t(allKey))}</option>` + vals.map(v=>`<option value="${escAttr(v)}">${escHtml(v)}</option>`).join('') + (extra||'');
+    if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+  };
+  fill('empFDept','department','emp_all_depts','<option value="__none">—</option>');
+  fill('empFPosition','position','emp_all_positions','<option value="__none">—</option>');
+  fill('empFRole','role','emp_all_roles');
+}
+function resetEmployeeFilters(){
+  ['empSearch','empFDept','empFPosition','empFRole'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value=''; });
+  renderEmployeesTable();
+}
+function sortEmployees(key){
+  empSort = { key, dir: (empSort.key===key && empSort.dir==='asc') ? 'desc' : 'asc' };
+  renderEmployeesTable();
+}
+function renderEmployeesTable(){
+  const body = document.getElementById('employeesBody'); if(!body) return;
+  const byId = {}; employeesCache.forEach(e=>byId[e.id]=e);
+  const chains = managerChainsCache || {};
+  const q = (document.getElementById('empSearch').value||'').trim().toLowerCase();
+  const fd = document.getElementById('empFDept').value, fp = document.getElementById('empFPosition').value, fr = document.getElementById('empFRole').value;
+  const match = (val, f) => !f || (f==='__none' ? !String(val||'').trim() : String(val||'').trim()===f);
+  let list = employeesCache.filter(e=>
+    (!q || [e.employee_code,e.name,e.email].some(x=>String(x||'').toLowerCase().includes(q))) &&
+    match(e.department,fd) && match(e.position,fp) && (!fr || e.role===fr));
+  const k = empSort.key, dir = empSort.dir==='asc' ? 1 : -1;
+  list.sort((a,b)=>{
+    const va = String(a[k]||''), vb = String(b[k]||'');
+    if(!va && vb) return 1; if(va && !vb) return -1;   // ค่าว่างไปท้ายเสมอ
+    return va.localeCompare(vb,'th',{numeric:true,sensitivity:'base'}) * dir;
+  });
+  document.querySelectorAll('#employeesTable th.sortable').forEach(th=>{
+    th.classList.remove('asc','desc'); if(th.dataset.sort===k) th.classList.add(empSort.dir);
+  });
+  const cnt = document.getElementById('empCount'); if(cnt) cnt.textContent = t('emp_count').replace('{n}', list.length).replace('{m}', employeesCache.length);
+  body.innerHTML = list.map(e=>{
+    const chain = chains[e.id] || [];
+    const managerNames = chain.map((mid,i)=>`${i+1}. ${byId[mid]?escHtml(byId[mid].name):'?'}`).join('<br/>');
+    return `
       <tr>
-        <td class="mono">${e.employee_code}</td>
+        <td class="mono">${escHtml(e.employee_code)}</td>
         <td><span class="name-with-avatar">${avatarHtml(e,28)}<span>${escHtml(e.name)}</span></span></td>
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
-        <td>${e.role}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
+        <td>${e.position?escHtml(e.position):'—'}</td>
+        <td>${escHtml(e.role)}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
@@ -4088,8 +4160,7 @@ async function loadEmployees(){
           ${e.role!=='admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">${escHtml(t('c_delete'))}</button>` : ''}
         </td>
       </tr>`;
-    }).join('');
-  }catch(e){ showToast(e.message,'err'); }
+  }).join('') || `<tr><td colspan="8" class="empty-msg">${escHtml(t('tk_none2'))}</td></tr>`;
 }
 
 async function resetEmployeePassword(id, name){
@@ -4461,6 +4532,26 @@ function populateExportFilterSelectors(){
 }
 
 // ── ADMIN: EXPORT LOI DATA (คงเหลือ + ใช้ไปแล้ว ของทุกประเภทการลา อยู่ติดกัน) ──
+// แยกจำนวนวัน(ทศนิยม) เป็น วัน / ชั่วโมง / นาที (1 วัน = 8 ชม., นาทีเป็น 0 หรือ 30) — ค่าติดลบใส่เครื่องหมายลบหน้าทุกส่วนที่ไม่เป็น 0
+function dhmParts(v){
+  const n = Number(v) || 0, neg = n < 0, s = nySplit(Math.abs(n));
+  const sg = x => (neg && x !== 0) ? -x : x;
+  return { d: sg(s.d), h: sg(s.hr), m: sg(s.mn) };
+}
+// ใส่ 3 คอลัมน์ (วัน/ชั่วโมง/นาที) ลงแถว: prefix เช่น "ลาพักร้อน — คงเหลือ"
+function putDhm(row, prefix, v){
+  if(v === null || v === undefined || v === ''){ row[`${prefix} (${t('exp_unit_d')})`] = ''; row[`${prefix} (${t('exp_unit_h')})`] = ''; row[`${prefix} (${t('exp_unit_m')})`] = ''; return; }
+  const p = dhmParts(v);
+  row[`${prefix} (${t('exp_unit_d')})`] = p.d; row[`${prefix} (${t('exp_unit_h')})`] = p.h; row[`${prefix} (${t('exp_unit_m')})`] = p.m;
+}
+function downloadRowsXlsx(rows, sheetName, fileName, firstCols){
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map((k,i)=>({ wch: i===1 ? 26 : i<(firstCols||3) ? 16 : Math.max(11, Math.min(28, k.length+2)) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, String(sheetName).slice(0,31));
+  XLSX.writeFile(wb, fileName);
+}
+
 async function exportLoiDataExcel(){
   const year = Number(document.getElementById('exportLoiYear').value) || new Date().getFullYear();
   const dept = document.getElementById('exportLoiDept').value;
@@ -4491,8 +4582,8 @@ async function exportLoiDataExcel(){
       types.forEach(ty=>{
         const b = (byEmp[e.id]||{})[ty];
         const label = getLeaveTypeLabel(ty);
-        row[`${label} — ${t('exp_col_remaining')}`] = b ? round2(Number(b.total_days) - Number(b.used_days)) : '';
-        row[`${label} — ${t('exp_col_used')}`] = b ? round2(Number(b.used_days)) : '';
+        putDhm(row, `${label} — ${t('exp_col_remaining')}`, b ? Number(b.total_days) - Number(b.used_days) : '');
+        putDhm(row, `${label} — ${t('exp_col_used')}`, b ? Number(b.used_days) : '');
       });
       return row;
     });
@@ -4710,6 +4801,36 @@ function renderYearQuotas(){
   const rows = nyqState.employees.filter(e=>!q || [e.employee_code,e.name,e.department].some(x=>String(x||'').toLowerCase().includes(q)));
   body.innerHTML = rows.length ? rows.map(e=>`<tr><td>${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${NY_TYPES.map(tp=>cell(e,tp)).join('')}</tr>`).join('')
     : `<tr><td colspan="7" class="empty-msg">${escHtml(t('tk_none'))}</td></tr>`;
+}
+
+const NY_EXPORT_TYPES = ['annual','annual_prev','sick','personal'];
+function exportYearQuotasExcel(){
+  if(!nyqState.ready || !nyqState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
+  const map = {}; nyqState.balances.forEach(b=>{ map[b.employee_id+'|'+b.leave_type] = b; });
+  const rows = nyqState.employees.map(e=>{
+    const row = {}; row[t('exp_col_code')] = e.employee_code; row[t('exp_col_user')] = e.name; row[t('exp_col_dept')] = e.department || '';
+    NY_EXPORT_TYPES.forEach(ty=>{
+      const b = map[e.id+'|'+ty], label = getLeaveTypeLabel(ty);
+      putDhm(row, `${label} — ${t('exp_col_total')}`, b ? Number(b.total_days) : '');
+      putDhm(row, `${label} — ${t('exp_col_used')}`, b ? Number(b.used_days) : '');
+      putDhm(row, `${label} — ${t('exp_col_remaining')}`, b ? Number(b.total_days) - Number(b.used_days) : '');
+    });
+    return row;
+  });
+  downloadRowsXlsx(rows, `Quota ${nyqState.year}`, `LOI_Quota_${nyqState.year}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function exportNextYearPlanExcel(){
+  if(!nyState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
+  const rows = nyState.employees.map(e=>{
+    const row = {}; row[t('exp_col_code')] = e.employee_code; row[t('exp_col_user')] = e.name; row[t('exp_col_dept')] = e.department || '';
+    NY_EXPORT_TYPES.forEach(ty=>{
+      const k = e.id+'|'+ty, label = getLeaveTypeLabel(ty);
+      putDhm(row, `${label} — ${t('exp_col_plan')}`, nyState.plan[k] !== undefined ? nyState.plan[k] : '');
+      putDhm(row, `${label} — ${t('exp_col_current')}`, nyState.cur[k] !== undefined ? nyState.cur[k] : '');
+    });
+    return row;
+  });
+  downloadRowsXlsx(rows, 'Prepared quotas', `LOI_Prepared_Quotas_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 async function deleteYearQuotas(){
