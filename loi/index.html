@@ -428,7 +428,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
   .ticket{flex-direction:row}
   .modal.wide{width:100%}
 }
-#nyTable.ny-nohours .ny-h,#nyTable.ny-nohours .ny-hu{display:none}
+#nyTable.ny-nohours .ny-h,#nyTable.ny-nohours .ny-hu,#nyTable.ny-nohours .ny-m{display:none}
 .nyq-neg{color:#DC2626;font-weight:700}
 .nyq-sub{color:#9ca3af;font-size:.74rem}
 .nyq-months{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
@@ -1188,7 +1188,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
     <div class="form-grid" id="neQuotaFields">
       <div class="field"><label data-i18n="em_annual_days">Annual Days</label><input type="number" id="neAnnual" value="10"/></div>
       <div class="field"><label data-i18n="em_sick_days">Sick Days</label><input type="number" id="neSick" value="30"/></div>
-      <div class="field"><label data-i18n="em_personal_days">Personal Days</label><input type="number" id="nePersonal" value="3"/></div>
+      <div class="field"><label data-i18n="em_personal_days">Personal Days</label><input type="number" id="nePersonal" value="4"/></div>
     </div>
     <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neAutoApprove" style="width:auto"/>
@@ -1314,6 +1314,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <input type="number" min="0" step="1" id="ebTotalDays" style="width:84px"/><span data-i18n="tk_unit_days">days</span>
           <input type="number" min="0" max="7" step="1" id="ebTotalHours" style="width:72px"/><span data-i18n="tk_unit_hours">hours</span>
+          <select id="ebTotalMinutes" style="width:76px;padding:9px 8px;border:1.5px solid var(--line);border-radius:8px;background:var(--cream)"><option value="0">00</option><option value="30">30</option></select><span data-i18n="tk_unit_minutes">minutes</span>
         </div>
         <p class="hint" style="margin-top:6px" data-i18n="eb_hint_hours">1 day = 8 hours</p>
       </div>
@@ -1377,7 +1378,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 <div class="modal-bg" id="importModal">
   <div class="modal wide">
     <h3>📊 Import Employees from Excel</h3>
-    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days, auto_approve, bypass_conditions, special_calendar_access<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)<br/>auto_approve ใส่ "yes"/"true"/"1" สำหรับผู้บริหารที่ลาแล้วอนุมัติทันที ไม่ต้องผ่านใคร<br/>bypass_conditions ใส่ "yes"/"true"/"1" = Emergency Leave (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่า)<br/>special_calendar_access ใส่ "yes"/"true"/"1" = ให้สิทธิ์ดูปฏิทินลารวมทั้งองค์กร (เว้นว่าง = ไม่ให้)</p>
+    <p class="hint">Columns required: employee_code, name, email, department, position, role, manager_code, password, annual_days, sick_days, personal_days (optional: annual_hours, sick_hours, personal_hours — 0 to 7.5 in 0.5 steps, e.g. 3.5 = 3 h 30 min), auto_approve, bypass_conditions, special_calendar_access<br/>manager_code รองรับหลายคน คั่นด้วยจุลภาค เช่น "2400,2401" (ลำดับซ้าย→ขวา = ลำดับอนุมัติ)<br/>auto_approve ใส่ "yes"/"true"/"1" สำหรับผู้บริหารที่ลาแล้วอนุมัติทันที ไม่ต้องผ่านใคร<br/>bypass_conditions ใส่ "yes"/"true"/"1" = Emergency Leave (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่า)<br/>special_calendar_access ใส่ "yes"/"true"/"1" = ให้สิทธิ์ดูปฏิทินลารวมทั้งองค์กร (เว้นว่าง = ไม่ให้)</p>
     <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
       <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(event)"/>
       <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
@@ -2086,14 +2087,19 @@ function formatDaysNice(n){
 }
 // ── แปลงเศษวัน (จากการลารายชั่วโมง 1 วัน=8 ชม.) เป็น "X วัน Y ชั่วโมง" ให้อ่านง่าย แทนทศนิยมแปลกๆ เช่น 2.2 ──
 function formatDaysHoursNice(n){
-  let days = Math.floor(Number(n) + 1e-9);
-  let hours = Math.round((Number(n) - days) * 8);
-  if(hours >= 8){ days += 1; hours = 0; }
-  if(hours <= 0) return { text: String(days), compact: false };
-  const hUnit = hours===1 ? t('tk_unit_hour') : t('tk_unit_hours');
-  const dUnit = days===1 ? t('tk_unit_day') : t('tk_unit_days');
-  if(days <= 0) return { text: `${hours} ${hUnit}`, compact: true };
-  return { text: `${days} ${dUnit} ${hours} ${hUnit}`, compact: true };
+  // 1 วัน = 8 ชม.; ละเอียดถึงครึ่งชั่วโมง (30 นาที)
+  const v = Number(n) || 0;
+  let days = Math.floor(v + 1e-9);
+  let half = Math.round((v - days) * 16);   // จำนวน "ครึ่งชั่วโมง" ที่เหลือ (0–16)
+  if(half >= 16){ days += 1; half = 0; }
+  if(half <= 0) return { text: String(days), compact: false };
+  const hrs = Math.floor(half/2), hasMin = half % 2 === 1;
+  const parts = [];
+  if(hrs > 0) parts.push(`${hrs} ${hrs===1 ? t('tk_unit_hour') : t('tk_unit_hours')}`);
+  if(hasMin) parts.push(`30 ${t('tk_unit_min')}`);
+  const hm = parts.join(' ');
+  if(days <= 0) return { text: hm, compact: true };
+  return { text: `${days} ${days===1 ? t('tk_unit_day') : t('tk_unit_days')} ${hm}`, compact: true };
 }
 
 // ── สีเด่นประจำแต่ละประเภทการลา (ไล่สีสดใสต่างกันให้แยกแยะง่ายกว่าสีม่วงซีดเดียวทั้งหมด) ──
@@ -2391,7 +2397,7 @@ const I18N = {
     eb_hint:'Adjusts the total day quota for this year, one leave type at a time. Days already used are not affected.',
     eb_title:'Leave Balances', eb_th_type:'Type', eb_th_total:'Total', eb_th_used:'Used', eb_th_remaining:'Remaining',
     eb_none:'No balances to show', eb_edit_title:'✏️ Edit Leave Balance', eb_type:'Leave Type', eb_total:'Total Days', eb_used:'Used So Far',
-    eb_invalid:'Please enter a valid number of days', ny_unit_d:'d', ny_unit_h:'h', ny_show_hours:'Show hours column (for partial days)', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
+    imp_hours_invalid:'{f} must be 0–7.5 in steps of 0.5 (e.g. 3.5 = 3 h 30 min)', eb_invalid:'Please enter a valid number of days', ny_unit_d:'d', ny_unit_h:'h', ny_show_hours:'Show hours column (for partial days)', eb_hint_hours:'1 day = 8 hours (e.g. 2 days 1 hour = 2 days + 1 hour)', eb_hours_max:'Hours must be less than 8 (8 hours = 1 day)',
     set_notifybalance_title:'Notify employee when admin adjusts their balance',
     set_notifybalance_desc:'Send an email when an admin manually changes one of their leave day quotas.',
     pg_myleave_title:'My Leave', pg_myleave_sub:'View your leave balance and submit new requests',
@@ -2473,7 +2479,7 @@ const I18N = {
     hint_senddoc_new:'Tick the recipients (one or many), choose the file and click "+ Add to list". Everyone ticked gets the same file. Repeat for different files, then send the whole list together.',
     btn_add_to_list:'+ Add to list', h3_senddoc_queue:'📋 Ready to Send',
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
-    tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
+    tk_unit_min:'min', tk_unit_minutes:'minutes', tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
     tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
@@ -2580,7 +2586,7 @@ const I18N = {
     eb_hint:'ปรับจำนวนวันลารวมของปีนี้ ทีละประเภท วันที่ใช้ไปแล้วจะไม่ได้รับผลกระทบ',
     eb_title:'โควตาวันลา', eb_th_type:'ประเภท', eb_th_total:'รวม', eb_th_used:'ใช้ไปแล้ว', eb_th_remaining:'คงเหลือ',
     eb_none:'ไม่มีโควตาให้แสดง', eb_edit_title:'✏️ แก้ไขโควตาวันลา', eb_type:'ประเภทการลา', eb_total:'จำนวนวันรวม', eb_used:'ใช้ไปแล้ว',
-    eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', ny_unit_d:'วัน', ny_unit_h:'ชม.', ny_show_hours:'แสดงช่องชั่วโมง (สำหรับโควตาที่มีเศษวัน)', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
+    imp_hours_invalid:'{f} ต้องเป็น 0–7.5 ทีละ 0.5 (เช่น 3.5 = 3 ชม. 30 นาที)', eb_invalid:'กรุณากรอกจำนวนวันให้ถูกต้อง', ny_unit_d:'วัน', ny_unit_h:'ชม.', ny_show_hours:'แสดงช่องชั่วโมง (สำหรับโควตาที่มีเศษวัน)', eb_hint_hours:'1 วัน = 8 ชั่วโมง (เช่น 2 วัน 1 ชม. กรอกวัน = 2, ชม. = 1)', eb_hours_max:'ชั่วโมงต้องน้อยกว่า 8 (8 ชม. = 1 วัน)',
     set_notifybalance_title:'แจ้งพนักงานเมื่อ admin ปรับโควตา',
     set_notifybalance_desc:'ส่งอีเมลแจ้งเมื่อ admin ปรับแก้โควตาวันลาของพนักงาน',
     pg_myleave_title:'วันลาของฉัน', pg_myleave_sub:'ดูโควตาวันลาคงเหลือ และยื่นคำขอลาใหม่',
@@ -2662,7 +2668,7 @@ const I18N = {
     hint_senddoc_new:'ติ๊กเลือกผู้รับ (หนึ่งคนหรือหลายคน) เลือกไฟล์ แล้วกด "+ เพิ่มลงรายการ" ทุกคนที่ติ๊กจะได้ไฟล์เดียวกัน ถ้ามีไฟล์อื่นให้เพิ่มรอบใหม่ แล้วค่อยส่งทั้งรายการพร้อมกัน',
     btn_add_to_list:'+ เพิ่มลง list', h3_senddoc_queue:'📋 พร้อมส่ง',
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
-    tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
+    tk_unit_min:'นาที', tk_unit_minutes:'นาที', tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
     tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
@@ -4284,12 +4290,12 @@ function renderEditBalancesList(){
 function openEditOneBalanceModal(leaveType){
   const byType = {}; editBalancesCache.forEach(b=>{ byType[b.leave_type] = b; });
   const b = byType[leaveType];
-  const total = b ? Number(b.total_days) : (leaveType==='annual'?10:leaveType==='sick'?30:leaveType==='personal'?3:0);
+  const total = b ? Number(b.total_days) : (leaveType==='annual'?10:leaveType==='sick'?30:leaveType==='personal'?4:0);
   const used = b ? Number(b.used_days) : 0;
   editingBalanceType = leaveType;
   document.getElementById('ebTypeLabel').value = getLeaveTypeLabel(leaveType);
-  { let d = Math.floor(total + 1e-9), hr = Math.round((total - d)*8); if(hr >= 8){ d += 1; hr = 0; }
-    document.getElementById('ebTotalDays').value = d; document.getElementById('ebTotalHours').value = hr; }
+  { const s = nySplit(total);
+    document.getElementById('ebTotalDays').value = s.d; document.getElementById('ebTotalHours').value = s.hr; document.getElementById('ebTotalMinutes').value = String(s.mn); }
   document.getElementById('ebUsed').value = `${formatDaysHoursNice(used).text} ${t('eb_used_so_far')}`;
   document.getElementById('ebErr').textContent = '';
   openModal('editOneBalanceModal');
@@ -4297,10 +4303,10 @@ function openEditOneBalanceModal(leaveType){
 
 async function submitEditOneBalance(){
   const errEl = document.getElementById('ebErr');
-  const dd = Number(document.getElementById('ebTotalDays').value || 0), hh = Number(document.getElementById('ebTotalHours').value || 0);
+  const dd = Number(document.getElementById('ebTotalDays').value || 0), hh = Number(document.getElementById('ebTotalHours').value || 0), mm = Number(document.getElementById('ebTotalMinutes').value || 0);
   if(!Number.isFinite(dd) || !Number.isFinite(hh) || dd < 0 || hh < 0){ errEl.textContent = t('eb_invalid'); return; }
   if(hh >= 8){ errEl.textContent = t('eb_hours_max'); return; }
-  const total = Math.round((dd + hh/8)*1000)/1000;   // 1 วัน = 8 ชั่วโมง (เก็บเป็นทศนิยมของวัน เช่น 2 วัน 1 ชม. = 2.125)
+  const total = Math.round((dd + (hh + mm/60)/8)*10000)/10000;   // 1 วัน = 8 ชั่วโมง (เก็บเป็นทศนิยมของวัน เช่น 2 วัน 1 ชม. 30 นาที = 2.1875)
   if(editingBalanceType==='annual_prev' && total > 3){ errEl.textContent = t('eb_prev_max'); return; }
   try{
     const res = await callApi('update_balance', { employee_id: editingEmployeeId, leave_type: editingBalanceType, total_days: total });
@@ -4765,21 +4771,21 @@ async function loadNextYearPlan(){
 
 // แปลงจำนวนวัน (ทศนิยม) ↔ วัน + ชั่วโมง  (1 วัน = 8 ชั่วโมง) ใช้กับช่องโควตาในหน้านี้
 function nySplit(total){
-  let d = Math.floor(Number(total) + 1e-9), hr = Math.round((Number(total) - d)*8);
-  if(hr >= 8){ d += 1; hr = 0; }
-  return { d, hr };
+  let d = Math.floor(Number(total) + 1e-9), half = Math.round((Number(total) - d) * 16);   // ละเอียดครึ่งชั่วโมง
+  if(half >= 16){ d += 1; half = 0; }
+  return { d, hr: Math.floor(half/2), mn: (half % 2) ? 30 : 0 };
 }
-// อ่านค่าจากช่อง วัน+ชม. ของเซลล์: คืน null ถ้าว่างทั้งคู่, NaN ถ้ากรอกไม่ถูกต้อง, ไม่เช่นนั้นคืนจำนวนวัน (ทศนิยม)
+// อ่านค่าจากช่อง วัน+ชม.+นาที ของเซลล์: คืน null ถ้าว่างทั้งหมด, NaN ถ้ากรอกไม่ถูกต้อง, ไม่เช่นนั้นคืนจำนวนวันทศนิยม
 function nyRead(td){
-  const ds = td.querySelector('.ny-d').value.trim(), hs = td.querySelector('.ny-h').value.trim();
-  if(ds==='' && hs==='') return null;
+  const ds = td.querySelector('.ny-d').value.trim(), hs = td.querySelector('.ny-h').value.trim(), mm = Number(td.querySelector('.ny-m').value || 0);
+  if(ds==='' && hs==='' && mm===0) return null;
   const d = Number(ds||0), hr = Number(hs||0);
   if(!Number.isFinite(d) || !Number.isFinite(hr) || d < 0 || hr < 0 || hr >= 8) return NaN;
-  return Math.round((d + hr/8)*1000)/1000;
+  return Math.round((d + (hr + mm/60)/8)*10000)/10000;
 }
 function nyWrite(td, total){
   const s = nySplit(total);
-  td.querySelector('.ny-d').value = s.d; td.querySelector('.ny-h').value = s.hr;
+  td.querySelector('.ny-d').value = s.d; td.querySelector('.ny-h').value = s.hr; td.querySelector('.ny-m').value = String(s.mn);
 }
 
 function toggleNyHours(on){
@@ -4798,7 +4804,8 @@ function renderNextYearTable(){
       const sc = nyState.cur[k]!==undefined ? nySplit(nyState.cur[k]) : null;
       return `<td class="ny-cell" data-emp="${e.id}" data-type="${tp}" style="white-space:nowrap">
         <input type="number" min="0"${tp==='annual_prev'?' max="3"':''} step="1" class="ny-d" value="${sv?sv.d:''}" placeholder="${sc?sc.d:''}" style="${st}" aria-label="days"/><span class="ny-u">${escHtml(t('ny_unit_d'))}</span>
-        <input type="number" min="0" max="7" step="1" class="ny-h" value="${sv?sv.hr:''}" placeholder="${sc?sc.hr:''}" style="${st}" aria-label="hours"/><span class="ny-u ny-hu">${escHtml(t('ny_unit_h'))}</span></td>`;
+        <input type="number" min="0" max="7" step="1" class="ny-h" value="${sv?sv.hr:''}" placeholder="${sc?sc.hr:''}" style="${st}" aria-label="hours"/><span class="ny-u ny-hu">${escHtml(t('ny_unit_h'))}</span>
+        <select class="ny-m" aria-label="minutes" style="padding:6px 4px;border:1.5px solid var(--line);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.84rem"><option value="0"${sv&&sv.mn===0||!sv?' selected':''}>00</option><option value="30"${sv&&sv.mn===30?' selected':''}>30</option></select><span class="ny-u ny-hu">${escHtml(t('tk_unit_min'))}</span></td>`;
     }).join('');
     return `<tr data-search="${search}"><td class="mono">${escHtml(e.employee_code||'')}</td><td>${escHtml(e.name||'')}</td><td>${escHtml(e.department||'')}</td>${cells}</tr>`;
   }).join('');
@@ -5145,7 +5152,7 @@ function openAddEmployeeModal(){
   document.getElementById('neRole').value='employee';
   document.getElementById('neAnnual').value=10;
   document.getElementById('neSick').value=30;
-  document.getElementById('nePersonal').value=3;
+  document.getElementById('nePersonal').value=4;
   document.getElementById('neAutoApprove').checked=false;
   document.getElementById('neBypassConditions').checked=false;
   document.getElementById('addEmpErr').textContent='';
@@ -5264,11 +5271,11 @@ function openImportModal(){
 }
 
 function downloadExcelTemplate(){
-  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','sick_days','personal_days','auto_approve','bypass_conditions','special_calendar_access'];
+  const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','annual_hours','sick_days','sick_hours','personal_days','personal_hours','auto_approve','bypass_conditions','special_calendar_access'];
   const sample=[{
     employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
     position:'Staff', role:'employee', manager_code:'2400,2401', password:'welcome123',
-    annual_days:10, sick_days:30, personal_days:3, auto_approve:'no', bypass_conditions:'no', special_calendar_access:'no',
+    annual_days:10, annual_hours:0, sick_days:30, sick_hours:0, personal_days:4, personal_hours:0, auto_approve:'no', bypass_conditions:'no', special_calendar_access:'no',
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
   const wb = XLSX.utils.book_new();
@@ -5294,13 +5301,24 @@ function handleExcelFile(event){
         role:String(r.role||'employee').trim() || 'employee',
         manager_code:String(r.manager_code||'').trim(),
         password:String(r.password||'').trim(),
-        annual_days:Number(r.annual_days)||0,
-        sick_days:Number(r.sick_days)||0,
-        personal_days:Number(r.personal_days)||0,
+        // วัน + ชั่วโมง (ชั่วโมงเป็น 0–7.5 ทีละ 0.5 เช่น 3.5 = 3 ชม. 30 นาที) → รวมเป็นจำนวนวันทศนิยมตอนส่ง (1 วัน = 8 ชม.)
+        annual_d:Number(r.annual_days)||0, annual_h:Number(r.annual_hours)||0,
+        sick_d:Number(r.sick_days)||0, sick_h:Number(r.sick_hours)||0,
+        personal_d:Number(r.personal_days)||0, personal_h:Number(r.personal_hours)||0,
         auto_approve:String(r.auto_approve||'').trim(),
         bypass_conditions:String(r.bypass_conditions||'').trim(),
         special_calendar_access:String(r.special_calendar_access||'').trim(),
       })).filter(r=>r.employee_code);
+      for(const r of importRows){
+        for(const k of ['annual','sick','personal']){
+          const hr = r[k+'_h'];
+          if(hr < 0 || hr >= 8 || Math.round(hr*2) !== hr*2){
+            importRows = [];
+            throw new Error(`${r.employee_code}: ${t('imp_hours_invalid').replace('{f}', k+'_hours')}`);
+          }
+          r[k+'_days'] = Math.round((r[k+'_d'] + hr/8)*10000)/10000;
+        }
+      }
 
       document.getElementById('importCount').textContent = importRows.length;
       document.getElementById('importSummary').style.display='flex';
@@ -5318,7 +5336,7 @@ function renderImportPreview(){
   const table=document.getElementById('importPreviewTable');
   if(!importRows.length){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const cols=['employee_code','name','email','department','role','manager_code','annual_days','sick_days','personal_days','auto_approve','bypass_conditions','special_calendar_access'];
+  const cols=['employee_code','name','email','department','role','manager_code','annual_d','annual_h','sick_d','sick_h','personal_d','personal_h','auto_approve','bypass_conditions','special_calendar_access'];
   table.innerHTML = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
     '<tbody>'+importRows.map(r=>'<tr>'+cols.map(c=>`<td>${escHtml(String(r[c]))}</td>`).join('')+'</tr>').join('')+'</tbody>';
 }
