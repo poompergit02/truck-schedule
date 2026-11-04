@@ -301,18 +301,20 @@ tr:hover td{background:var(--cream)}
 .yg-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
-.cal-dot{width:9px;height:9px;border-radius:50%;background:var(--plum-600);cursor:default}
-.cal-dot-annual{background:var(--plum-600)}
-.cal-dot-sick{background:var(--success)}
-.cal-dot-personal{background:#2AA9A0}
-.cal-dot-other{background:var(--text-faint)}
-.cal-dot-maternity{background:#E0679A}
-.cal-dot-paternity{background:#3B82C4}
-.cal-dot-priesthood{background:#C9A227}
-.cal-dot-personal_unpaid{background:#E58F2A}
-.cal-dot-annual_prev{background:#8B5CF6}
-.cal-dot-annual_urgent{background:#DC2626}
-.cal-dot-wfh{background:#6366F1}
+.cal-dot{--dc:var(--plum-600);width:9px;height:9px;border-radius:50%;background:var(--dc);cursor:default}
+/* คำขอที่ยังไม่อนุมัติ = วงกลมกลวง (สีขอบตามประเภทการลา) */
+.cal-dot.cal-dot-pending{background:transparent;box-shadow:inset 0 0 0 2px var(--dc)}
+.cal-dot-annual{--dc:var(--plum-600);background:var(--dc)}
+.cal-dot-sick{--dc:var(--success);background:var(--dc)}
+.cal-dot-personal{--dc:#2AA9A0;background:var(--dc)}
+.cal-dot-other{--dc:var(--text-faint);background:var(--dc)}
+.cal-dot-maternity{--dc:#E0679A;background:var(--dc)}
+.cal-dot-paternity{--dc:#3B82C4;background:var(--dc)}
+.cal-dot-priesthood{--dc:#C9A227;background:var(--dc)}
+.cal-dot-personal_unpaid{--dc:#E58F2A;background:var(--dc)}
+.cal-dot-annual_prev{--dc:#8B5CF6;background:var(--dc)}
+.cal-dot-annual_urgent{--dc:#DC2626;background:var(--dc)}
+.cal-dot-wfh{--dc:#6366F1;background:var(--dc)}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
   background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
@@ -2046,7 +2048,7 @@ function renderMyCalendar(){
       const st = STATUS_LABEL[r.status]||{label:r.status};
       while(cur <= endD){
         const day = cur.getUTCDate();
-        if(dayMap[day]) dayMap[day].push({ leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, statusLabel: st.label });
+        if(dayMap[day]) dayMap[day].push({ leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, statusLabel: st.label, pending: PENDING_STATUSES.includes(r.status) });
         cur.setUTCDate(cur.getUTCDate()+1);
       }
     });
@@ -2055,7 +2057,7 @@ function renderMyCalendar(){
   for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const entries = dayMap[d];
-    const dots = entries.map(e=>`<span class="cal-dot cal-dot-${e.leaveType}"></span>`).join('');
+    const dots = entries.map(e=>`<span class="cal-dot cal-dot-${e.leaveType}${e.pending?' cal-dot-pending':''}"></span>`).join('');
     const dateStr = `${myCalYear}-${pad(myCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
     const entryNames = entries.map(e=>{
@@ -2074,7 +2076,7 @@ function renderMyCalendar(){
 
   document.getElementById('myCalLegend').innerHTML = legendLeaveTypes().map(t=>
     `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
-  ).join('');
+  ).join('') + `<span style="display:flex;align-items:center;gap:5px;border-left:1px solid var(--line);padding-left:14px"><span class="cal-dot"></span>${escHtml(t('cal_legend_approved'))}</span><span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-pending"></span>${escHtml(t('cal_legend_pending'))}</span>`;
 }
 
 // ── แสดงจำนวนวันแบบอ่านง่าย: ปัดเหลือทศนิยม 1 ตำแหน่ง และตัด .0 ทิ้งถ้าเป็นจำนวนเต็ม ──
@@ -2426,6 +2428,7 @@ const I18N = {
     set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
     set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
+    cal_legend_approved:'Approved (solid)', cal_legend_pending:'Pending approval (hollow)',
     h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
     lbl_ny_target:'Transfer into the quotas of year', ny_when_sched:'Schedule — runs at 00:01 (Thai time) on the date below', ny_when_now:'Transfer NOW — takes effect immediately, no waiting for 00:01',
     ny_scope_all:'Transfer for everyone', ny_scope_some:'Transfer only selected employees', ny_pick_count:'{n} selected', msg_ny_pick_none:'Select at least one employee', cf_ny_pick_note:'Only {n} selected employee(s) will be transferred.', ny_scope_tag:'(selected {n} people)',
@@ -2614,6 +2617,7 @@ const I18N = {
     set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
     set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
+    cal_legend_approved:'อนุมัติแล้ว (ทึบ)', cal_legend_pending:'รออนุมัติ (กลวง)',
     h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
     lbl_ny_target:'ย้ายไปเป็นโควตาของปี', ny_when_sched:'ตั้งเวลา — ย้ายตอน 00:01 น. (เวลาไทย) ของวันที่ด้านล่าง', ny_when_now:'ย้ายทันที — มีผลเดี๋ยวนี้ ไม่ต้องรอ 00:01',
     ny_scope_all:'ย้ายให้ทุกคน', ny_scope_some:'ย้ายเฉพาะคนที่เลือก', ny_pick_count:'เลือกแล้ว {n} คน', msg_ny_pick_none:'กรุณาเลือกพนักงานอย่างน้อย 1 คน', cf_ny_pick_note:'จะย้ายเฉพาะพนักงานที่เลือก {n} คน', ny_scope_tag:'(เฉพาะที่เลือก {n} คน)',
@@ -3566,7 +3570,7 @@ function applyLeaveDotColors(){
   const m = dotColorMap();
   let st = document.getElementById('dotColorStyle');
   if(!st){ st = document.createElement('style'); st.id = 'dotColorStyle'; document.head.appendChild(st); }
-  st.textContent = DOT_TYPES.map(k=>`.cal-dot-${k}{background:${m[k]}}`).join('\n');
+  st.textContent = DOT_TYPES.map(k=>`.cal-dot-${k}{--dc:${m[k]};background:var(--dc)}`).join('\n');
 }
 function renderDotColorEditor(){
   const g = document.getElementById('dotColorGrid');
@@ -4801,7 +4805,7 @@ function renderNextYearTable(){
   // ถ้ามีค่าที่มีเศษชั่วโมงอยู่แล้ว ให้เปิดช่องชั่วโมงอัตโนมัติ (ไม่ซ่อนข้อมูลที่ไม่ใช่วันเต็ม)
   const hasHours = Object.values(nyState.plan).some(v=>nySplit(v).hr>0);
   const sw = document.getElementById('nyShowHours');
-  if(hasHours && sw && !sw.checked){ sw.checked = true; toggleNyHours(true); }
+  // ค่าเริ่มต้นซ่อนช่องชั่วโมงเสมอ (ไม่เปิดเองแม้มีเศษวัน) — ติ๊ก "แสดงช่องชั่วโมง" เมื่ออยากดู/แก้
   filterNextYearRows();
 }
 
@@ -5436,25 +5440,24 @@ window.addEventListener('load', async ()=>{
 // ตอนนี้ทุก const/let ในไฟล์ถูกประกาศครบแล้ว (อยู่ท้ายสุดของสคริปต์) เรียกได้อย่างปลอดภัย ไม่ชน TDZ
 // ── ช่องเวลาแบบ 24 ชั่วโมง 00:00–23:59 (ไม่ใช้ <input type=time> เพราะบางเครื่องแสดง AM/PM ตามภาษาของเบราว์เซอร์) ──
 function initTime24(){
+  // ลาเป็นรายชั่วโมง: เลือกเวลาจาก dropdown เดียว ทีละครึ่งชั่วโมง 08:30 ... 17:30 (ไม่ต้องเลือกชั่วโมง/นาทีแยก)
+  const slots = [];
+  for(let m = 8*60+30; m <= 17*60+30; m += 30){ slots.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')); }
   document.querySelectorAll('.t24').forEach(el=>{
     if(el.dataset.ready) return;
-    const pad = n => String(n).padStart(2,'0');
-    const opts = (count, step) => '<option value="">--</option>' + Array.from({length:Math.ceil(count/step)},(_,i)=>`<option value="${pad(i*step)}">${pad(i*step)}</option>`).join('');
-    // นาทีเลือกได้เฉพาะ 00 หรือ 30 (ลาเป็นช่วงครึ่งชั่วโมง เช่น 08:30 09:00 09:30)
-    el.innerHTML = `<select id="${el.id}_h" aria-label="hour">${opts(24,1)}</select><span class="t24-sep">:</span><select id="${el.id}_m" aria-label="minute">${opts(60,30)}</select>`;
+    el.innerHTML = `<select id="${el.id}_sel" aria-label="time"><option value="">--:--</option>${slots.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`;
     el.dataset.ready = '1';
   });
 }
 function getT24(id){
-  const h = document.getElementById(id+'_h').value, m = document.getElementById(id+'_m').value;
-  return (h==='' || m==='') ? '' : `${h}:${m}`;
+  const el = document.getElementById(id+'_sel');
+  return el ? el.value : '';
 }
 function setT24(id, val){
-  const parts = val ? String(val).slice(0,5).split(':') : ['',''];
-  document.getElementById(id+'_h').value = parts[0] || '';
-  const mSel = document.getElementById(id+'_m'), mv = parts[1] || '';
-  if(mv && ![...mSel.options].some(o=>o.value===mv)){ const o = document.createElement('option'); o.value = mv; o.textContent = mv; mSel.appendChild(o); }   // ค่าเดิมที่ไม่ใช่ :00/:30 ยังแสดงได้
-  mSel.value = mv;
+  const sel = document.getElementById(id+'_sel'); if(!sel) return;
+  const v = val ? String(val).slice(0,5) : '';
+  if(v && ![...sel.options].some(o=>o.value===v)){ const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); }   // ค่าเดิมนอกช่วง/ไม่ลงครึ่งชั่วโมง (ใบลาเก่า) ยังแสดงได้
+  sel.value = v;
 }
 
 
