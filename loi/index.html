@@ -1039,7 +1039,14 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <h3 data-i18n="h3_ny_transfer">🔄 Transfer to live quotas</h3>
         <p class="hint" data-i18n="hint_ny_transfer">At 00:01 (Thai time) on the effective date, the quotas below replace the employees' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.</p>
         <div class="form-grid">
-          <div class="field"><label data-i18n="lbl_ny_date">Effective date</label><input type="date" id="nyEffectiveDate"/></div>
+          <div class="field"><label data-i18n="lbl_ny_target">Transfer into the quotas of year</label><select id="nyTargetYear" onchange="nyTargetTouched=true"></select></div>
+        </div>
+        <div class="ny-mode">
+          <label><input type="radio" name="nyWhen" value="schedule" checked onchange="renderNyWhen()"/><span data-i18n="ny_when_sched">Schedule — runs at 00:01 (Thai time) on the date below</span></label>
+          <label><input type="radio" name="nyWhen" value="now" onchange="renderNyWhen()"/><span data-i18n="ny_when_now">Transfer NOW — takes effect immediately, no waiting for 00:01</span></label>
+        </div>
+        <div class="form-grid" id="nyDateWrap">
+          <div class="field"><label data-i18n="lbl_ny_date">Effective date</label><input type="date" id="nyEffectiveDate" onchange="syncNyTargetYear()"/></div>
         </div>
         <div class="ny-mode">
           <label><input type="radio" name="nyScope" value="all" checked onchange="renderNyPick()"/><span data-i18n="ny_scope_all">Transfer for everyone</span></label>
@@ -1553,6 +1560,7 @@ const MSG_TH_TO_EN_EXACT = {
   'จำนวนวันไม่ถูกต้อง':'Invalid number of days',
   'ลาป่วยตั้งแต่ 3 วันขึ้นไปต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave of 3 days or more requires a medical certificate attachment',
   'ลากิจต้องแนบไฟล์เอกสาร':'Personal leave requires an attached file',
+  'ปีเป้าหมายไม่ถูกต้อง':'Invalid target year',
   'รหัสพนักงานห้ามเป็นค่าว่าง':'Employee code cannot be empty',
   'รหัสพนักงานห้ามมีช่องว่างหรือเครื่องหมายจุลภาค (,)':'Employee code cannot contain spaces or commas',
   'ไม่พบพนักงานคนนี้':'Employee not found',
@@ -2419,6 +2427,7 @@ const I18N = {
     set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
     h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
+    lbl_ny_target:'Transfer into the quotas of year', ny_when_sched:'Schedule — runs at 00:01 (Thai time) on the date below', ny_when_now:'Transfer NOW — takes effect immediately, no waiting for 00:01',
     ny_scope_all:'Transfer for everyone', ny_scope_some:'Transfer only selected employees', ny_pick_count:'{n} selected', msg_ny_pick_none:'Select at least one employee', cf_ny_pick_note:'Only {n} selected employee(s) will be transferred.', ny_scope_tag:'(selected {n} people)',
     btn_nyq_delete:'🗑️ Delete ALL leave quotas of this year', hint_nyq_delete:'For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.', cf_nyq_delete:'This deletes ALL leave quotas of year {y} for every employee. Leave requests are not deleted.\nType {y} to confirm:', msg_nyq_delete_mismatch:'Year does not match — nothing was deleted', msg_nyq_deleted:'✅ Deleted {n} quota row(s) of {y}', loading_nyq_delete:'Deleting quotas…',
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
@@ -2606,6 +2615,7 @@ const I18N = {
     set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
     h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
+    lbl_ny_target:'ย้ายไปเป็นโควตาของปี', ny_when_sched:'ตั้งเวลา — ย้ายตอน 00:01 น. (เวลาไทย) ของวันที่ด้านล่าง', ny_when_now:'ย้ายทันที — มีผลเดี๋ยวนี้ ไม่ต้องรอ 00:01',
     ny_scope_all:'ย้ายให้ทุกคน', ny_scope_some:'ย้ายเฉพาะคนที่เลือก', ny_pick_count:'เลือกแล้ว {n} คน', msg_ny_pick_none:'กรุณาเลือกพนักงานอย่างน้อย 1 คน', cf_ny_pick_note:'จะย้ายเฉพาะพนักงานที่เลือก {n} คน', ny_scope_tag:'(เฉพาะที่เลือก {n} คน)',
     btn_nyq_delete:'🗑️ ลบโควตาวันลาทั้งหมดของปีนี้', hint_nyq_delete:'ไว้ล้างข้อมูลตอนเทส ใบลาไม่ถูกลบ ลบเฉพาะโควตาของปีที่เลือก', cf_nyq_delete:'จะลบโควตาวันลาของ "ทุกคน" ในปี {y} ทั้งหมด (ใบลาไม่ถูกลบ)\nพิมพ์ {y} เพื่อยืนยัน:', msg_nyq_delete_mismatch:'ปีไม่ตรงกัน — ยังไม่ได้ลบอะไร', msg_nyq_deleted:'✅ ลบโควตาปี {y} แล้ว {n} รายการ', loading_nyq_delete:'กำลังลบโควตา…',
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
@@ -4745,6 +4755,7 @@ async function loadNextYearPlan(){
     if(dateEl && !dateEl.value) dateEl.value = (d.current_year+1)+'-01-01';
     renderNextYearTable();
     renderTransferStatus();
+    initNyTargetYear();
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -4869,18 +4880,39 @@ function todayLocalIso(){
   return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
 }
 
+// ── ปีเป้าหมาย + ย้ายทันที ──
+let nyTargetTouched = false;
+function nyWhen(){ return (document.querySelector('input[name="nyWhen"]:checked')||{}).value || 'schedule'; }
+function renderNyWhen(){
+  const w = document.getElementById('nyDateWrap'); if(w) w.style.display = nyWhen()==='now' ? 'none' : '';
+}
+function initNyTargetYear(){
+  const sel = document.getElementById('nyTargetYear'); if(!sel) return;
+  const cy = new Date().getFullYear();
+  if(!sel.options.length){
+    sel.innerHTML = [cy, cy+1, cy+2, cy+3].map(y=>`<option value="${y}">${y}</option>`).join('');
+    sel.value = String(cy+1);
+  }
+  renderNyWhen();
+}
+function syncNyTargetYear(){
+  const d = document.getElementById('nyEffectiveDate').value, sel = document.getElementById('nyTargetYear');
+  if(d && sel && !nyTargetTouched && [...sel.options].some(o=>o.value===d.slice(0,4))) sel.value = d.slice(0,4);
+}
+
 async function confirmYearTransfer(){
-  const date = document.getElementById('nyEffectiveDate').value;
+  const nowMode = nyWhen()==='now';
+  const date = nowMode ? todayLocalIso() : document.getElementById('nyEffectiveDate').value;
   if(!date){ showToast(t('msg_ny_pick_date'),'err'); return; }
-  const year = date.slice(0,4);
+  const year = document.getElementById('nyTargetYear').value || date.slice(0,4);
   const pickedIds = nyScope()==='some' ? [...nyPickSel] : null;
   if(nyScope()==='some' && !pickedIds.length){ showToast(t('msg_ny_pick_none'),'err'); return; }
-  const immediate = date <= todayLocalIso();
+  const immediate = nowMode || date <= todayLocalIso();
   const msg = (immediate ? t('cf_ny_now') : t('cf_ny_sched')).replace('{y}', year).replace('{d}', formatDMY(date)) + (pickedIds ? '\n' + t('cf_ny_pick_note').replace('{n}', pickedIds.length) : '');
   if(!confirm(msg)) return;
   try{
     if(!(await saveNextYearPlan(true))) return;
-    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date, employee_ids: pickedIds, mode: (document.querySelector('input[name="nyMode"]:checked')||{}).value || 'replace' }), t('loading_ny'));
+    const res = await withLoading(()=>callApi('schedule_year_transfer', { effective_date: date, target_year: Number(year), immediate: nowMode, employee_ids: pickedIds, mode: (document.querySelector('input[name="nyMode"]:checked')||{}).value || 'replace' }), t('loading_ny'));
     showToast(res.executed ? t('msg_ny_done_ok').replace('{n}', res.applied).replace('{y}', res.target_year)
                            : t('msg_ny_sched_ok').replace('{d}', formatDMY(date)));
     loadNextYearPlan();
