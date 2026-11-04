@@ -39,11 +39,11 @@ h1,h2,h3,.serif{font-family:'Cormorant Garamond','Noto Sans Thai',serif}
 
 /* ══════════ LOGIN SCREEN ══════════ */
 #loginScreen{
-  /* รูปพื้นหลัง: Nadezhda Moryak, Pexels (ฟรี ใช้ได้ตาม Pexels License — https://www.pexels.com/photo/8677191/) */
+  /* รูปพื้นหลัง: เปลี่ยนตามวันในสัปดาห์ (ดู LOGIN_BG_BY_DAY ใน script) — ค่าเริ่มต้น/สำรอง: Nadezhda Moryak, Pexels (ฟรี ตาม Pexels License — https://www.pexels.com/photo/8677191/) */
   min-height:100vh; display:flex; align-items:flex-end; justify-content:flex-end; padding:24px 40px 48px;
   background:
     linear-gradient(0deg, rgba(26,13,46,.75), rgba(26,13,46,.15) 55%, rgba(37,17,64,.35)),
-    url('https://images.pexels.com/photos/8677191/pexels-photo-8677191.jpeg?auto=compress&cs=tinysrgb&w=1920') center/cover no-repeat,
+    var(--login-bg, url('https://images.pexels.com/photos/8677191/pexels-photo-8677191.jpeg?auto=compress&cs=tinysrgb&w=1920')) center/cover no-repeat,
     linear-gradient(160deg,var(--plum-900),#251140 65%,#1a0d2e);
 }
 .login-card{
@@ -1762,13 +1762,37 @@ async function callApi_noToken(action, params){
   return data;
 }
 
+// ── พื้นหลังหน้า Login เปลี่ยนตามวันในสัปดาห์ (เวลาไทย) — รูปจาก Pexels (ฟรี ตาม Pexels License) ──
+// 0=อาทิตย์ 1=จันทร์ ... 6=เสาร์ ; ถ้ารูปโหลดไม่ได้จะคงรูปสำรอง (CSS) ไว้
+const LOGIN_BG_BY_DAY = [
+  36211478, // อาทิตย์ — Bali beach umbrellas  https://www.pexels.com/photo/aerial-view-of-colorful-beach-umbrellas-in-bali-36211478/
+  35914239, // จันทร์ — two hikers              https://www.pexels.com/photo/two-hikers-resting-in-mountain-landscape-35914239/
+  29603100, // อังคาร — pink lake, Ukraine      https://www.pexels.com/photo/aerial-view-of-woman-relaxing-on-pink-lake-in-ukraine-29603100/
+  19240417, // พุธ — dinner on lakeside          https://www.pexels.com/photo/man-and-woman-having-dinner-on-lakeside-19240417/
+  5601489,  // พฤหัสบดี — beach silhouettes      https://www.pexels.com/photo/silhouette-of-people-near-beach-5601489/
+  8677191,  // ศุกร์ — Nadezhda Moryak           https://www.pexels.com/photo/8677191/
+  1108234,  // เสาร์ — nimbus clouds at sunset   https://www.pexels.com/photo/photo-of-a-nimbus-clouds-during-sunset-1108234/
+];
+function applyLoginBackground(){
+  try{
+    const wd = new Intl.DateTimeFormat('en-US', { weekday:'short', timeZone:'Asia/Bangkok' }).format(new Date());
+    const day = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wd);
+    const id = LOGIN_BG_BY_DAY[day < 0 ? 5 : day];
+    const url = `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1920`;
+    const img = new Image();
+    img.onload = ()=>{ const el = document.getElementById('loginScreen'); if(el) el.style.setProperty('--login-bg', `url('${url}')`); };
+    img.src = url;   // โหลดสำเร็จค่อยสลับ (ไม่ขึ้นรูปว่าง ถ้าโหลดไม่ได้ก็คงรูปสำรอง)
+  }catch(e){}
+}
+applyLoginBackground();
+
 function doLogout(){
   if(pendingDotTimer){ clearInterval(pendingDotTimer); pendingDotTimer=null; }
   localStorage.removeItem('loi_token');
   currentUser=null;
   document.getElementById('app').style.display='none';
   BgArt.stop();
-  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginScreen').style.display='flex'; applyLoginBackground();
   document.getElementById('loginCode').value='';
   document.getElementById('loginPassword').value='';
 
