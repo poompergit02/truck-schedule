@@ -107,7 +107,7 @@ header{
 #loginScreen .lang-btn{background:rgba(255,255,255,.06);border-color:rgba(231,217,190,.3);color:rgba(255,255,255,.6)}
 #loginScreen .lang-btn.active{background:var(--gold);color:#241a0c;border-color:var(--gold)}
 
-nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 28px;display:flex;gap:4px;overflow-x:auto}
+nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 28px;display:flex;gap:4px;overflow-x:auto;position:sticky;top:var(--hdr-h,0px);z-index:49}
 .tab-btn{padding:14px 18px;font-size:.86rem;font-weight:600;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;background:none;border-top:none;border-left:none;border-right:none}
 .tab-btn.active{color:var(--plum-700);border-bottom-color:var(--gold)}
 .tab-btn:hover:not(.active){color:var(--ink)}
@@ -427,6 +427,9 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 
 @media(max-width:640px){
   header{padding:14px 18px}
+  /* มือถือ: header สูงหลายบรรทัด ให้เลื่อนหายไปได้ เหลือแต่แถบเมนูติดบนจอ */
+  #app header{position:static}
+  nav.tabs{top:0}
   nav.tabs{padding:0 12px}
   main{padding:24px 14px 60px}
   .ticket{flex-direction:row}
@@ -1850,6 +1853,12 @@ async function enterApp(){
   BgArt.start(appSettingsCache['bg_animal']);   // เริ่มภาพพื้นหลังหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง) — สัตว์ตามที่ admin เลือก หรือตามเดือนปัจจุบัน
 }
 
+// แถบเมนู (nav.tabs) ติดบนจอตลอดเวลา — เลื่อนลงไปดูข้อมูลลึกๆ ก็ยังกดเมนูได้ ตำแหน่งต่อจาก header (วัดความสูงจริง)
+function syncStickyHeader(){
+  const hd = document.querySelector('#app header');
+  if(hd) document.documentElement.style.setProperty('--hdr-h', hd.offsetHeight + 'px');
+}
+window.addEventListener('resize', syncStickyHeader);
 function buildTabs(){
   let tabs, dropdownTabs = [];
   if(currentUser.role==='admin'){
@@ -1896,6 +1905,7 @@ function buildTabs(){
     </div>`;
   }
   bar.innerHTML = mainHtml + dropdownHtml;
+  syncStickyHeader();
   refreshPendingDot();
 }
 
@@ -2414,6 +2424,7 @@ const I18N = {
     exp_loi_btn:'Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
+    exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
     exp_unit_d:'days', exp_unit_h:'hours', exp_unit_m:'min', exp_col_total:'Quota', exp_col_current:'Current year', exp_col_plan:'Prepared', btn_ny_export_plan:'⬇ Export prepared quotas (Excel)', btn_nyq_export:'⬇ Export quotas of this year (Excel)', msg_export_none:'No data to export',
     exp_col_code:'Employee Code', exp_col_user:'User', exp_col_dept:'Department', exp_col_remaining:'Remaining', exp_col_used:'Used',
     exp_none:'No employees to export',
@@ -2539,7 +2550,7 @@ const I18N = {
     leave_personal_unpaid:'💸 Unpaid Personal Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used until 31 March only and disappears on 1 April.',
-    ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the filled “Annual from last year” cells with the calculated values?', msg_ny_carry_done:'✅ Calculated (max 3 days) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
+    ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the “Annual from last year” cells with the calculated carry-over, and set Sick = 30 days and Personal = 4 days for everyone in the table?', msg_ny_carry_done:'✅ Calculated (carry-over max 3 days; Sick 30, Personal 4) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
     lbl_unit_half:'Half day (morning / afternoon)', lbl_half_session:'Session', opt_half_am:'Morning (3.5 hrs)', opt_half_pm:'Afternoon (4.5 hrs)',
     lbl_wfh_photo:'📷 Photo (required for Work From Home)', btn_attachment:'Attachment',
     set_wfhphoto_title:'Work From Home requires a photo', set_wfhphoto_desc:'When ON, a Work From Home request cannot be submitted without attaching a photo.',
@@ -2605,6 +2616,7 @@ const I18N = {
     exp_loi_btn:'Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
+    exp_entitle:'สิทธิ์', exp_sfx_used:'ที่ใช้ไป', exp_sfx_remaining:'คงเหลือ',
     exp_unit_d:'วัน', exp_unit_h:'ชั่วโมง', exp_unit_m:'นาที', exp_col_total:'โควตา', exp_col_current:'ปีปัจจุบัน', exp_col_plan:'ที่เตรียมไว้', btn_ny_export_plan:'⬇ Export โควตาที่เตรียมไว้ (Excel)', btn_nyq_export:'⬇ Export โควตาปีนี้ (Excel)', msg_export_none:'ไม่มีข้อมูลให้ export',
     exp_col_code:'รหัสพนักงาน', exp_col_user:'ผู้ใช้', exp_col_dept:'แผนก', exp_col_remaining:'คงเหลือ', exp_col_used:'ใช้ไปแล้ว',
     exp_none:'ไม่มีพนักงานให้ export',
@@ -2730,7 +2742,7 @@ const I18N = {
     leave_personal_unpaid:'💸 ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึง 31 มีนาคมเท่านั้น และจะหายไปในวันที่ 1 เมษายน',
-    ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ที่กรอกไว้ด้วยค่าที่คำนวณหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (สูงสุด 3 วัน) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
+    ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ด้วยค่ายกยอดที่คำนวณ และตั้งลาป่วย 30 วัน / ลากิจ 4 วัน ให้ทุกคนในตารางหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (ยกยอดสูงสุด 3 วัน, ลาป่วย 30, ลากิจ 4) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
     lbl_unit_half:'ครึ่งวัน (เช้า / บ่าย)', lbl_half_session:'ช่วงเวลา', opt_half_am:'เช้า (3.5 ชม.)', opt_half_pm:'บ่าย (4.5 ชม.)',
     lbl_wfh_photo:'📷 รูปภาพ (ต้องแนบสำหรับ Work From Home)', btn_attachment:'ไฟล์แนบ',
     set_wfhphoto_title:'Work From Home ต้องแนบรูปภาพ', set_wfhphoto_desc:'เมื่อเปิด จะส่งคำขอ Work From Home ไม่ได้ถ้าไม่แนบรูปภาพ',
@@ -4556,21 +4568,30 @@ function populateExportFilterSelectors(){
 }
 
 // ── ADMIN: EXPORT LOI DATA (คงเหลือ + ใช้ไปแล้ว ของทุกประเภทการลา อยู่ติดกัน) ──
-// แยกจำนวนวัน(ทศนิยม) เป็น วัน / ชั่วโมง / นาที (1 วัน = 8 ชม., นาทีเป็น 0 หรือ 30) — ค่าติดลบใส่เครื่องหมายลบหน้าทุกส่วนที่ไม่เป็น 0
-function dhmParts(v){
+// ── Export แบบหัวตาราง 2 ชั้น: กลุ่มหัวข้อ (merge 2 คอลัมน์) → ย่อย "วัน | ชั่วโมง" ──
+// ชั่วโมงรวมนาทีเป็นทศนิยมแล้ว เช่น 2 ชม. 30 นาที = 2.5 ; ค่าติดลบมีเครื่องหมายลบทั้งวันและชั่วโมง
+function dhPair(v){
+  if(v === null || v === undefined || v === '') return ['',''];
   const n = Number(v) || 0, neg = n < 0, s = nySplit(Math.abs(n));
-  const sg = x => (neg && x !== 0) ? -x : x;
-  return { d: sg(s.d), h: sg(s.hr), m: sg(s.mn) };
+  const hrs = s.hr + s.mn/60;
+  return [neg && s.d ? -s.d : s.d, neg && hrs ? -hrs : hrs];
 }
-// ใส่ 3 คอลัมน์ (วัน/ชั่วโมง/นาที) ลงแถว: prefix เช่น "ลาพักร้อน — คงเหลือ"
-function putDhm(row, prefix, v){
-  if(v === null || v === undefined || v === ''){ row[`${prefix} (${t('exp_unit_d')})`] = ''; row[`${prefix} (${t('exp_unit_h')})`] = ''; row[`${prefix} (${t('exp_unit_m')})`] = ''; return; }
-  const p = dhmParts(v);
-  row[`${prefix} (${t('exp_unit_d')})`] = p.d; row[`${prefix} (${t('exp_unit_h')})`] = p.h; row[`${prefix} (${t('exp_unit_m')})`] = p.m;
-}
-function downloadRowsXlsx(rows, sheetName, fileName, firstCols){
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = Object.keys(rows[0]).map((k,i)=>({ wch: i===1 ? 26 : i<(firstCols||3) ? 16 : Math.max(11, Math.min(28, k.length+2)) }));
+function stripLeadingSymbols(s){ return String(s).replace(/^[^\p{L}\p{N}]+/u, '').trim(); }   // ตัด emoji/สัญลักษณ์หน้าชื่อ
+function entitleLabel(type){ return t('exp_entitle') + stripLeadingSymbols(getLeaveTypeLabel(type)); }
+// fixedHeaders: ['รหัส','ผู้ใช้','แผนก'] ; fixedRows: [[..],[..]] ; groups: [{title, vals:[ค่าต่อแถว(วัน ทศนิยม)]}]
+function downloadGroupedXlsx(fixedHeaders, fixedRows, groups, sheetName, fileName){
+  const nf = fixedHeaders.length;
+  const r1 = [...fixedHeaders], r2 = fixedHeaders.map(()=>'');
+  groups.forEach(g=>{ r1.push(g.title, ''); r2.push(t('exp_unit_d'), t('exp_unit_h')); });
+  const body = fixedRows.map((fr,i)=>{ const row = [...fr]; groups.forEach(g=>{ const p = dhPair(g.vals[i]); row.push(p[0], p[1]); }); return row; });
+  const ws = XLSX.utils.aoa_to_sheet([r1, r2, ...body]);
+  const merges = [];
+  for(let c=0;c<nf;c++) merges.push({ s:{r:0,c}, e:{r:1,c} });
+  groups.forEach((g,gi)=>{ const c0 = nf + gi*2; merges.push({ s:{r:0,c:c0}, e:{r:0,c:c0+1} }); });
+  ws['!merges'] = merges;
+  const cols = fixedHeaders.map((x,i)=>({ wch: i===1 ? 24 : 14 }));
+  groups.forEach(g=>{ const w = Math.max(16, Math.ceil(g.title.length*1.15)); cols.push({ wch: Math.round(w*0.42) }, { wch: Math.round(w*0.58) }); });
+  ws['!cols'] = cols;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, String(sheetName).slice(0,31));
   XLSX.writeFile(wb, fileName);
@@ -4597,26 +4618,17 @@ async function exportLoiDataExcel(){
     if(dept!=='all') emps = emps.filter(e=>e.department===dept);
     if(!emps.length){ showToast(t('exp_none'),'err'); return; }
 
-    const round2 = n => Math.round(n*100)/100;
-    const rows = emps.map(e=>{
-      const row = {};
-      row[t('exp_col_code')] = e.employee_code;
-      row[t('exp_col_user')] = e.name;
-      row[t('exp_col_dept')] = e.department || '';
-      types.forEach(ty=>{
-        const b = (byEmp[e.id]||{})[ty];
-        const label = getLeaveTypeLabel(ty);
-        putDhm(row, `${label} — ${t('exp_col_remaining')}`, b ? Number(b.total_days) - Number(b.used_days) : '');
-        putDhm(row, `${label} — ${t('exp_col_used')}`, b ? Number(b.used_days) : '');
-      });
-      return row;
+    const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
+    const fixedRows = emps.map(e=>[e.employee_code, e.name, e.department || '']);
+    const groups = [];
+    types.forEach(ty=>{
+      const base = entitleLabel(ty);
+      const bOf = e => (byEmp[e.id]||{})[ty];
+      groups.push({ title: base, vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) : ''; }) });
+      groups.push({ title: base + t('exp_sfx_used'), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.used_days) : ''; }) });
+      groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) - Number(b.used_days) : ''; }) });
     });
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = Object.keys(rows[0]).map((k,i)=>({ wch: i===1 ? 26 : i===2 ? 16 : Math.max(12, k.length+2) }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `LOI ${year}`);
-    XLSX.writeFile(wb, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}.xlsx`);
+    downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `LOI ${year}`, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}.xlsx`);
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -4831,30 +4843,30 @@ const NY_EXPORT_TYPES = ['annual','annual_prev','sick','personal'];
 function exportYearQuotasExcel(){
   if(!nyqState.ready || !nyqState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
   const map = {}; nyqState.balances.forEach(b=>{ map[b.employee_id+'|'+b.leave_type] = b; });
-  const rows = nyqState.employees.map(e=>{
-    const row = {}; row[t('exp_col_code')] = e.employee_code; row[t('exp_col_user')] = e.name; row[t('exp_col_dept')] = e.department || '';
-    NY_EXPORT_TYPES.forEach(ty=>{
-      const b = map[e.id+'|'+ty], label = getLeaveTypeLabel(ty);
-      putDhm(row, `${label} — ${t('exp_col_total')}`, b ? Number(b.total_days) : '');
-      putDhm(row, `${label} — ${t('exp_col_used')}`, b ? Number(b.used_days) : '');
-      putDhm(row, `${label} — ${t('exp_col_remaining')}`, b ? Number(b.total_days) - Number(b.used_days) : '');
-    });
-    return row;
+  const emps = nyqState.employees;
+  const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
+  const fixedRows = emps.map(e=>[e.employee_code, e.name, e.department || '']);
+  const groups = [];
+  NY_EXPORT_TYPES.forEach(ty=>{
+    const base = entitleLabel(ty), g = e => map[e.id+'|'+ty];
+    groups.push({ title: base, vals: emps.map(e=>g(e) ? Number(g(e).total_days) : '') });
+    groups.push({ title: base + t('exp_sfx_used'), vals: emps.map(e=>g(e) ? Number(g(e).used_days) : '') });
+    groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>g(e) ? Number(g(e).total_days) - Number(g(e).used_days) : '') });
   });
-  downloadRowsXlsx(rows, `Quota ${nyqState.year}`, `LOI_Quota_${nyqState.year}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `Quota ${nyqState.year}`, `LOI_Quota_${nyqState.year}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 function exportNextYearPlanExcel(){
   if(!nyState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
-  const rows = nyState.employees.map(e=>{
-    const row = {}; row[t('exp_col_code')] = e.employee_code; row[t('exp_col_user')] = e.name; row[t('exp_col_dept')] = e.department || '';
-    NY_EXPORT_TYPES.forEach(ty=>{
-      const k = e.id+'|'+ty, label = getLeaveTypeLabel(ty);
-      putDhm(row, `${label} — ${t('exp_col_plan')}`, nyState.plan[k] !== undefined ? nyState.plan[k] : '');
-      putDhm(row, `${label} — ${t('exp_col_current')}`, nyState.cur[k] !== undefined ? nyState.cur[k] : '');
-    });
-    return row;
+  const emps = nyState.employees;
+  const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
+  const fixedRows = emps.map(e=>[e.employee_code, e.name, e.department || '']);
+  const groups = [];
+  NY_EXPORT_TYPES.forEach(ty=>{
+    const base = entitleLabel(ty);
+    groups.push({ title: `${base} — ${t('exp_col_plan')}`, vals: emps.map(e=>{ const v = nyState.plan[e.id+'|'+ty]; return v !== undefined ? v : ''; }) });
+    groups.push({ title: `${base} — ${t('exp_col_current')}`, vals: emps.map(e=>{ const v = nyState.cur[e.id+'|'+ty]; return v !== undefined ? v : ''; }) });
   });
-  downloadRowsXlsx(rows, 'Prepared quotas', `LOI_Prepared_Quotas_${new Date().toISOString().slice(0,10)}.xlsx`);
+  downloadGroupedXlsx(fixedHeaders, fixedRows, groups, 'Prepared quotas', `LOI_Prepared_Quotas_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 async function deleteYearQuotas(){
@@ -4978,6 +4990,7 @@ function fillNextYearFromCurrent(){
 }
 
 // คำนวณ "ลาพักร้อนจากปีที่แล้ว" = min(3, พักร้อนคงเหลือของปีนี้) ให้ทุกคน (admin ไม่อยู่ในรายการ)
+const NY_DEFAULT_SICK = 30, NY_DEFAULT_PERSONAL = 4;
 function fillNextYearCarry(){
   const cells = [...document.querySelectorAll('#nyBody .ny-cell[data-type="annual_prev"]')];
   if(cells.some(td=>nyRead(td)!==null) && !confirm(t('cf_ny_carry'))) return;
@@ -4988,6 +5001,9 @@ function fillNextYearCarry(){
     const rem = Math.max(0, Math.round((total-used)*1000)/1000);
     nyWrite(td, Math.min(3, rem));
   });
+  // ยกยอดแล้วตั้งค่ามาตรฐานของปีใหม่ให้อัตโนมัติ: ลาป่วย 30 วัน, ลากิจ 4 วัน (ทุกคนในตาราง)
+  document.querySelectorAll('#nyBody .ny-cell[data-type="sick"]').forEach(td=>nyWrite(td, NY_DEFAULT_SICK));
+  document.querySelectorAll('#nyBody .ny-cell[data-type="personal"]').forEach(td=>nyWrite(td, NY_DEFAULT_PERSONAL));
   showToast(t('msg_ny_carry_done'));
 }
 
