@@ -174,6 +174,9 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .exp-pick-panel{position:absolute;z-index:30;top:calc(100% + 4px);left:0;min-width:240px;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px}
 .exp-pick-panel label{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:.84rem;cursor:pointer}
 .exp-pick-panel label:hover{background:#f4f1ea}
+.exp-pick-mv{border:1px solid var(--line);background:#fff;border-radius:5px;width:24px;height:22px;font-size:.62rem;cursor:pointer;padding:0;color:var(--ink)}
+.exp-pick-mv:hover{background:#ece6f5}
+.exp-pick-mv-sp{display:inline-block;width:24px}
 .exp-pick-panel hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 .ls-wrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-start;margin:0 0 16px}
 .ls-ticket{position:relative;width:172px;height:172px;box-sizing:border-box;padding:14px 14px 12px;border-radius:14px;color:#fff;background:linear-gradient(145deg,#141414 0%,#2a0b0b 100%);border:1.5px solid #b91c1c;box-shadow:0 6px 16px rgba(185,28,28,.25);display:flex;flex-direction:column}
@@ -2458,6 +2461,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -2654,7 +2658,8 @@ const I18N = {
     exp_loi_btn:'Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
-    exp_entitle:'สิทธิ์', exp_sfx_used:'ที่ใช้ไป', exp_sfx_remaining:'คงเหลือ',
+    exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
+    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
     ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
@@ -4678,29 +4683,41 @@ function downloadGroupedXlsx(fixedHeaders, fixedRows, groups, sheetName, fileNam
 
 // ── ตัวเลือกประเภทการลาที่จะ export (dropdown ติ๊ก) ──
 const LOI_EXPORT_ORDER = ['annual','annual_urgent','annual_prev','sick','personal'];
+const LOI_PICK_ALL = [...LOI_EXPORT_ORDER, '__others'];
+let loiPickOrder = (()=>{ try{ const v = JSON.parse(localStorage.getItem('loi_export_order')||'null'); if(Array.isArray(v) && v.length===LOI_PICK_ALL.length && LOI_PICK_ALL.every(k=>v.includes(k))) return v; }catch(e){} return LOI_PICK_ALL.slice(); })();
+let loiPickChecked = new Set(LOI_PICK_ALL);
+function loiPickLabel(k){ return k==='__others' ? t('exp_pick_others') : stripLeadingSymbols(getLeaveTypeLabel(k)); }
 function loiPickerInit(){
   const pn = document.getElementById('exportLoiTypesPanel'); if(!pn) return;
-  const prev = pn.dataset.ready ? new Set(loiPickerSelected()) : null;   // เก็บค่าที่ติ๊กไว้เมื่อสลับภาษา
-  const row = (v,txt,cls) => `<label><input type="checkbox" class="${cls||'loi-pick'}" value="${v}" ${(!prev || prev.has(v) || (v==='__all' && prev.size===LOI_EXPORT_ORDER.length+1)) ? 'checked' : ''} onchange="loiPickerChanged(this)"> <span>${escHtml(txt)}</span></label>`;
-  pn.dataset.ready = '1';
-  pn.innerHTML = row('__all', t('exp_pick_all'), 'loi-pick-all') + '<hr>'
-    + LOI_EXPORT_ORDER.map(k=>row(k, stripLeadingSymbols(getLeaveTypeLabel(k)))).join('')
-    + row('__others', t('exp_pick_others'));
+  const allOn = LOI_PICK_ALL.every(k=>loiPickChecked.has(k));
+  const arrow = (k,d,sym) => `<button type="button" class="exp-pick-mv" onclick="loiPickMove('${k}',${d});event.preventDefault();event.stopPropagation()">${sym}</button>`;
+  pn.innerHTML = `<label><input type="checkbox" class="loi-pick-all" ${allOn?'checked':''} onchange="loiPickerChanged(this)"> <span>${escHtml(t('exp_pick_all'))}</span></label><hr>`
+    + loiPickOrder.map((k,i)=>`<label><input type="checkbox" class="loi-pick" value="${k}" ${loiPickChecked.has(k)?'checked':''} onchange="loiPickerChanged(this)"> <span style="flex:1">${escHtml(loiPickLabel(k))}</span>${i>0?arrow(k,-1,'▲'):'<span class="exp-pick-mv-sp"></span>'}${i<loiPickOrder.length-1?arrow(k,1,'▼'):'<span class="exp-pick-mv-sp"></span>'}</label>`).join('')
+    + `<div class="hint" style="margin:6px 8px 2px;font-size:.72rem">${escHtml(t('exp_pick_move'))}</div>`;
   loiPickerUpdateSummary();
+}
+function loiPickMove(k, d){
+  const i = loiPickOrder.indexOf(k), j = i + d;
+  if(i<0 || j<0 || j>=loiPickOrder.length) return;
+  [loiPickOrder[i], loiPickOrder[j]] = [loiPickOrder[j], loiPickOrder[i]];
+  try{ localStorage.setItem('loi_export_order', JSON.stringify(loiPickOrder)); }catch(e){}
+  loiPickerInit();
 }
 function loiPickerChanged(el){
   const pn = document.getElementById('exportLoiTypesPanel');
   if(el.classList.contains('loi-pick-all')) pn.querySelectorAll('.loi-pick').forEach(c=>c.checked = el.checked);
   else pn.querySelector('.loi-pick-all').checked = [...pn.querySelectorAll('.loi-pick')].every(c=>c.checked);
+  loiPickChecked = new Set([...pn.querySelectorAll('.loi-pick:checked')].map(c=>c.value));
   loiPickerUpdateSummary();
 }
-function loiPickerSelected(){ return [...document.querySelectorAll('#exportLoiTypesPanel .loi-pick:checked')].map(c=>c.value); }
+function loiPickerSelected(){ return loiPickOrder.filter(k=>loiPickChecked.has(k)); }   // เรียงตามลำดับที่ผู้ใช้จัด
 function loiPickerUpdateSummary(){
   const sum = document.getElementById('exportLoiTypesSum'); if(!sum) return;
-  const n = loiPickerSelected().length, total = LOI_EXPORT_ORDER.length + 1;
-  sum.textContent = n===total ? t('exp_pick_all') : t('exp_pick_n').replace('{n}', n);
+  const n = loiPickerSelected().length;
+  sum.textContent = n===LOI_PICK_ALL.length ? t('exp_pick_all') : t('exp_pick_n').replace('{n}', n);
 }
 document.addEventListener('click', ev=>{ const d = document.getElementById('exportLoiTypes'); if(d && d.open && !d.contains(ev.target)) d.open = false; });
+function totalLabel(type){ return type==='annual' ? t('exp_tot_annual') : type==='annual_prev' ? t('exp_tot_prev') : entitleLabel(type); }
 function usedLabel(type){ return stripLeadingSymbols(getLeaveTypeLabel(type)) + t('exp_sfx_used'); }   // "ลาพักร้อนที่ใช้ไป"
 
 async function exportLoiDataExcel(){
@@ -4719,10 +4736,11 @@ async function exportLoiDataExcel(){
     // เรียง: พักร้อน, พักร้อนฉุกเฉิน, พักร้อนจากปีที่แล้ว, ป่วย, กิจ, อื่นๆ (annual_carry_* และประเภทอื่นที่มีข้อมูลจริง)
     const present = new Set(balances.map(b=>b.leave_type));
     const others = [...present].filter(x=>!LOI_EXPORT_ORDER.includes(x)).sort();
-    const types = [
-      ...LOI_EXPORT_ORDER.filter(x=>picked.includes(x) && (x==='annual_urgent' || present.has(x))),
-      ...(picked.includes('__others') ? others : []),
-    ];
+    const types = [];
+    picked.forEach(k=>{            // picked เรียงตามลำดับที่ผู้ใช้จัดใน dropdown
+      if(k==='__others') types.push(...others);
+      else if(k==='annual_urgent' || present.has(k)) types.push(k);
+    });
 
     // พักร้อนฉุกเฉินไม่มีแถวโควตาของตัวเอง (หักจากพักร้อน) → รวมจากใบลาที่อนุมัติแล้ว
     const urgentUsed = {};
@@ -4746,7 +4764,7 @@ async function exportLoiDataExcel(){
         return;
       }
       const showTotal = !(ty==='sick' || ty==='personal');   // ลาป่วย/ลากิจ ไม่แสดงสิทธิ์ (admin ทราบอยู่แล้ว)
-      if(showTotal) groups.push({ title: base, vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) : ''; }) });
+      if(showTotal) groups.push({ title: totalLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) : ''; }) });
       groups.push({ title: usedLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.used_days) : ''; }) });
       groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) - Number(b.used_days) : ''; }) });
     });
@@ -4995,7 +5013,7 @@ function exportYearQuotasExcel(){
   const groups = [];
   NY_EXPORT_TYPES.forEach(ty=>{
     const base = entitleLabel(ty), g = e => map[e.id+'|'+ty];
-    groups.push({ title: base, vals: emps.map(e=>g(e) ? Number(g(e).total_days) : '') });
+    groups.push({ title: totalLabel(ty), vals: emps.map(e=>g(e) ? Number(g(e).total_days) : '') });
     groups.push({ title: usedLabel(ty), vals: emps.map(e=>g(e) ? Number(g(e).used_days) : '') });
     groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>g(e) ? Number(g(e).total_days) - Number(g(e).used_days) : '') });
   });
