@@ -332,6 +332,8 @@ tr:hover td{background:var(--cream)}
 .setting-subrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;font-size:.88rem;border-bottom:1px dashed var(--line-soft)}
 .setting-subrow:last-child{border-bottom:none}
 .setting-subrow small{display:block;color:var(--text-dim);font-size:.74rem;margin-top:1px}
+.scroll-box{max-height:68vh;overflow:auto}
+.scroll-box thead th{position:sticky;top:0;z-index:3;background:var(--white);box-shadow:0 1px 0 var(--line)}
 .sortable{cursor:pointer;user-select:none;white-space:nowrap}
 .sortable:hover{color:var(--plum-700)}
 .sortable.asc::after{content:' ▲';font-size:.7em}
@@ -706,7 +708,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       </div>
 
       <div class="card" style="padding:0">
-        <div class="table-wrap" style="border:none"><table id="employeesTable">
+        <div class="table-wrap scroll-box" style="border:none"><table id="employeesTable">
           <thead><tr>
             <th class="sortable" data-sort="employee_code" onclick="sortEmployees('employee_code')" data-i18n="th_code">Code</th>
             <th class="sortable" data-sort="name" onclick="sortEmployees('name')" data-i18n="th_name">Name</th>
@@ -794,7 +796,12 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       </div>
 
       <div class="card">
-        <h3 data-i18n="h3_attachcleanup">🗑 Clean Up Old Attachments</h3>
+        <h3 data-i18n="h3_cleanup_all">🗑 Clean Up Files</h3>
+        <div style="margin-bottom:14px"><select id="cleanupType" class="exp-select" onchange="switchCleanupType()">
+          <option value="attach" data-i18n="opt_cleanup_attach">📎 Old leave attachments (certificates)</option>
+          <option value="sent" data-i18n="opt_cleanup_sent">📤 Documents sent by Admin</option>
+        </select></div>
+        <div id="cleanupSecAttach">
         <p class="hint" style="margin-bottom:8px" data-i18n="hint_attachcleanup">Deletes the actual certificate photo/PDF from storage for old leave requests to free up space — the leave record itself is kept, only the file is removed. Nothing loads automatically; click Find first.</p>
         <p class="hint" style="margin-bottom:14px" data-i18n="hint_attach_all">Every certificate file currently stored. Tick any to delete, or delete one at a time.</p>
         <div style="margin-bottom:16px">
@@ -806,10 +813,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSelectedAttachments()" data-i18n="btn_delete_selected">Delete Selected</button>
         </div>
         <div id="attachmentCleanupResults"></div>
-      </div>
-
-      <div class="card">
-        <h3 data-i18n="h3_senddoc_cleanup">📤 Documents Sent by Admin</h3>
+        </div>
+        <div id="cleanupSecSent" style="display:none">
         <p class="hint" style="margin-bottom:14px" data-i18n="hint_senddoc_cleanup">Documents sent via "Send Document". Tick any to delete, or delete one at a time.</p>
         <div style="margin-bottom:16px">
           <button class="btn btn-primary" onclick="findAllSentDocuments()" data-i18n="btn_view_all_docs">📎 View All Documents</button>
@@ -820,6 +825,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSelectedSentDocs()" data-i18n="btn_delete_selected">Delete Selected</button>
         </div>
         <div id="sentDocCleanupResults"></div>
+        </div>
       </div>
 
       <div class="danger-card">
@@ -1053,7 +1059,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <div class="nyq-months" id="nyqMonths"></div>
         </div>
         <div style="margin-top:14px"><button class="btn btn-sm btn-outline" onclick="exportYearQuotasExcel()" data-i18n="btn_nyq_export">⬇ Export quotas of this year (Excel)</button> <button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
-        <div class="table-wrap" style="border:none;margin-top:10px"><table id="nyqTable">
+        <div class="table-wrap scroll-box" style="border:none;margin-top:10px"><table id="nyqTable">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
             <th data-i18n="ny_col_annual">Annual</th><th data-i18n="ny_col_sick">Sick</th><th data-i18n="ny_col_personal">Personal</th><th data-i18n="ny_col_prevannual">Annual from last year (max 3)</th>
@@ -1111,7 +1117,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       </div>
 
       <div class="card" style="padding:0">
-        <div class="table-wrap" style="border:none"><table id="nyTable" class="ny-nohours">
+        <div class="table-wrap scroll-box" style="border:none"><table id="nyTable" class="ny-nohours">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
             <th data-i18n="ny_col_annual">Annual</th><th data-i18n="ny_col_sick">Sick</th><th data-i18n="ny_col_personal">Personal</th><th data-i18n="ny_col_prevannual">Annual from last year (max 3)</th>
@@ -1614,6 +1620,7 @@ const MSG_TH_TO_EN_RULES = [
   [/^ไม่สามารถเปลี่ยนรหัสพนักงานได้ เพราะมีใบลา (\d+) ใบรอพนักงานคนนี้อนุมัติอยู่$/, 'Cannot change the employee code: $1 leave request(s) are waiting for this employee to approve'],
   [/^ลาพักร้อนรายชั่วโมงเลือกเวลาได้เฉพาะเป็นครึ่งชั่วโมง \(เช่น 08:30, 09:00, 09:30\)$/, 'Hourly annual leave can only be chosen in 30-minute steps (e.g. 08:30, 09:00, 09:30)'],
   [/^คุณมีลาพักร้อนจากปีที่แล้วเหลือ (.*) วัน กรุณาใช้ให้หมดก่อนจึงจะลาพักร้อนปกติได้$/, 'You still have $1 day(s) of annual leave from last year — please use it up before requesting normal annual leave'],
+  [/^ลาพักร้อนจากปีที่แล้วใช้ได้ถึงวันที่ (.+) เท่านั้น$/, 'Annual leave from last year can only be used up to $1'],
   [/^ลาพักร้อนจากปีที่แล้วใช้ได้ถึงวันที่ 31 มีนาคม (\d+) เท่านั้น \(หมดอายุวันที่ 1 เมษายน\)$/, 'Annual leave from last year can only be used until 31 March $1 (it expires on 1 April)'],
   [/^วันลาพักร้อนจากปีที่แล้วของคุณเหลือ (.*) วัน ไม่พอสำหรับคำขอนี้$/, 'Your annual leave from last year has only $1 day(s) left — not enough for this request'],
   [/^ลาพักร้อนจากปีที่แล้ว(?:ตั้ง|ยกยอด)ได้สูงสุด (\d+) วัน$/, 'Annual leave from last year can be at most $1 days'],
@@ -2046,7 +2053,8 @@ function refreshPrevAnnualOptions(balances){
   const b = (balances||[]).find(x=>x.leave_type==='annual_prev');
   const remaining = b ? Number(b.total_days)-Number(b.used_days) : 0;
   const todayIso = new Date().toISOString().slice(0,10);
-  const inTime = todayIso <= `${new Date().getFullYear()}-03-31` || !!(currentUser && currentUser.bypass_conditions);   // Emergency ข้ามเงื่อนไขวันหมดอายุ
+  const closeMD = /^\d{2}-\d{2}$/.test(appSettingsCache['annual_prev_close_date']||'') ? appSettingsCache['annual_prev_close_date'] : '04-01';   // วันปิดใช้ (ค่าเริ่มต้น 1 เม.ย.)
+  const inTime = todayIso < `${new Date().getFullYear()}-${closeMD}` || !!(currentUser && currentUser.bypass_conditions);   // Emergency ข้ามเงื่อนไขวันหมดอายุ
   document.querySelectorAll('option[value="annual_prev"]').forEach(o=>{
     const own = o.parentElement && o.parentElement.id==='reqType';
     const show = on && (!own || (remaining>0 && inTime));
@@ -2399,6 +2407,7 @@ const I18N = {
     tab_holidays:'🏖️ Company Holidays', tab_special:'⭐ Special Leave Calendar', tab_login_progress:'🚦 Login Progress',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 Carry Over Annual Leave (3-day policy)', h3_specialaccess:'⭐ Special Leave Calendar Access',
+    h3_cleanup_all:'🗑 Clean Up Files', opt_cleanup_attach:'📎 Old leave attachments (certificates)', opt_cleanup_sent:'📤 Documents sent by Admin',
     h3_attachcleanup:'🗑 Clean Up Old Attachments', h3_dangerzone:'⚠️ Danger Zone — Testing Only',
     btn_delete_sel_req:'Delete Selected', el_sel_count:'{n} selected', el_sel_none:'Tick the requests to delete first', el_sel_confirm:'Delete {n} leave request(s)? Approved ones will have their deducted balance restored. This cannot be undone.', el_sel_loading:'Deleting…', el_sel_done:'✅ Deleted {n} request(s)',
     hint_carryover:'Nothing loads automatically. Click Find to see who has more than 3 unused Annual/Vacation days for a given year, then grant + notify people one at a time — nothing happens in bulk.',
@@ -2490,6 +2499,7 @@ const I18N = {
     set_attach_desc:'Sick leave that includes a Monday or Friday, or lasts 3 or more working days (e.g. Tue–Thu), must attach a photo of a medical certificate.',
     set_grp_sameday_title:'Block same-day leave requests', set_grp_sameday_desc:'When ON, leave starting/including today cannot be requested — except the leave types switched ON in the exception list below.',
     set_grp_past_title:'Block backdated leave requests', set_grp_past_desc:'When ON, leave that starts in the past cannot be requested — except the leave types switched ON in the exception list below.',
+    set_prevclose_title:'Closing date for “Annual leave from last year”', set_prevclose_desc:'Usable until the day before this date each year (default 1 April = usable through 31 March). Emergency accounts ignore it.',
     set_exempt_hdr:'Exceptions (ON = allowed)', set_att_list_hdr:'Leave types',
     set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
     set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
@@ -2591,6 +2601,7 @@ const I18N = {
     tab_holidays:'🏖️ วันหยุดบริษัท', tab_special:'⭐ ปฏิทินลาพิเศษ', tab_login_progress:'🚦 ความคืบหน้าการล็อกอิน',
     menu_iida_control:'IIDA Control',
     h3_carryover:'🗓 ยกยอดวันลาพักร้อน (นโยบาย 3 วัน)', h3_specialaccess:'⭐ สิทธิ์เข้าดูปฏิทินลาพิเศษ',
+    h3_cleanup_all:'🗑 ล้างไฟล์', opt_cleanup_attach:'📎 ไฟล์แนบใบลาเก่า (ใบรับรอง)', opt_cleanup_sent:'📤 เอกสารที่ Admin ส่งไป',
     h3_attachcleanup:'🗑 ล้างไฟล์แนบเก่า', h3_dangerzone:'⚠️ โซนอันตราย — สำหรับทดสอบเท่านั้น',
     btn_delete_sel_req:'ลบที่เลือก', el_sel_count:'เลือกแล้ว {n} ใบ', el_sel_none:'ติ๊กใบลาที่ต้องการลบก่อน', el_sel_confirm:'ลบใบลา {n} ใบ? ใบที่อนุมัติแล้วจะคืนโควตาที่หักไป ย้อนกลับไม่ได้', el_sel_loading:'กำลังลบ…', el_sel_done:'✅ ลบแล้ว {n} ใบ',
     hint_carryover:'ระบบจะไม่โหลดข้อมูลอัตโนมัติ กด "ค้นหา" เพื่อดูว่าใครมีวันลาพักร้อนคงเหลือเกิน 3 วันในปีที่เลือก จากนั้นให้สิทธิ์ยกยอดและแจ้งเตือนทีละคน — ไม่มีการดำเนินการแบบรวมกลุ่ม',
@@ -2682,6 +2693,7 @@ const I18N = {
     set_attach_desc:'คำขอลาป่วยที่มีวันจันทร์หรือวันศุกร์อยู่ในช่วงที่ลา หรือลาตั้งแต่ 3 วันทำงานขึ้นไป (เช่น อังคาร–พฤหัสบดี) ต้องแนบรูปใบรับรองแพทย์',
     set_grp_sameday_title:'ห้ามลาวันปัจจุบัน', set_grp_sameday_desc:'เมื่อเปิด จะขอลาที่รวมวันนี้ไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
     set_grp_past_title:'ห้ามลาย้อนหลัง', set_grp_past_desc:'เมื่อเปิด จะขอลาที่เริ่มในอดีตไม่ได้ — ยกเว้นประเภทการลาที่เปิดไว้ในรายการข้อยกเว้นด้านล่าง',
+    set_prevclose_title:'วันที่ปิดใช้ “ลาพักร้อนจากปีที่แล้ว”', set_prevclose_desc:'ใช้ได้ถึงก่อนวันที่นี้ 1 วัน ในทุกปี (ค่าเริ่มต้น 1 เมษายน = ใช้ได้ถึง 31 มีนาคม) บัญชี Emergency ไม่ถูกจำกัด',
     set_exempt_hdr:'ข้อยกเว้น (เปิด = ลาได้)', set_att_list_hdr:'ประเภทการลา',
     set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
     set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
@@ -3412,6 +3424,11 @@ h2{color:#6B3FA0;margin-top:28px;font-size:1.15rem}p{color:#3a3348}</style></hea
 // ── ADMIN: ATTACHMENTS — view every stored file, tick to bulk-delete (prevents storage from filling up) ──
 let oldAttachmentsCache = [];
 
+function switchCleanupType(){
+  const v = document.getElementById('cleanupType').value;
+  document.getElementById('cleanupSecAttach').style.display = v==='attach' ? '' : 'none';
+  document.getElementById('cleanupSecSent').style.display = v==='sent' ? '' : 'none';
+}
 async function findOldAttachments(){
   const resultsEl = document.getElementById('attachmentCleanupResults');
   resultsEl.innerHTML = `<div class="empty-msg">${escHtml(t('lp_loading'))}</div>`;
@@ -4736,7 +4753,25 @@ function renderSettingsGroups(settings){
         ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
       </div></details>
     </div>`;
-  return exemptHtml + attachHtml;
+  const cd = String(settings['annual_prev_close_date']||'04-01'), cm = Number(cd.slice(0,2))||4, cdd = Number(cd.slice(3,5))||1;
+  const mNames = (I18N[currentLang]||I18N.en).months || MONTH_NAMES_EN;
+  const closeHtml = `<div class="setting-group">
+      <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_prevclose_title'))}</h4><p>${escHtml(t('set_prevclose_desc'))}</p></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="prevCloseDay" class="exp-select" onchange="savePrevCloseDate()">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${i+1===cdd?'selected':''}>${i+1}</option>`).join('')}</select>
+          <select id="prevCloseMonth" class="exp-select" onchange="savePrevCloseDate()">${mNames.map((n,i)=>`<option value="${i+1}" ${i+1===cm?'selected':''}>${escHtml(n)}</option>`).join('')}</select>
+        </div></div></div>`;
+  return exemptHtml + attachHtml + closeHtml;
+}
+async function savePrevCloseDate(){
+  const m = Number(document.getElementById('prevCloseMonth').value), dMax = new Date(2024, m, 0).getDate();   // ปีอธิกสุรทินเพื่อให้ 29 ก.พ. เลือกได้
+  let d = Number(document.getElementById('prevCloseDay').value); if(d > dMax){ d = dMax; document.getElementById('prevCloseDay').value = d; }
+  const v = String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+  try{
+    await callApi('update_setting', { key:'annual_prev_close_date', value: v });
+    appSettingsCache['annual_prev_close_date'] = v; refreshPrevAnnualOptions();
+    showToast(t('msg_nyq_saved'));
+  }catch(e){ showToast(e.message,'err'); }
 }
 async function toggleExempt(listKey, inputEl){
   const wrap = inputEl.closest('.setting-sublist');
