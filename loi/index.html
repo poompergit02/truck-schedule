@@ -2559,7 +2559,7 @@ const I18N = {
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
     leave_personal_unpaid:'💸 Unpaid Personal Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
-    set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used until 31 March only and disappears on 1 April.',
+    set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used only until the day before the closing date set below (default: 31 March), then it disappears.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the “Annual from last year” cells with the calculated carry-over, and set Sick = 30 days and Personal = 4 days for everyone in the table?', msg_ny_carry_done:'✅ Calculated (carry-over max 3 days; Sick 30, Personal 4) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
     lbl_unit_half:'Half day (morning / afternoon)', lbl_half_session:'Session', opt_half_am:'Morning (3.5 hrs)', opt_half_pm:'Afternoon (4.5 hrs)',
     lbl_wfh_photo:'📷 Photo (required for Work From Home)', btn_attachment:'Attachment',
@@ -2753,7 +2753,7 @@ const I18N = {
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
     leave_personal_unpaid:'💸 ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
-    set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึง 31 มีนาคมเท่านั้น และจะหายไปในวันที่ 1 เมษายน',
+    set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึงก่อน “วันปิดใช้” ที่ตั้งด้านล่าง 1 วัน (ค่าเริ่มต้น 31 มีนาคม) จากนั้นจะหายไป',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ด้วยค่ายกยอดที่คำนวณ และตั้งลาป่วย 30 วัน / ลากิจ 4 วัน ให้ทุกคนในตารางหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (ยกยอดสูงสุด 3 วัน, ลาป่วย 30, ลากิจ 4) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
     lbl_unit_half:'ครึ่งวัน (เช้า / บ่าย)', lbl_half_session:'ช่วงเวลา', opt_half_am:'เช้า (3.5 ชม.)', opt_half_pm:'บ่าย (4.5 ชม.)',
     lbl_wfh_photo:'📷 รูปภาพ (ต้องแนบสำหรับ Work From Home)', btn_attachment:'ไฟล์แนบ',
@@ -4728,6 +4728,17 @@ const ATTACH_LIST = [
   { key:'personal_leave_requires_attachment', type:'personal', noteKey:'set_att_personal_note' },
   { key:'wfh_requires_photo', type:'wfh', noteKey:'set_att_wfh_note' },
 ];
+// ตัวเลือกวันที่ปิดใช้ลาพักร้อนจากปีที่แล้ว — แสดงใต้สวิตช์ leave_prev_year_annual
+function prevCloseHtml(settings){
+  const cd = String(settings['annual_prev_close_date']||'04-01'), cm = Number(cd.slice(0,2))||4, cdd = Number(cd.slice(3,5))||1;
+  const mNames = (I18N[currentLang]||I18N.en).months || MONTH_NAMES_EN;
+  return `<div class="setting-sublist" style="margin:0 0 10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span style="font-size:.84rem"><b>${escHtml(t('set_prevclose_title'))}</b><small style="display:block;color:var(--text-dim);font-size:.74rem">${escHtml(t('set_prevclose_desc'))}</small></span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <select id="prevCloseDay" class="exp-select" onchange="savePrevCloseDate()">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${i+1===cdd?'selected':''}>${i+1}</option>`).join('')}</select>
+        <select id="prevCloseMonth" class="exp-select" onchange="savePrevCloseDate()">${mNames.map((n,i)=>`<option value="${i+1}" ${i+1===cm?'selected':''}>${escHtml(n)}</option>`).join('')}</select>
+      </span></div>`;
+}
 function settingsToggleHtml(checked, onchange, small){
   return `<label class="toggle-switch${small?' sm':''}"><input type="checkbox" ${checked?'checked':''} onchange="${onchange}"/><span class="toggle-track"></span></label>`;
 }
@@ -4753,15 +4764,7 @@ function renderSettingsGroups(settings){
         ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
       </div></details>
     </div>`;
-  const cd = String(settings['annual_prev_close_date']||'04-01'), cm = Number(cd.slice(0,2))||4, cdd = Number(cd.slice(3,5))||1;
-  const mNames = (I18N[currentLang]||I18N.en).months || MONTH_NAMES_EN;
-  const closeHtml = `<div class="setting-group">
-      <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_prevclose_title'))}</h4><p>${escHtml(t('set_prevclose_desc'))}</p></div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select id="prevCloseDay" class="exp-select" onchange="savePrevCloseDate()">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${i+1===cdd?'selected':''}>${i+1}</option>`).join('')}</select>
-          <select id="prevCloseMonth" class="exp-select" onchange="savePrevCloseDate()">${mNames.map((n,i)=>`<option value="${i+1}" ${i+1===cm?'selected':''}>${escHtml(n)}</option>`).join('')}</select>
-        </div></div></div>`;
-  return exemptHtml + attachHtml + closeHtml;
+  return exemptHtml + attachHtml;
 }
 async function savePrevCloseDate(){
   const m = Number(document.getElementById('prevCloseMonth').value), dMax = new Date(2024, m, 0).getDate();   // ปีอธิกสุรทินเพื่อให้ 29 ก.พ. เลือกได้
@@ -4801,7 +4804,7 @@ async function loadSettings(){
           <input type="checkbox" ${on?'checked':''} onchange="toggleSetting('${def.key}', this.checked)"/>
           <span class="toggle-track"></span>
         </label>
-      </div>`;
+      </div>${def.key==='leave_prev_year_annual' ? prevCloseHtml(data.settings) : ''}`;
     }).join('');
   }catch(e){ showToast(e.message,'err'); }
 }
