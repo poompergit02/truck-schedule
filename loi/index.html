@@ -1083,7 +1083,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <p class="hint" style="margin:6px 0 0" data-i18n="nyq_visible_hint">Employees see next year's quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.</p>
           <div class="nyq-months" id="nyqMonths"></div>
         </div>
-        <div style="margin-top:14px"><button class="btn btn-sm btn-outline" onclick="exportYearQuotasExcel()" data-i18n="btn_nyq_export">⬇ Export quotas of this year (Excel)</button> <button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
+        <div style="margin-top:14px"><button class="btn btn-sm btn-danger" onclick="deleteYearQuotas()" data-i18n="btn_nyq_delete">🗑️ Delete ALL leave quotas of this year</button> <span class="hint" data-i18n="hint_nyq_delete">For clearing test data. Leave requests are kept; only quota rows of the selected year are removed.</span></div>
         <div class="table-wrap scroll-box" style="border:none;margin-top:10px"><table id="nyqTable">
           <thead><tr>
             <th data-i18n="ny_col_code">Code</th><th data-i18n="ny_col_name">Name</th><th data-i18n="ny_col_dept">Department</th>
@@ -1135,6 +1135,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <button class="btn btn-outline" onclick="fillNextYearFromCurrent()" data-i18n="btn_ny_fill">Fill empty cells from this year</button>
           <button class="btn btn-outline" onclick="fillNextYearCarry()" data-i18n="btn_ny_carry">Calculate carry-over from remaining annual</button>
           <button class="btn btn-outline" onclick="exportNextYearPlanExcel()" data-i18n="btn_ny_export_plan">⬇ Export prepared quotas (Excel)</button>
+          <button class="btn btn-outline" onclick="document.getElementById('nyImportFile').click()" data-i18n="btn_ny_import_plan">⬆ Import prepared quotas (Excel)</button>
+          <input type="file" id="nyImportFile" accept=".xlsx,.xls" style="display:none" onchange="importNextYearPlanExcel(event)"/>
           <button class="btn btn-primary" onclick="saveNextYearPlan()" data-i18n="btn_ny_save">💾 Save quotas</button>
         </div>
         <div class="ny-hours-toggle"><label class="toggle-switch"><input type="checkbox" id="nyShowHours" onchange="toggleNyHours(this.checked)"/><span class="toggle-track"></span></label><span data-i18n="ny_show_hours">Show hours column (for partial days)</span></div>
@@ -2459,7 +2461,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
-    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -2657,7 +2659,7 @@ const I18N = {
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
-    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
+    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
     ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
@@ -5013,21 +5015,44 @@ function renderYearQuotas(){
 }
 
 const NY_EXPORT_TYPES = ['annual','annual_prev','sick','personal'];
-function exportYearQuotasExcel(){
-  if(!nyqState.ready || !nyqState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
-  const map = {}; nyqState.balances.forEach(b=>{ map[b.employee_id+'|'+b.leave_type] = b; });
-  const emps = nyqState.employees;
-  const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
-  const fixedRows = emps.map(e=>[e.employee_code, e.name, e.department || '']);
-  const groups = [];
-  NY_EXPORT_TYPES.forEach(ty=>{
-    const base = entitleLabel(ty), g = e => map[e.id+'|'+ty];
-    groups.push({ title: totalLabel(ty), vals: emps.map(e=>g(e) ? Number(g(e).total_days) : '') });
-    groups.push({ title: usedLabel(ty), vals: emps.map(e=>g(e) ? Number(g(e).used_days) : '') });
-    groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>g(e) ? Number(g(e).total_days) - Number(g(e).used_days) : '') });
-  });
-  downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `Quota ${nyqState.year}`, `LOI_Quota_${nyqState.year}_${new Date().toISOString().slice(0,10)}.xlsx`);
+// ── Import โควตาที่เตรียมไว้ (ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้) → เติมลงตาราง ยังไม่บันทึกจนกว่าจะกด Save ──
+function importNextYearPlanExcel(ev){
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+      const planWords = [I18N.en.exp_col_plan, I18N.th.exp_col_plan];
+      const types = NY_EXPORT_TYPES;
+      // โครงสร้าง: 3 คอลัมน์แรก (รหัส/ผู้ใช้/แผนก) แล้วแต่ละประเภทมี 4 คอลัมน์: [ที่เตรียมไว้ วัน|ชม.] [ปีปัจจุบัน วัน|ชม.]
+      const ok = aoa.length>=3 && types.every((ty,i)=>planWords.some(w=>String(aoa[0][3+i*4]||'').includes(w)));
+      if(!ok){ showToast(t('msg_ny_import_bad'),'err'); return; }
+      const idByCode = {}; nyState.employees.forEach(x=>{ idByCode[String(x.employee_code).trim()] = x.id; });
+      const cellOf = (emp,ty) => document.querySelector(`#nyBody .ny-cell[data-emp="${emp}"][data-type="${ty}"]`);
+      let n = 0, skipped = 0;
+      aoa.slice(2).forEach(r=>{
+        const id = idByCode[String(r[0]).trim()];
+        if(!id){ if(String(r[0]).trim()!=='') skipped++; return; }
+        let touched = false;
+        types.forEach((ty,i)=>{
+          const dv = r[3+i*4], hv = r[4+i*4];
+          if(dv==='' && hv==='') return;
+          const total = (Number(dv)||0) + (Number(hv)||0)/8;     // ชั่วโมงในไฟล์รวมนาทีเป็นทศนิยมแล้ว (2.5 = 2 ชม. 30 นาที)
+          const td = cellOf(id, ty);
+          if(!td) return;
+          if(total < 0 || !Number.isFinite(total)){ skipped++; return; }
+          nyWrite(td, Math.round(total*10000)/10000); touched = true;
+        });
+        if(touched) n++;
+      });
+      showToast(t('msg_ny_import_done').replace('{n}', n) + (skipped ? t('msg_ny_import_skip').replace('{n}', skipped) : ''));
+    }catch(err){ showToast(t('msg_ny_import_bad'),'err'); }
+  };
+  rd.readAsArrayBuffer(f);
 }
+
 function exportNextYearPlanExcel(){
   if(!nyState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
   const emps = nyState.employees;
