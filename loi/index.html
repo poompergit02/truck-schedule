@@ -172,6 +172,26 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .exp-pick-panel{position:absolute;z-index:30;top:calc(100% + 4px);left:0;min-width:240px;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px}
 .exp-pick-panel label{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:.84rem;cursor:pointer}
 .exp-pick-panel label:hover{background:#f4f1ea}
+
+.rp-ov{position:fixed;inset:0;background:rgba(20,10,40,.55);z-index:400;display:flex;align-items:center;justify-content:center;padding:14px}
+.rp-box{background:#fff;border-radius:14px;padding:18px;max-width:640px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35);max-height:94vh;overflow:auto}
+.rp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.rp-head b{font-size:1rem;color:var(--ink)}
+.rp-hint{font-size:.78rem;color:var(--text-dim,#6b6580);margin-bottom:10px}
+.rp-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rp-nav button{border:1px solid var(--line);background:#fff;border-radius:8px;width:34px;height:30px;cursor:pointer;font-size:.9rem}
+.rp-months{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.rp-m{flex:1;min-width:250px}
+.rp-mt{text-align:center;font-weight:600;margin-bottom:6px;color:var(--plum-900)}
+.rp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.rp-w{font-size:.68rem;text-align:center;color:#8a84a0;padding:3px 0}
+.rp-d{height:34px;border:0;background:transparent;border-radius:8px;font-size:.84rem;cursor:pointer;color:var(--ink)}
+.rp-d:hover{background:var(--line-soft)}
+.rp-d.rp-in{background:#e6dcf5;border-radius:0}
+.rp-d.rp-s,.rp-d.rp-e,.rp-d.rp-s.rp-wk,.rp-d.rp-e.rp-wk{background:var(--plum-600);color:#fff;font-weight:600;border-radius:8px}
+.rp-d.rp-today{box-shadow:inset 0 0 0 1.5px var(--plum-600)}
+.rp-d.rp-wk{color:#b4455f}
+.rp-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .exp-pick-mv{border:1px solid var(--line);background:#fff;border-radius:5px;width:24px;height:22px;font-size:.62rem;cursor:pointer;padding:0;color:var(--ink)}
 .exp-pick-mv:hover{background:#ece6f5}
 .exp-pick-mv-sp{display:inline-block;width:24px}
@@ -577,6 +597,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <div class="form-grid" id="dayFields">
           <div class="field"><label data-i18n="lbl_start_date">Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqStartConfirm"></div></div>
           <div class="field"><label data-i18n="lbl_end_date">End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
+          <div class="field" style="grid-column:1/-1"><button type="button" class="btn btn-sm btn-outline" onclick="openRangePicker('reqStart','reqEnd')" data-i18n="btn_range_pick">📅 Pick date range (2 months)</button></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
           <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
@@ -1328,6 +1349,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
     <div class="form-grid" id="erDayFields">
       <div class="field"><label data-i18n="eo_start">Start Date</label><input type="date" id="erStart"/></div>
       <div class="field"><label data-i18n="eo_end">End Date</label><input type="date" id="erEnd"/></div>
+      <div class="field" style="grid-column:1/-1"><button type="button" class="btn btn-sm btn-outline" onclick="openRangePicker('erStart','erEnd')" data-i18n="btn_range_pick">📅 Pick date range (2 months)</button></div>
     </div>
     <div class="form-grid" id="erHourFields" style="display:none">
       <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="erHourDate"/></div>
@@ -1418,6 +1440,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
     <div class="form-grid" id="emrDayFields">
       <div class="field"><label>Start Date</label><input type="date" id="emrStart"/></div>
       <div class="field"><label>End Date</label><input type="date" id="emrEnd"/></div>
+      <div class="field" style="grid-column:1/-1"><button type="button" class="btn btn-sm btn-outline" onclick="openRangePicker('emrStart','emrEnd')" data-i18n="btn_range_pick">📅 Pick date range (2 months)</button></div>
     </div>
     <div class="form-grid" id="emrHourFields" style="display:none">
       <div class="field"><label>Date</label><input type="date" id="emrHourDate"/></div>
@@ -2461,7 +2484,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
-    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -2659,7 +2682,7 @@ const I18N = {
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
-    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
+    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
     ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
@@ -2928,6 +2951,74 @@ function updateDateConfirm(inputId, confirmId){
   const el = document.getElementById(confirmId);
   el.textContent = val ? `📅 ${formatDMY(val)}` : '';
   if(['reqStart','reqEnd','reqHourDate','reqHalfDate'].includes(inputId)) checkAttachmentRequirement();   // ช่องแนบใบรับรองแพทย์/รูป ขึ้นตามวันที่ที่เลือก
+}
+
+
+// ── เลือกช่วงวัน 2 เดือน (คลิก 2 จุด: เริ่ม → สิ้นสุด ข้ามเดือนได้) ──
+const RP = { sId:null, eId:null, s:null, e:null, hover:null, y:0, m:0 };
+function rpFmt(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function openRangePicker(sId, eId){
+  RP.sId = sId; RP.eId = eId;
+  RP.s = document.getElementById(sId).value || null;
+  RP.e = document.getElementById(eId).value || null;
+  if(!(RP.s && RP.e)){ RP.s = null; RP.e = null; }   // เลือกครบ 2 จุดใหม่เสมอ ถ้ายังไม่มีช่วงเดิมครบ
+  RP.hover = null;
+  const base = RP.s || bkkDateStr(0);
+  RP.y = Number(base.slice(0,4)); RP.m = Number(base.slice(5,7)) - 1;
+  let ov = document.getElementById('rpOverlay');
+  if(!ov){ ov = document.createElement('div'); ov.id = 'rpOverlay'; ov.className = 'rp-ov'; ov.onclick = ev=>{ if(ev.target===ov) closeRangePicker(); }; document.body.appendChild(ov); }
+  ov.style.display = 'flex';
+  renderRangePicker();
+}
+function closeRangePicker(){ const ov = document.getElementById('rpOverlay'); if(ov) ov.style.display = 'none'; }
+function rpNav(d){ const x = new Date(Date.UTC(RP.y, RP.m + d, 1)); RP.y = x.getUTCFullYear(); RP.m = x.getUTCMonth(); renderRangePicker(); }
+function rpPick(ds){
+  if(!RP.s || (RP.s && RP.e)){ RP.s = ds; RP.e = null; }
+  else { if(ds < RP.s){ RP.e = RP.s; RP.s = ds; } else RP.e = ds; }
+  RP.hover = null; renderRangePicker();
+}
+function rpHover(ds){ if(RP.s && !RP.e){ RP.hover = ds; rpPaint(); } }
+function rpPaint(){
+  const a = RP.s, b = RP.e || (RP.hover && RP.hover >= RP.s ? RP.hover : RP.s);
+  document.querySelectorAll('#rpOverlay .rp-d[data-d]').forEach(el=>{
+    const d = el.dataset.d;
+    el.classList.toggle('rp-s', d===a); el.classList.toggle('rp-e', !!a && d===b && b!==a);
+    el.classList.toggle('rp-in', !!a && d>a && d<b);
+  });
+  const n = RP.s ? Math.round((new Date(b+'T00:00:00Z') - new Date(RP.s+'T00:00:00Z'))/86400000) + 1 : 0;
+  const info = document.getElementById('rpInfo');
+  if(info) info.textContent = RP.s ? `${formatDMY(RP.s)}${b!==RP.s ? ' – '+formatDMY(b) : ''} · ${t('rp_days').replace('{n}', n)}` : t('rp_hint');
+}
+function renderRangePicker(){
+  const ov = document.getElementById('rpOverlay'); if(!ov) return;
+  const loc = currentLang==='th' ? 'th-TH-u-ca-gregory' : 'en-GB';
+  const today = bkkDateStr(0);
+  const wd = [...Array(7)].map((_,i)=>new Date(Date.UTC(2024,0,7+i)).toLocaleDateString(loc,{weekday:'short',timeZone:'UTC'}));
+  const month = off => {
+    const first = new Date(Date.UTC(RP.y, RP.m+off, 1)), y = first.getUTCFullYear(), m = first.getUTCMonth();
+    const days = new Date(Date.UTC(y, m+1, 0)).getUTCDate(), lead = first.getUTCDay();
+    let cells = wd.map(w=>`<div class="rp-w">${escHtml(w)}</div>`).join('') + '<div></div>'.repeat(lead);
+    for(let d=1; d<=days; d++){
+      const ds = rpFmt(y,m,d), dow = (lead + d - 1) % 7;
+      cells += `<button type="button" class="rp-d${ds===today?' rp-today':''}${dow===0||dow===6?' rp-wk':''}" data-d="${ds}" onclick="rpPick('${ds}')" onmouseenter="rpHover('${ds}')">${d}</button>`;
+    }
+    return `<div class="rp-m"><div class="rp-mt">${escHtml(first.toLocaleDateString(loc,{month:'long',year:'numeric',timeZone:'UTC'}))}</div><div class="rp-g">${cells}</div></div>`;
+  };
+  ov.innerHTML = `<div class="rp-box"><div class="rp-head"><b>${escHtml(t('rp_title'))}</b><button type="button" class="rp-x" style="border:0;background:none;font-size:1.2rem;cursor:pointer" onclick="closeRangePicker()">✕</button></div>
+    <div class="rp-hint">${escHtml(t('rp_hint'))}</div>
+    <div class="rp-nav"><button type="button" onclick="rpNav(-1)">◀</button><button type="button" onclick="rpNav(1)">▶</button></div>
+    <div class="rp-months">${month(0)}${month(1)}</div>
+    <div class="rp-foot"><span id="rpInfo" style="font-size:.84rem;font-weight:600;color:var(--plum-700)"></span>
+      <span style="display:flex;gap:8px"><button type="button" class="btn btn-sm btn-outline" onclick="closeRangePicker()">${escHtml(t('rp_cancel'))}</button><button type="button" class="btn btn-sm btn-primary" onclick="applyRangePicker()">${escHtml(t('rp_apply'))}</button></span></div></div>`;
+  rpPaint();
+}
+function applyRangePicker(){
+  if(!RP.s){ closeRangePicker(); return; }
+  const sEl = document.getElementById(RP.sId), eEl = document.getElementById(RP.eId);
+  sEl.value = RP.s; eEl.value = RP.e || RP.s;
+  sEl.dispatchEvent(new Event('input',{bubbles:true})); eEl.dispatchEvent(new Event('input',{bubbles:true}));
+  sEl.dispatchEvent(new Event('change',{bubbles:true})); eEl.dispatchEvent(new Event('change',{bubbles:true}));
+  closeRangePicker();
 }
 
 function formatDuration(r){
@@ -4745,7 +4836,7 @@ async function exportLoiDataExcel(){
 
     // พักร้อนฉุกเฉินไม่มีแถวโควตาของตัวเอง (หักจากพักร้อน) → รวมจากใบลาที่อนุมัติแล้ว
     const urgentUsed = {};
-    if(types.includes('annual_urgent') || types.includes('__annual01')){
+    if(types.includes('annual_urgent') || types.includes('__annual01') || types.includes('annual')){
       const rq = await callApi('list_all_requests', { year, status:'approved', leave_type:'annual_urgent' });
       (rq.requests||[]).forEach(r=>{ urgentUsed[r.employee_id] = Math.round(((urgentUsed[r.employee_id]||0) + (Number(r.days_count)||0))*10000)/10000; });
     }
@@ -4760,12 +4851,15 @@ async function exportLoiDataExcel(){
     types.forEach(ty=>{
       const base = entitleLabel(ty);
       const bOf = e => (byEmp[e.id]||{})[ty];
+      const urgentShown = types.includes('annual_urgent') || types.includes('__annual01');
+      // พักร้อนฉุกเฉินถูกหักจากโควตาพักร้อนอยู่แล้ว → ถ้ามีคอลัมน์ "ฉุกเฉินใช้ไป" ให้คอลัมน์ "ใช้ไป" แสดงเฉพาะที่ไม่ใช่ฉุกเฉิน กันนับซ้ำ
+      const normUsed = (e,b) => Math.max(0, Math.round((Number(b.used_days) - (urgentUsed[e.id]||0))*10000)/10000);
       if(ty==='__annual01'){
         // ลาพักร้อน01: สิทธิ์ปีนี้ | สะสมจากปีที่แล้ว | ลาพักร้อนใช้ไป | ฉุกเฉินใช้ไป | สิทธิ์คงเหลือ
         const A = e => (byEmp[e.id]||{}).annual, P = e => (byEmp[e.id]||{}).annual_prev;
         groups.push({ title: totalLabel('annual'), vals: emps.map(e=>A(e) ? Number(A(e).total_days) : '') });
         groups.push({ title: totalLabel('annual_prev'), vals: emps.map(e=>P(e) ? Number(P(e).total_days) : '') });
-        groups.push({ title: usedLabel('annual'), vals: emps.map(e=>A(e) ? Number(A(e).used_days) : '') });
+        groups.push({ title: usedLabel('annual'), vals: emps.map(e=>A(e) ? Math.max(0, Math.round((Number(A(e).used_days) - (urgentUsed[e.id]||0))*10000)/10000) : '') });
         groups.push({ title: usedLabel('annual_urgent'), vals: emps.map(e=>urgentUsed[e.id] || 0) });
         groups.push({ title: entitleLabel('annual') + t('exp_sfx_remaining'), vals: emps.map(e=>A(e) ? Number(A(e).total_days) - Number(A(e).used_days) : '') });
         return;
@@ -4776,7 +4870,7 @@ async function exportLoiDataExcel(){
       }
       const showTotal = !(ty==='sick' || ty==='personal');   // ลาป่วย/ลากิจ ไม่แสดงสิทธิ์ (admin ทราบอยู่แล้ว)
       if(showTotal) groups.push({ title: totalLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) : ''; }) });
-      groups.push({ title: usedLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.used_days) : ''; }) });
+      groups.push({ title: usedLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? (ty==='annual' && urgentShown ? normUsed(e,b) : Number(b.used_days)) : ''; }) });
       groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) - Number(b.used_days) : ''; }) });
     });
     downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `LOI ${year}`, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}.xlsx`);
