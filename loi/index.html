@@ -190,6 +190,7 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .rp-d.rp-in{background:#e6dcf5;border-radius:0}
 .rp-d.rp-s,.rp-d.rp-e,.rp-d.rp-s.rp-wk,.rp-d.rp-e.rp-wk{background:var(--plum-600);color:#fff;font-weight:600;border-radius:8px}
 .rp-d.rp-today{box-shadow:inset 0 0 0 1.5px var(--plum-600)}
+.rp-d.rp-red,.rp-d.rp-red.rp-wk{background:#dc2626;color:#fff;font-weight:600;border-radius:8px}
 .rp-d.rp-wk{color:#b4455f}
 .rp-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .exp-pick-mv{border:1px solid var(--line);background:#fff;border-radius:5px;width:24px;height:22px;font-size:.62rem;cursor:pointer;padding:0;color:var(--ink)}
@@ -574,7 +575,6 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <label data-i18n="lbl_leave_type">Leave Type</label>
             <select id="reqType" onchange="onLeaveTypeChange()">
               <option value="annual" data-i18n="leave_annual">🏖️ Annual / Vacation</option>
-              <option value="annual_prev" data-i18n="leave_annual_prev">📆 Annual leave from last year</option>
               <option value="annual_urgent" data-i18n="leave_annual_urgent">🚨 Emergency Annual Leave</option>
               <option value="sick" data-i18n="leave_sick">🤒 Sick Leave</option>
               <option value="personal" data-i18n="leave_personal">📝 Personal Leave</option>
@@ -594,10 +594,10 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             </select>
           </div>
         </div>
+        <div id="leavePickRow" style="margin-bottom:12px"><button type="button" class="btn btn-sm btn-outline" id="leavePickBtn" onclick="openLeavePicker()">📅</button></div>
         <div class="form-grid" id="dayFields">
           <div class="field"><label data-i18n="lbl_start_date">Start Date</label><input type="date" id="reqStart" oninput="updateDateConfirm('reqStart','reqStartConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqStartConfirm"></div></div>
           <div class="field"><label data-i18n="lbl_end_date">End Date</label><input type="date" id="reqEnd" oninput="updateDateConfirm('reqEnd','reqEndConfirm')"/><div class="date-confirm" id="reqEndConfirm"></div></div>
-          <div class="field" style="grid-column:1/-1"><button type="button" class="btn btn-sm btn-outline" onclick="openRangePicker('reqStart','reqEnd')" data-i18n="btn_range_pick">📅 Pick date range (2 months)</button></div>
         </div>
         <div class="form-grid" id="hourFields" style="display:none">
           <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="reqHourDate" oninput="updateDateConfirm('reqHourDate','reqHourDateConfirm'); checkAttachmentRequirement()"/><div class="date-confirm" id="reqHourDateConfirm"></div></div>
@@ -798,7 +798,10 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
                 <option value="all" data-i18n="exp_scope_all">All requests</option>
                 <option value="month" data-i18n="exp_scope_month">By month</option>
                 <option value="year" data-i18n="exp_scope_year">By year</option>
+                <option value="range" data-i18n="exp_scope_range">Date range</option>
               </select>
+              <input type="date" id="exportFrom" style="display:none"/><input type="date" id="exportTo" style="display:none"/>
+              <button type="button" class="exp-select" id="exportRangeBtn" style="display:none;cursor:pointer" onclick="openRangePicker('exportFrom','exportTo')"></button>
               <select id="exportMonth" class="exp-select" style="display:none"></select>
               <select id="exportYear" class="exp-select" style="display:none"></select>
               <select id="exportEmployee" class="exp-select"><option value="all" data-i18n="sc_all_users">All employees</option></select>
@@ -2111,19 +2114,6 @@ function refreshPrevAnnualOptions(balances){
     o.hidden = !show; o.disabled = !show;
     if(!show && o.parentElement && o.parentElement.value==='annual_prev') o.parentElement.value = 'annual';
   });
-  // ตั้งค่า "ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน": ปิดตัวเลือกลาพักร้อนปกติในฟอร์มขอลาของตัวเอง (backend ตรวจซ้ำอีกชั้น)
-  const sel = document.getElementById('reqType');
-  if(sel){
-    const annualOpt = sel.querySelector('option[value="annual"]');
-    const prevOpt = sel.querySelector('option[value="annual_prev"]');
-    const must = on && appSettingsCache['annual_prev_first']==='true' && remaining>0 && inTime && !(currentUser && currentUser.bypass_conditions);
-    const urgentOpt = sel.querySelector('option[value="annual_urgent"]');
-    if(urgentOpt) urgentOpt.disabled = must;
-    if(annualOpt){
-      annualOpt.disabled = must;
-      if(must && (sel.value==='annual' || sel.value==='annual_urgent') && prevOpt && !prevOpt.disabled){ sel.value = 'annual_prev'; if(typeof onLeaveTypeChange==='function') onLeaveTypeChange(); }
-    }
-  }
 }
 
 // ── MY LEAVE CALENDAR (personal, colored by leave type) ──
@@ -2484,7 +2474,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
-    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -2682,7 +2672,7 @@ const I18N = {
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
-    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
+    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_multi_pick:'📅 เลือกหลายวันไม่ติดกัน (ปฏิทิน)', rp_hint_multi:'คลิกวันที่ลา (จะเป็นปุ่มสีแดง) คลิกซ้ำเพื่อเอาออก', rp_title_multi:'เลือกวันลาแบบไม่ติดกัน', exp_scope_range:'เลือกช่วงวัน', btn_range_export:'📅 เลือกช่วงวันที่', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
     ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
@@ -2955,37 +2945,63 @@ function updateDateConfirm(inputId, confirmId){
 
 
 // ── เลือกช่วงวัน 2 เดือน (คลิก 2 จุด: เริ่ม → สิ้นสุด ข้ามเดือนได้) ──
-const RP = { sId:null, eId:null, s:null, e:null, hover:null, y:0, m:0 };
+const RP = { sId:null, eId:null, s:null, e:null, hover:null, y:0, m:0, mode:'range', set:new Set() };
 function rpFmt(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function updateLeavePickBtn(){
+  const row = document.getElementById('leavePickRow'), btn = document.getElementById('leavePickBtn'); if(!row||!btn) return;
+  const unit = document.getElementById('reqUnit').value;
+  row.style.display = (unit==='day' || unit==='multi') ? 'block' : 'none';
+  btn.textContent = unit==='multi' ? t('btn_multi_pick') : t('btn_range_pick');
+}
+function openLeavePicker(){
+  if(document.getElementById('reqUnit').value==='multi') openMultiPicker(); else openRangePicker('reqStart','reqEnd');
+}
+function openMultiPicker(){
+  RP.mode = 'multi'; RP.hover = null;
+  RP.set = new Set([...document.querySelectorAll('.multiDateInput')].map(i=>i.value).filter(Boolean));
+  const first = [...RP.set].sort()[0] || bkkDateStr(0);
+  RP.y = Number(first.slice(0,4)); RP.m = Number(first.slice(5,7)) - 1;
+  rpShowOverlay(); renderRangePicker();
+}
+function rpShowOverlay(){
+  let ov = document.getElementById('rpOverlay');
+  if(!ov){ ov = document.createElement('div'); ov.id = 'rpOverlay'; ov.className = 'rp-ov'; ov.onclick = ev=>{ if(ev.target===ov) closeRangePicker(); }; document.body.appendChild(ov); }
+  ov.style.display = 'flex';
+}
 function openRangePicker(sId, eId){
-  RP.sId = sId; RP.eId = eId;
+  RP.mode = 'range'; RP.sId = sId; RP.eId = eId;
   RP.s = document.getElementById(sId).value || null;
   RP.e = document.getElementById(eId).value || null;
   if(!(RP.s && RP.e)){ RP.s = null; RP.e = null; }   // เลือกครบ 2 จุดใหม่เสมอ ถ้ายังไม่มีช่วงเดิมครบ
   RP.hover = null;
   const base = RP.s || bkkDateStr(0);
   RP.y = Number(base.slice(0,4)); RP.m = Number(base.slice(5,7)) - 1;
-  let ov = document.getElementById('rpOverlay');
-  if(!ov){ ov = document.createElement('div'); ov.id = 'rpOverlay'; ov.className = 'rp-ov'; ov.onclick = ev=>{ if(ev.target===ov) closeRangePicker(); }; document.body.appendChild(ov); }
-  ov.style.display = 'flex';
+  rpShowOverlay();
   renderRangePicker();
 }
 function closeRangePicker(){ const ov = document.getElementById('rpOverlay'); if(ov) ov.style.display = 'none'; }
 function rpNav(d){ const x = new Date(Date.UTC(RP.y, RP.m + d, 1)); RP.y = x.getUTCFullYear(); RP.m = x.getUTCMonth(); renderRangePicker(); }
 function rpPick(ds){
+  if(RP.mode==='multi'){ if(RP.set.has(ds)) RP.set.delete(ds); else RP.set.add(ds); renderRangePicker(); return; }
   if(!RP.s || (RP.s && RP.e)){ RP.s = ds; RP.e = null; }
   else { if(ds < RP.s){ RP.e = RP.s; RP.s = ds; } else RP.e = ds; }
   RP.hover = null; renderRangePicker();
 }
 function rpHover(ds){ if(RP.s && !RP.e){ RP.hover = ds; rpPaint(); } }
 function rpPaint(){
+  if(RP.mode==='multi'){
+    document.querySelectorAll('#rpOverlay .rp-d[data-d]').forEach(el=>el.classList.toggle('rp-red', RP.set.has(el.dataset.d)));
+    const wdays = [...RP.set].filter(d=>clientWorkingDays(d,d)>0).length;   // ไม่นับเสาร์-อาทิตย์/วันหยุดบริษัท
+    const info = document.getElementById('rpInfo'); if(info) info.textContent = RP.set.size ? t('rp_days').replace('{n}', wdays) : t('rp_hint_multi');
+    return;
+  }
   const a = RP.s, b = RP.e || (RP.hover && RP.hover >= RP.s ? RP.hover : RP.s);
   document.querySelectorAll('#rpOverlay .rp-d[data-d]').forEach(el=>{
     const d = el.dataset.d;
     el.classList.toggle('rp-s', d===a); el.classList.toggle('rp-e', !!a && d===b && b!==a);
     el.classList.toggle('rp-in', !!a && d>a && d<b);
   });
-  const n = RP.s ? Math.round((new Date(b+'T00:00:00Z') - new Date(RP.s+'T00:00:00Z'))/86400000) + 1 : 0;
+  const n = RP.s ? clientWorkingDays(RP.s, b) : 0;   // ไม่นับเสาร์-อาทิตย์/วันหยุดบริษัท
   const info = document.getElementById('rpInfo');
   if(info) info.textContent = RP.s ? `${formatDMY(RP.s)}${b!==RP.s ? ' – '+formatDMY(b) : ''} · ${t('rp_days').replace('{n}', n)}` : t('rp_hint');
 }
@@ -3004,8 +3020,8 @@ function renderRangePicker(){
     }
     return `<div class="rp-m"><div class="rp-mt">${escHtml(first.toLocaleDateString(loc,{month:'long',year:'numeric',timeZone:'UTC'}))}</div><div class="rp-g">${cells}</div></div>`;
   };
-  ov.innerHTML = `<div class="rp-box"><div class="rp-head"><b>${escHtml(t('rp_title'))}</b><button type="button" class="rp-x" style="border:0;background:none;font-size:1.2rem;cursor:pointer" onclick="closeRangePicker()">✕</button></div>
-    <div class="rp-hint">${escHtml(t('rp_hint'))}</div>
+  ov.innerHTML = `<div class="rp-box"><div class="rp-head"><b>${escHtml(t(RP.mode==='multi' ? 'rp_title_multi' : 'rp_title'))}</b><button type="button" class="rp-x" style="border:0;background:none;font-size:1.2rem;cursor:pointer" onclick="closeRangePicker()">✕</button></div>
+    <div class="rp-hint">${escHtml(t(RP.mode==='multi' ? 'rp_hint_multi' : 'rp_hint'))}</div>
     <div class="rp-nav"><button type="button" onclick="rpNav(-1)">◀</button><button type="button" onclick="rpNav(1)">▶</button></div>
     <div class="rp-months">${month(0)}${month(1)}</div>
     <div class="rp-foot"><span id="rpInfo" style="font-size:.84rem;font-weight:600;color:var(--plum-700)"></span>
@@ -3013,12 +3029,22 @@ function renderRangePicker(){
   rpPaint();
 }
 function applyRangePicker(){
+  if(RP.mode==='multi'){
+    const dates = [...RP.set].sort();
+    const wrap = document.getElementById('multiDateRows'); wrap.innerHTML = '';
+    if(!dates.length) addMultiDateRow();
+    dates.forEach(d=>{ addMultiDateRow(); const ins = wrap.querySelectorAll('.multiDateInput'); ins[ins.length-1].value = d; });
+    wrap.querySelectorAll('.multiDateInput').forEach(i=>i.dispatchEvent(new Event('input',{bubbles:true})));
+    if(typeof checkAttachmentRequirement==='function') checkAttachmentRequirement();
+    closeRangePicker(); return;
+  }
   if(!RP.s){ closeRangePicker(); return; }
   const sEl = document.getElementById(RP.sId), eEl = document.getElementById(RP.eId);
   sEl.value = RP.s; eEl.value = RP.e || RP.s;
   sEl.dispatchEvent(new Event('input',{bubbles:true})); eEl.dispatchEvent(new Event('input',{bubbles:true}));
   sEl.dispatchEvent(new Event('change',{bubbles:true})); eEl.dispatchEvent(new Event('change',{bubbles:true}));
   closeRangePicker();
+  updateExportRangeBtn();
 }
 
 function formatDuration(r){
@@ -3077,6 +3103,7 @@ function toggleLeaveUnit(){
   document.getElementById('hourFields').style.display = unit==='hour' ? 'grid' : 'none';
   document.getElementById('halfFields').style.display = unit==='half' ? 'grid' : 'none';
   document.getElementById('multiFields').style.display = unit==='multi' ? 'block' : 'none';
+  updateLeavePickBtn();
   if(unit==='multi' && !document.getElementById('multiDateRows').children.length){
     addMultiDateRow();
   }
@@ -4609,11 +4636,18 @@ const BALANCE_TYPE_ORDER = ['annual','sick','personal','annual_prev','other','ma
 
 
 // ── ADMIN: EXPORT ALL LEAVE REQUESTS TO EXCEL ──
+function updateExportRangeBtn(){
+  const rb = document.getElementById('exportRangeBtn'); if(!rb) return;
+  const a = document.getElementById('exportFrom').value, b = document.getElementById('exportTo').value;
+  rb.textContent = a ? `📅 ${formatDMY(a)}${b && b!==a ? ' – '+formatDMY(b) : ''}` : t('btn_range_export');
+}
 function onExportScopeChange(){
   const scope = document.getElementById('exportScope').value;
   populateMonthYearSelectors('exportMonth','exportYear');
   document.getElementById('exportMonth').style.display = scope==='month' ? 'inline-block' : 'none';
   document.getElementById('exportYear').style.display = (scope==='month'||scope==='year') ? 'inline-block' : 'none';
+  const rb = document.getElementById('exportRangeBtn'); rb.style.display = scope==='range' ? 'inline-block' : 'none';
+  updateExportRangeBtn();
 }
 
 function populateMonthYearSelectors(monthId, yearId){
@@ -4882,9 +4916,15 @@ async function exportAllRequestsExcel(){
   const empFilter = document.getElementById('exportEmployee').value;
   const deptFilter = document.getElementById('exportDept').value;
   try{
-    const data = await callApi('list_all_requests');
+    const data = await callApi('list_all_requests', { all:true });
     let filtered = data.requests;
     let filenameSuffix = 'All';
+    if(scope==='range'){
+      const a = document.getElementById('exportFrom').value, b = document.getElementById('exportTo').value || a;
+      if(!a){ showToast(t('btn_range_export'),'err'); return; }
+      filtered = filtered.filter(r => r.start_date<=b && r.end_date>=a);
+      filenameSuffix = `${a}_${b}`;
+    }
 
     if(scope==='month'){
       const month = Number(document.getElementById('exportMonth').value);
@@ -4945,7 +4985,6 @@ const SETTING_DEFS = [
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
-  { key: 'annual_prev_first', titleKey: 'set_prevfirst_title', descKey: 'set_prevfirst_desc' },
 ];
 
 // ── กลุ่มเงื่อนไขที่มีรายการประเภทการลา (เปิด/ปิดรายประเภท) ──
