@@ -5419,6 +5419,7 @@ async function confirmYearTransfer(){
     showToast(res.executed ? t('msg_ny_done_ok').replace('{n}', res.applied).replace('{y}', res.target_year)
                            : t('msg_ny_sched_ok').replace('{d}', formatDMY(date)));
     loadNextYearPlan();
+    if(typeof nyqState!=='undefined' && nyqState.ready) loadYearQuotas();   // รีเฟรชตาราง "โควตาวันลาปี" ให้เห็นค่าหลังย้ายทันที
   }catch(e){ showToast(e.message,'err'); loadNextYearPlan(); }
 }
 
