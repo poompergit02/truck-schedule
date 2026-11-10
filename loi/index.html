@@ -403,7 +403,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 
 /* ══════════ DANGER ZONE ══════════ */
 .dur{display:inline-block;min-width:104px;white-space:nowrap;line-height:1.4}
-.scoped-admin .danger-card{display:none!important}
+.scoped-admin .danger-card,.scoped-admin .ny-transfer-card,.scoped-admin button[onclick="deleteYearQuotas()"]{display:none!important}
 .danger-card{background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:var(--radius);padding:24px;margin-top:28px}
 .danger-card h3{color:var(--danger);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:6px}
 .danger-card p.hint{font-size:.82rem;color:#7a3a3a;margin-bottom:16px}
@@ -1123,7 +1123,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         </table></div>
       </div>
 
-      <div class="card">
+      <div class="card ny-transfer-card">
         <h3 data-i18n="h3_ny_transfer">🔄 Transfer to live quotas</h3>
         <p class="hint" data-i18n="hint_ny_transfer">At 00:01 (Thai time) on the effective date, the quotas below replace the employees' live quotas for that year. Days already used are kept. Employees with no quota entered here are left unchanged.</p>
         <div class="form-grid">
@@ -1939,7 +1939,9 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
+      {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
+      {id:'special_calendar', label:t('tab_special')},
     ];
   } else if(currentUser.role==='admin'){
     tabs = [
