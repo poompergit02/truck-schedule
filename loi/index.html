@@ -801,7 +801,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
                 <option value="year" data-i18n="exp_scope_year">By year</option>
                 <option value="range" data-i18n="exp_scope_range">Date range</option>
               </select>
-              <input type="date" id="exportFrom" style="display:none"/><input type="date" id="exportTo" style="display:none"/>
+              <input type="hidden" id="exportFrom"/><input type="hidden" id="exportTo"/>
               <button type="button" class="exp-select" id="exportRangeBtn" style="display:none;cursor:pointer" onclick="openRangePicker('exportFrom','exportTo')"></button>
               <select id="exportMonth" class="exp-select" style="display:none"></select>
               <select id="exportYear" class="exp-select" style="display:none"></select>
@@ -4316,6 +4316,7 @@ function renderSpecialCalendar(requests){
 }
 
 let managerChainsCache = {};
+let extraManagersCache = [];   // หัวหน้านอกสาขา (ผู้ดูแลสาขามองไม่เห็นในรายชื่อพนักงาน แต่ต้องแสดงชื่อ)
 
 // ── ตั๋วคนลา เมื่อวาน / วันนี้ / พรุ่งนี้ (หน้าจัดการพนักงาน) ──
 function bkkDateStr(offset){
@@ -4354,6 +4355,7 @@ async function loadEmployees(){
     const data = await callApi('list_employees');
     employeesCache = data.employees;
     managerChainsCache = data.manager_chains || {};
+    extraManagersCache = data.extra_managers || [];
     populateEmployeeFilters();
     renderEmployeesTable();
   }catch(e){ showToast(e.message,'err'); }
@@ -4383,7 +4385,7 @@ function sortEmployees(key){
 }
 function renderEmployeesTable(){
   const body = document.getElementById('employeesBody'); if(!body) return;
-  const byId = {}; employeesCache.forEach(e=>byId[e.id]=e);
+  const byId = {}; extraManagersCache.forEach(e=>byId[e.id]=e); employeesCache.forEach(e=>byId[e.id]=e);
   const chains = managerChainsCache || {};
   const q = (document.getElementById('empSearch').value||'').trim().toLowerCase();
   const fd = document.getElementById('empFDept').value, fp = document.getElementById('empFPosition').value, fr = document.getElementById('empFRole').value;
@@ -4690,7 +4692,7 @@ function exportAllEmployeesExcel(){
   if(!employeesCache.length){ showToast('No employees to export','err'); return; }
   const rows = employeesCache.filter(e=>posOk(e.position,'exportEmpPos')).map(e=>{
     const chain = managerChainsCache[e.id] || [];
-    const managerCodes = chain.map(mid=>employeesCache.find(x=>x.id===mid)?.employee_code).filter(Boolean).join(',');
+    const managerCodes = chain.map(mid=>(employeesCache.find(x=>x.id===mid)||extraManagersCache.find(x=>x.id===mid))?.employee_code).filter(Boolean).join(',');
     return {
       employee_code: e.employee_code, name: e.name, email: e.email||'', department: e.department||'',
       position: e.position||'', role: e.role, manager_codes: managerCodes,
@@ -5725,7 +5727,7 @@ function openEditEmployeeModal(id){
 
   // แปลง manager_id ในผังกลับเป็น employee_code เพื่อแสดงในช่องแก้ไข
   const chain = managerChainsCache[id] || [];
-  const codes = chain.map(mid => employeesCache.find(e=>e.id===mid)?.employee_code).filter(Boolean);
+  const codes = chain.map(mid => (employeesCache.find(e=>e.id===mid)||extraManagersCache.find(e=>e.id===mid))?.employee_code).filter(Boolean);
   document.getElementById('neManagerCode').value = codes.join(',');
 
   document.getElementById('addEmpErr').textContent='';
