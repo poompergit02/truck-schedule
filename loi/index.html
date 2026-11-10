@@ -199,8 +199,6 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .exp-pick-panel hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 .ls-wrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-start;margin:0 0 16px}
 .ls-ticket{position:relative;width:172px;height:172px;box-sizing:border-box;padding:14px 14px 12px;border-radius:14px;color:#fff;background:linear-gradient(145deg,#141414 0%,#2a0b0b 100%);border:1.5px solid #b91c1c;box-shadow:0 6px 16px rgba(185,28,28,.25);display:flex;flex-direction:column}
-.ls-ticket::before,.ls-ticket::after{content:'';position:absolute;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--bg,#f6f3ee);border:1.5px solid #b91c1c}
-.ls-ticket::before{left:-8px}.ls-ticket::after{right:-8px}
 .ls-ticket.ls-today{border-color:#ef4444;box-shadow:0 6px 20px rgba(239,68,68,.45)}
 .ls-lbl{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:#fca5a5}
 .ls-date{font-size:.7rem;color:#a3a3a3}
@@ -404,6 +402,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 .toggle-switch input:checked + .toggle-track::before{transform:translateX(22px)}
 
 /* ══════════ DANGER ZONE ══════════ */
+.dur{display:inline-block;min-width:104px;white-space:nowrap;line-height:1.4}
+.scoped-admin .danger-card{display:none!important}
 .danger-card{background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:var(--radius);padding:24px;margin-top:28px}
 .danger-card h3{color:var(--danger);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:6px}
 .danger-card p.hint{font-size:.82rem;color:#7a3a3a;margin-bottom:16px}
@@ -782,6 +782,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <div class="exp-controls">
               <select id="exportLoiYear" class="exp-select"></select>
               <select id="exportLoiDept" class="exp-select"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+              <select id="exportLoiPos" class="exp-select exp-pos"></select>
               <details class="exp-pick" id="exportLoiTypes"><summary id="exportLoiTypesSum"></summary><div class="exp-pick-panel" id="exportLoiTypesPanel"></div></details>
             </div>
             <button class="btn-export gold" onclick="exportLoiDataExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_loi_btn">Export LOI Data</span><span class="xl-tag">.XLSX</span></button>
@@ -806,6 +807,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
               <select id="exportYear" class="exp-select" style="display:none"></select>
               <select id="exportEmployee" class="exp-select"><option value="all" data-i18n="sc_all_users">All employees</option></select>
               <select id="exportDept" class="exp-select"><option value="all" data-i18n="sc_all_depts">All departments</option></select>
+              <select id="exportPos" class="exp-select exp-pos"></select>
             </div>
             <button class="btn-export" onclick="exportAllRequestsExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_req_btn">Export Requests</span><span class="xl-tag">.XLSX</span></button>
           </div>
@@ -816,6 +818,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
               <div><div class="exp-tile-title" data-i18n="exp_emp_title">Employee list</div>
               <div class="exp-tile-desc" data-i18n="exp_emp_desc">Everyone in the system with role, manager chain and permissions.</div></div>
             </div>
+            <select id="exportEmpPos" class="exp-select exp-pos"></select>
             <button class="btn-export" onclick="exportAllEmployeesExcel()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="exp_emp_btn">Export Employees</span><span class="xl-tag">.XLSX</span></button>
           </div>
         </div>
@@ -829,6 +832,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <input type="number" id="carryoverYear" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.88rem"/>
           <button class="btn btn-primary" onclick="findCarryoverCandidates()" data-i18n="btn_find">🔍 Find</button>
+          <select id="exportCarryPos" class="exp-select exp-pos" style="display:none"></select>
           <button class="btn btn-outline" id="carryoverExportBtn" style="display:none" onclick="exportCarryoverCandidates()">📥 Export</button>
         </div>
         <div id="carryoverResults"></div>
@@ -913,6 +917,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <option value="week">This week</option>
             <option value="month">This month</option>
           </select>
+          <select id="exportLogsPos" class="exp-select exp-pos"></select>
           <button class="btn btn-outline" onclick="exportLogsExcel()">📥 Export</button>
         </div>
         <div id="logsCard" style="font-family:'IBM Plex Mono',monospace;font-size:.82rem;line-height:1.9"></div>
@@ -1046,6 +1051,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <h3 data-i18n="lp_never_title">Never logged in</h3>
         <p id="loginProgressSummary" class="hint" style="margin-bottom:16px"></p>
         <div style="margin-bottom:16px">
+          <select id="exportNeverPos" class="exp-select exp-pos"></select>
           <button class="btn btn-outline" onclick="exportNeverLoggedIn()" data-i18n="btn_export_excel">Export to Excel</button>
         </div>
         <div id="loginProgressResults"></div>
@@ -1158,6 +1164,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <input type="text" id="nySearch" oninput="filterNextYearRows()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
           <button class="btn btn-outline" onclick="fillNextYearFromCurrent()" data-i18n="btn_ny_fill">Fill empty cells from this year</button>
           <button class="btn btn-outline" onclick="fillNextYearCarry()" data-i18n="btn_ny_carry">Calculate carry-over from remaining annual</button>
+          <select id="exportNyPos" class="exp-select exp-pos"></select>
           <button class="btn btn-outline" onclick="exportNextYearPlanExcel()" data-i18n="btn_ny_export_plan">⬇ Export prepared quotas (Excel)</button>
           <button class="btn btn-outline" onclick="document.getElementById('nyImportFile').click()" data-i18n="btn_ny_import_plan">⬆ Import prepared quotas (Excel)</button>
           <input type="file" id="nyImportFile" accept=".xlsx,.xls" style="display:none" onchange="importNextYearPlanExcel(event)"/>
@@ -1263,7 +1270,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       <div class="field"><label data-i18n="em_dept">Department</label><input type="text" id="neDept"/></div>
       <div class="field"><label data-i18n="em_position">Position</label><input type="text" id="nePosition"/></div>
       <div class="field"><label data-i18n="em_role">Role</label>
-        <select id="neRole"><option value="employee" data-i18n="em_role_employee">Employee</option><option value="manager" data-i18n="em_role_manager">Manager</option><option value="admin" data-i18n="em_role_admin">Admin</option></select>
+        <select id="neRole"><option value="employee" data-i18n="em_role_employee">Employee</option><option value="manager" data-i18n="em_role_manager">Manager</option><option value="admin_sb" data-i18n="em_role_admin_sb">Branch admin — Sriracha (SB)</option><option value="admin" data-i18n="em_role_admin">Admin</option></select>
       </div>
       <div class="field"><label data-i18n="em_mgr_codes">Manager Code(s)</label><input type="text" id="neManagerCode" data-i18n-ph="em_mgr_ph" placeholder="e.g. 2400,2401 (in approval order)"/></div>
       <div class="field" id="nePasswordWrap"><label data-i18n="em_password">Password *</label><input type="text" id="nePassword" data-i18n-ph="em_password_ph" placeholder="Temporary password"/></div>
@@ -1919,9 +1926,22 @@ function syncStickyHeader(){
   if(hd) document.documentElement.style.setProperty('--hdr-h', hd.offsetHeight + 'px');
 }
 window.addEventListener('resize', syncStickyHeader);
+const isScopedAdmin = () => !!(currentUser && currentUser.role==='admin' && currentUser.scope_position);
+function applyScopeUi(){ document.body.classList.toggle('scoped-admin', isScopedAdmin()); }
+function roleText(e){ return e.role==='admin' && e.scope_position ? t('em_role_admin_sb') : e.role; }
 function buildTabs(){
+  applyScopeUi();
   let tabs, dropdownTabs = [];
-  if(currentUser.role==='admin'){
+  if(isScopedAdmin()){
+    // ผู้ดูแลสาขา: ไม่มีหน้าตั้งค่า / เตรียมโควตาปีหน้า / Special Calendar ; มีหน้าคำขอของทีม (อนุมัติลาพักร้อนเกิน 3 วันของสาขาตัวเอง)
+    tabs = [ {id:'employees', label:t('tab_employees')}, {id:'approvals2', label:t('tab_teamrequests')} ];
+    dropdownTabs = [
+      {id:'send_document', label:t('tab_send_document')},
+      {id:'logs', label:t('tab_logs')},
+      {id:'holidays', label:t('tab_holidays')},
+      {id:'login_progress', label:t('tab_login_progress')},
+    ];
+  } else if(currentUser.role==='admin'){
     tabs = [
       {id:'employees', label:t('tab_employees')},
       {id:'settings', label:t('tab_settings')},
@@ -2049,13 +2069,13 @@ function showPage(id, el){
   if(id==='myleave') loadMyLeave();
   if(id==='approvals') loadMyPendingRequests();
   if(id==='approvals2'){ loadApprovals(); loadLeaveCalendar(); initTeamResultsYearSelect(); loadTeamResults(); }
-  if(id==='employees'){ loadLeaveStrip(); loiPickerInit(); loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); loadSpecialAccessList(); primeRolloverYearInputs(); }
+  if(id==='employees'){ loadLeaveStrip(); loiPickerInit(); loadEmployees().then(populateExportFilterSelectors); populateDangerSelectors(); if(!isScopedAdmin()) loadSpecialAccessList(); primeRolloverYearInputs(); }
   if(id==='reports'){ initMyReportsYearSelect(); loadMyResolvedRequests(); loadMyDocuments(); }
   if(id==='settings') loadSettings();
-  if(id==='logs') loadLogs();
+  if(id==='logs'){ loadLogs(); ensureEmployeesLoaded(); }
   if(id==='holidays') loadHolidays();
-  if(id==='next_year'){ initYearQuotas(); loadNextYearPlan(); }
-  if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); loadBgPicker(); }
+  if(id==='next_year'){ initYearQuotas(); loadNextYearPlan(); ensureEmployeesLoaded(); }
+  if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); if(!isScopedAdmin()) loadBgPicker(); ensureEmployeesLoaded(); }
   if(id==='special_calendar') loadSpecialCalendar();
   if(id==='send_document'){ initSendDocPicker(); renderSendDocQueue(); loadSendDocSchedules(); }
 }
@@ -2460,7 +2480,7 @@ const I18N = {
     photo_title:'📷 Profile Photo', photo_choose:'Choose photo', photo_remove:'Remove photo', photo_save:'Save', photo_cancel:'Cancel',
     photo_hint:'The photo is cropped to a square and resized automatically.', photo_saved:'Photo saved', photo_removed:'Photo removed',
     photo_err_type:'Please choose a valid image file', photo_click_title:'Click to change your photo',
-    sc_all_depts:'All departments', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
+    sc_all_depts:'All departments', sc_all_positions:'All positions', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
     sc_chart_empty:'No approved leave in this month', sc_sum_people:'People on leave', sc_sum_total:'Total person-days', sc_sum_peak:'Busiest day',
     btn_prev:'← Prev', btn_next:'Next →',
     cal_team_title:'🗓 Team Leave Calendar', cal_my_title:'🗓️ My Leave Calendar',
@@ -2492,7 +2512,7 @@ const I18N = {
     em_add_title:'➕ Add Employee', em_add_btn:'Add Employee', em_edit_prefix:'Edit',
     em_code_hint:'Changing the code: the employee must log in with the new code. Not allowed if they have ever submitted a leave request or have requests waiting for their approval.', msg_code_empty:'Employee code cannot be empty', cf_code_change:'Change employee code {old} → {new}?\n\nThe employee must log in with the NEW code from now on. This is recorded in LOI Logs.', msg_code_changed:'✅ Code changed — tell the employee to log in with the new code {new}',
     em_code:'Employee Code *', em_name:'Name *', em_email:'Email', em_dept:'Department', em_position:'Position', em_role:'Role',
-    em_role_employee:'Employee', em_role_manager:'Manager', em_role_admin:'Admin', em_mgr_codes:'Manager Code(s)',
+    em_role_employee:'Employee', em_role_manager:'Manager', em_role_admin:'Admin', em_role_admin_sb:'Branch admin — Sriracha (SB)', em_mgr_codes:'Manager Code(s)',
     em_mgr_ph:'e.g. 2400,2401 (in approval order)', em_password:'Password *', em_password_ph:'Temporary password',
     em_annual_days:'Annual Days', em_sick_days:'Sick Days', em_personal_days:'Personal Days',
     em_auto_approve:'⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)',
@@ -2658,7 +2678,7 @@ const I18N = {
     photo_title:'📷 รูปโปรไฟล์', photo_choose:'เลือกรูป', photo_remove:'ลบรูป', photo_save:'บันทึก', photo_cancel:'ยกเลิก',
     photo_hint:'ระบบจะครอปรูปเป็นสี่เหลี่ยมจัตุรัสและย่อขนาดให้อัตโนมัติ', photo_saved:'บันทึกรูปแล้ว', photo_removed:'ลบรูปแล้ว',
     photo_err_type:'กรุณาเลือกไฟล์รูปภาพที่ใช้งานได้', photo_click_title:'คลิกเพื่อเปลี่ยนรูปของคุณ',
-    sc_all_depts:'ทุกแผนก', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
+    sc_all_depts:'ทุกแผนก', sc_all_positions:'ทุกตำแหน่ง', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
     sc_chart_empty:'เดือนนี้ไม่มีวันลาที่อนุมัติแล้ว', sc_sum_people:'จำนวนคนที่ลา', sc_sum_total:'รวมคน-วัน', sc_sum_peak:'วันที่ลาเยอะสุด',
     btn_prev:'← ก่อนหน้า', btn_next:'ถัดไป →',
     cal_team_title:'🗓 ปฏิทินการลาของทีม', cal_my_title:'🗓️ ปฏิทินการลาของฉัน',
@@ -2690,7 +2710,7 @@ const I18N = {
     em_add_title:'➕ เพิ่มพนักงาน', em_add_btn:'เพิ่มพนักงาน', em_edit_prefix:'แก้ไข',
     em_code_hint:'การเปลี่ยนรหัส: พนักงานต้องล็อกอินด้วยรหัสใหม่ และเปลี่ยนไม่ได้ถ้าเคยยื่นใบลา หรือมีใบลารอเขาอนุมัติอยู่', msg_code_empty:'รหัสพนักงานห้ามเป็นค่าว่าง', cf_code_change:'เปลี่ยนรหัสพนักงาน {old} → {new} ?\n\nพนักงานต้องล็อกอินด้วยรหัสใหม่นับจากนี้ และจะบันทึกไว้ใน LOI Logs', msg_code_changed:'✅ เปลี่ยนรหัสแล้ว — แจ้งพนักงานให้ล็อกอินด้วยรหัสใหม่ {new}',
     em_code:'รหัสพนักงาน *', em_name:'ชื่อ *', em_email:'อีเมล', em_dept:'แผนก', em_position:'ตำแหน่ง', em_role:'บทบาท',
-    em_role_employee:'พนักงาน', em_role_manager:'หัวหน้า', em_role_admin:'ผู้ดูแลระบบ', em_mgr_codes:'รหัสหัวหน้า',
+    em_role_employee:'พนักงาน', em_role_manager:'หัวหน้า', em_role_admin:'ผู้ดูแลระบบ', em_role_admin_sb:'ผู้ดูแลระบบสาขาศรีราชา', em_mgr_codes:'รหัสหัวหน้า',
     em_mgr_ph:'เช่น 2400,2401 (เรียงลำดับอนุมัติ)', em_password:'รหัสผ่าน *', em_password_ph:'รหัสผ่านชั่วคราว',
     em_annual_days:'วันลาพักร้อน', em_sick_days:'วันลาป่วย', em_personal_days:'วันลากิจ',
     em_auto_approve:'⚡ อนุมัติอัตโนมัติ (ผู้บริหาร — คำขอลาข้ามขั้นตอนอนุมัติและหักวันลาทันที)',
@@ -3048,10 +3068,12 @@ function applyRangePicker(){
 }
 
 function formatDuration(r){
+  // แสดงเป็น 2 บรรทัด (วันที่ / ช่วงเวลาหรือวันสิ้นสุด) และไม่ตัดคำกลางวันที่ → ช่องแคบก็ไม่ทับกับคอลัมน์ข้างเคียง
   if(r.leave_unit==='hour'){
-    return `${formatDMY(r.start_date)} ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}`;
+    return `<span class="dur">${formatDMY(r.start_date)}<br>${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}</span>`;
   }
-  return `${formatDMY(r.start_date)} → ${formatDMY(r.end_date)}`;
+  if(r.start_date===r.end_date) return `<span class="dur">${formatDMY(r.start_date)}</span>`;
+  return `<span class="dur">${formatDMY(r.start_date)}<br>→ ${formatDMY(r.end_date)}</span>`;
 }
 function formatAmount(r){
   return r.leave_unit==='hour' ? `${r.hours_count} ${t('unit_hr_short')}` : `${r.days_count} ${t('unit_day_short')}`;
@@ -4389,7 +4411,7 @@ function renderEmployeesTable(){
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
         <td>${e.position?escHtml(e.position):'—'}</td>
-        <td>${escHtml(e.role)}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
+        <td>${escHtml(roleText(e))}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
@@ -4666,7 +4688,7 @@ function populateMonthYearSelectors(monthId, yearId){
 // ── ADMIN: EXPORT ALL EMPLOYEES TO EXCEL ──
 function exportAllEmployeesExcel(){
   if(!employeesCache.length){ showToast('No employees to export','err'); return; }
-  const rows = employeesCache.map(e=>{
+  const rows = employeesCache.filter(e=>posOk(e.position,'exportEmpPos')).map(e=>{
     const chain = managerChainsCache[e.id] || [];
     const managerCodes = chain.map(mid=>employeesCache.find(x=>x.id===mid)?.employee_code).filter(Boolean).join(',');
     return {
@@ -4702,6 +4724,7 @@ async function findCarryoverCandidates(){
     carryoverYearCache = year;
     renderCarryoverCandidates();
     document.getElementById('carryoverExportBtn').style.display = carryoverCandidatesCache.length ? 'inline-block' : 'none';
+    document.getElementById('exportCarryPos').style.display = carryoverCandidatesCache.length ? 'inline-block' : 'none';
   }catch(e){ showToast(e.message,'err'); resultsEl.innerHTML=''; }
 }
 
@@ -4739,7 +4762,8 @@ async function grantAndNotifyCarryover(employeeId){
 
 function exportCarryoverCandidates(){
   if(!carryoverCandidatesCache.length){ showToast('Nothing to export','err'); return; }
-  const rows = carryoverCandidatesCache.map(c=>({
+  const posByCodeC = {}; employeesCache.forEach(e=>{ posByCodeC[e.employee_code] = e.position; });
+  const rows = carryoverCandidatesCache.filter(c=>posOk(posByCodeC[c.employee_code],'exportCarryPos')).map(c=>({
     employee_code: c.employee_code, name: c.name, department: c.department||'',
     remaining_days: c.remaining_days, already_granted: c.already_granted?'yes':'no',
   }));
@@ -4749,12 +4773,24 @@ function exportCarryoverCandidates(){
   XLSX.writeFile(wb, `LOI_Annual_Carryover_${carryoverYearCache}.xlsx`);
 }
 
+
+// ── ตัวกรอง "ตำแหน่ง" (HQ / SB ...) ของทุกปุ่ม Export Excel ──
+function populateExpPos(){
+  const poss = Array.from(new Set(employeesCache.map(e=>(e.position||'').trim()).filter(Boolean))).sort();
+  const html = `<option value="all">${escHtml(t('sc_all_positions'))}</option>` + poss.map(x=>`<option value="${escAttr(x)}">${escHtml(x)}</option>`).join('');
+  document.querySelectorAll('select.exp-pos').forEach(sel=>{ const cur = sel.value; sel.innerHTML = html; if(cur && [...sel.options].some(o=>o.value===cur)) sel.value = cur; });
+}
+function expPos(id){ const el = document.getElementById(id); return el ? (el.value||'all') : 'all'; }
+function posOk(position, selId){ const v = expPos(selId); return v==='all' || String(position||'').trim().toLowerCase()===v.toLowerCase(); }
+async function ensureEmployeesLoaded(){ if(!employeesCache.length){ try{ await loadEmployees(); }catch(e){} } populateExpPos(); }
+
 function populateExportFilterSelectors(){
   const empSel = document.getElementById('exportEmployee');
   const deptSel = document.getElementById('exportDept');
   const loiDeptSel = document.getElementById('exportLoiDept');
   const loiYearSel = document.getElementById('exportLoiYear');
   const currentEmp = empSel.value, currentDept = deptSel.value, currentLoiDept = loiDeptSel.value;
+  populateExpPos();
 
   empSel.innerHTML = `<option value="all">${escHtml(t('sc_all_users'))}</option>` +
     employeesCache.map(e=>`<option value="${e.id}">${escHtml(e.employee_code)} — ${escHtml(e.name)}</option>`).join('');
@@ -4877,6 +4913,7 @@ async function exportLoiDataExcel(){
 
     let emps = employeesCache.slice();
     if(dept!=='all') emps = emps.filter(e=>e.department===dept);
+    emps = emps.filter(e=>posOk(e.position,'exportLoiPos'));
     if(!emps.length){ showToast(t('exp_none'),'err'); return; }
 
     const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
@@ -4907,7 +4944,7 @@ async function exportLoiDataExcel(){
       groups.push({ title: usedLabel(ty), vals: emps.map(e=>{ const b = bOf(e); return b ? (ty==='annual' && urgentShown ? normUsed(e,b) : Number(b.used_days)) : ''; }) });
       groups.push({ title: base + t('exp_sfx_remaining'), vals: emps.map(e=>{ const b = bOf(e); return b ? Number(b.total_days) - Number(b.used_days) : ''; }) });
     });
-    downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `LOI ${year}`, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}.xlsx`);
+    downloadGroupedXlsx(fixedHeaders, fixedRows, groups, `LOI ${year}`, `LOI_Data_${year}${dept!=='all' ? '_'+dept : ''}${expPos('exportLoiPos')!=='all' ? '_'+expPos('exportLoiPos') : ''}.xlsx`);
   }catch(e){ showToast(e.message,'err'); }
 }
 
@@ -4952,6 +4989,7 @@ async function exportAllRequestsExcel(){
     }
 
     if(!filtered.length){ showToast('No requests to export for this range','err'); return; }
+    filtered = filtered.filter(r => posOk(r.employee?.position,'exportPos'));
     const rows = filtered.map(r=>{
       const isHour = r.leave_unit==='hour';
       return {
@@ -5188,7 +5226,9 @@ function importNextYearPlanExcel(ev){
 
 function exportNextYearPlanExcel(){
   if(!nyState.employees.length){ showToast(t('msg_export_none'),'err'); return; }
-  const emps = nyState.employees;
+  const posById = {}; employeesCache.forEach(e=>{ posById[e.id] = e.position; });
+  const emps = nyState.employees.filter(e=>posOk(posById[e.id],'exportNyPos'));
+  if(!emps.length){ showToast(t('msg_export_none'),'err'); return; }
   const fixedHeaders = [t('exp_col_code'), t('exp_col_user'), t('exp_col_dept')];
   const fixedRows = emps.map(e=>[e.employee_code, e.name, e.department || '']);
   const groups = [];
@@ -5482,7 +5522,8 @@ async function loadLogs(){
 function exportLogsExcel(){
   if(!logsCache.length){ showToast('No logs to export','err'); return; }
   const range = document.getElementById('logsRange').value;
-  const rows = logsCache.map(l=>({
+  const posByCode = {}; employeesCache.forEach(e=>{ posByCode[e.employee_code] = e.position; });
+  const rows = logsCache.filter(l=>posOk(posByCode[l.employee_code],'exportLogsPos')).map(l=>({
     timestamp: formatLogTimestamp(l.created_at), employee_code: l.employee_code||'', name: l.name||'',
     event_type: l.event_type, detail: l.detail||'',
   }));
@@ -5593,7 +5634,7 @@ function renderLoginLineSvg(daily){
 
 function exportNeverLoggedIn(){
   if(!neverLoggedInCache.length){ showToast('Nothing to export','err'); return; }
-  const rows = neverLoggedInCache.map(e=>({
+  const rows = neverLoggedInCache.filter(e=>posOk(e.position,'exportNeverPos')).map(e=>({
     employee_code: e.employee_code, name: e.name, department: e.department||'', email: e.email||'', role: e.role,
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
@@ -5637,6 +5678,12 @@ async function resetMonthData(){
 
 let editingEmployeeId = null;
 
+function applyScopeToEmployeeModal(){
+  const sc = isScopedAdmin();
+  document.querySelectorAll('#neRole option[value="admin"], #neRole option[value="admin_sb"]').forEach(o=>{ o.hidden = sc; o.disabled = sc; });
+  const pos = document.getElementById('nePosition');
+  if(sc){ pos.value = currentUser.scope_position; pos.disabled = true; } else pos.disabled = false;
+}
 function openAddEmployeeModal(){
   editingEmployeeId = null;
   ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
@@ -5650,6 +5697,7 @@ function openAddEmployeeModal(){
   document.getElementById('neBypassConditions').checked=false;
   document.getElementById('addEmpErr').textContent='';
   document.getElementById('addEmpModalTitle').textContent=t('em_add_title');
+  applyScopeToEmployeeModal();
   document.getElementById('addEmpSubmitBtn').textContent=t('em_add_btn');
   document.getElementById('nePasswordWrap').style.display='block';
   document.getElementById('neQuotaFields').style.display='grid';
@@ -5670,9 +5718,10 @@ function openEditEmployeeModal(id){
   document.getElementById('neEmail').value = emp.email || '';
   document.getElementById('neDept').value = emp.department || '';
   document.getElementById('nePosition').value = emp.position || '';
-  document.getElementById('neRole').value = emp.role || 'employee';
+  document.getElementById('neRole').value = (emp.role==='admin' && emp.scope_position) ? 'admin_sb' : (emp.role || 'employee');
   document.getElementById('neAutoApprove').checked = !!emp.auto_approve;
   document.getElementById('neBypassConditions').checked = !!emp.bypass_conditions;
+  applyScopeToEmployeeModal();
 
   // แปลง manager_id ในผังกลับเป็น employee_code เพื่อแสดงในช่องแก้ไข
   const chain = managerChainsCache[id] || [];
@@ -5767,7 +5816,7 @@ function downloadExcelTemplate(){
   const headers=['employee_code','name','email','department','position','role','manager_code','password','annual_days','annual_hours','sick_days','sick_hours','personal_days','personal_hours','auto_approve','bypass_conditions','special_calendar_access'];
   const sample=[{
     employee_code:'2410', name:'John Doe', email:'john@iida-sevensuns.com', department:'Logistics',
-    position:'Staff', role:'employee', manager_code:'2400,2401', password:'welcome123',
+    position:'HQ', role:'employee', manager_code:'2400,2401', password:'welcome123',
     annual_days:10, annual_hours:0, sick_days:30, sick_hours:0, personal_days:4, personal_hours:0, auto_approve:'no', bypass_conditions:'no', special_calendar_access:'no',
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header:headers});
