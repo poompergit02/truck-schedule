@@ -1933,8 +1933,8 @@ function buildTabs(){
   applyScopeUi();
   let tabs, dropdownTabs = [];
   if(isScopedAdmin()){
-    // ผู้ดูแลสาขา: ไม่มีหน้าตั้งค่า / เตรียมโควตาปีหน้า / Special Calendar ; มีหน้าคำขอของทีม (อนุมัติลาพักร้อนเกิน 3 วันของสาขาตัวเอง)
-    tabs = [ {id:'employees', label:t('tab_employees')}, {id:'approvals2', label:t('tab_teamrequests')} ];
+    // ผู้ดูแลสาขา: ไม่มีหน้าตั้งค่า / คำขอของทีม (ขั้น admin เป็นของ admin หลัก) / ย้ายโควตา
+    tabs = [ {id:'employees', label:t('tab_employees')} ];
     dropdownTabs = [
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
