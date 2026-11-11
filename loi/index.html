@@ -94,6 +94,12 @@ header{
 .brand-text a.brand-home{color:inherit;text-decoration:none;cursor:pointer;border-bottom:1px solid transparent;transition:color .15s,border-color .15s}
 .brand-text a.brand-home:hover,.brand-text a.brand-home:focus-visible{color:var(--plum-700);border-bottom-color:currentColor;outline:none}
 .header-right{display:flex;align-items:center;gap:14px}
+.approver-pop{display:none;position:fixed;z-index:500;min-width:230px;max-width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.2);padding:12px 14px;font-size:.84rem}
+.approver-pop .ap-title{font-weight:700;color:var(--plum-900);margin-bottom:6px}
+.approver-pop .ap-row{padding:3px 0;color:var(--ink)}.approver-pop .ap-row small{color:var(--text-dim);margin-left:4px}
+.approver-pop .ap-none{color:var(--text-dim)}
+.approver-pop .ap-note{margin-top:6px;font-size:.74rem;color:var(--text-dim)}
+.approver-pop .ap-photo{margin-top:10px;width:100%;border:1px solid var(--line);background:var(--line-soft);border-radius:8px;padding:6px;cursor:pointer;font-size:.8rem}
 .user-chip{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border:1px solid var(--line);border-radius:30px;background:var(--line-soft)}
 .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--plum-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600}
 .user-chip .u-name{font-size:.83rem;font-weight:600;color:var(--ink)}
@@ -547,7 +553,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <button class="lang-btn" id="langBtnThApp" onclick="setLang('th')">TH</button>
       </div>
       <div class="user-chip">
-        <div class="user-avatar" id="userAvatar" onclick="openPhotoModal(null)" data-i18n-title="photo_click_title" title="Click to change your photo">?</div>
+        <div class="user-avatar" id="userAvatar" onclick="showApproverPop()" onmouseenter="showApproverPop()" onmouseleave="hideApproverPop(true)">?</div>
         <div>
           <div class="u-name" id="userName">—</div>
           <div class="u-role" id="userRole">—</div>
@@ -581,8 +587,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
               <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
               <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
               <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
             </select>
           </div>
           <div class="field">
@@ -1335,8 +1341,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
         </select>
       </div>
       <div class="field">
@@ -1436,8 +1442,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <option value="maternity" data-i18n="leave_maternity">🤱 Maternity Leave</option>
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
-              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Personal Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
+              <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
         </select>
       </div>
       <div class="field"><label>Unit</label>
@@ -1537,7 +1543,7 @@ function legendLeaveTypes(){ return Object.keys(LEAVE_TYPE_LABEL).filter(k=>k!==
 const LEAVE_TYPE_LABEL = {
   annual:'🏖️ Annual / Vacation', annual_prev:'📆 Annual leave from last year', annual_urgent:'🚨 Emergency Annual Leave', sick:'🤒 Sick Leave', personal:'📝 Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
-  personal_unpaid:'💸 Unpaid Personal Leave', wfh:'💻 Work From Home',
+  personal_unpaid:'💸 Unpaid Leave', wfh:'💻 Work From Home Leave',
 };
 // ── โควตาพักร้อนยกยอด (carryover) มี leave_type เป็น "annual_carry_YYYY" แบบไดนามิก ──
 function getLeaveTypeLabel(type){
@@ -2087,6 +2093,7 @@ async function loadMyLeave(){
   try{
     const data = await callApi('get_my_data');
     if(data.employee && currentUser) currentUser.bypass_conditions = !!data.employee.bypass_conditions;   // ข้อมูลตอนล็อกอินไม่มีฟิลด์นี้ → ดึงจาก get_my_data
+    myApproversCache = data.approvers || [];
     renderBalances(data.balances);
     renderNextYearBlock(data.next_year);
     myLeaveRequestsCache = data.requests || [];
@@ -2496,7 +2503,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
-    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', bridge_title:'⚠️ Please avoid taking leave right before/after the company holiday', bridge_body:'Your leave is adjacent to a long company holiday ({h} holiday days: {from} – {to}). We kindly ask you not to take leave at the start or end of the holiday, as it affects our work.', bridge_confirm:'Confirm leave', bridge_cancel:'Understood — I will not take leave', set_bridge_title:'Warn when leave is adjacent to a long company holiday', set_bridge_desc:'When ON, a confirmation window appears if the leave date is right before/after 3+ consecutive company holiday days (weekends in between count as part of the break). If the employee confirms, admins are also emailed.', appr_title:'Your approvers', appr_none:'No approver assigned — requests go to the administrator', appr_admin_note:'Annual leave over 3 days is finally approved by the administrator', appr_change_photo:'📷 Change photo', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -2623,7 +2630,7 @@ const I18N = {
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
-    leave_personal_unpaid:'💸 Unpaid Personal Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
+    leave_personal_unpaid:'💸 Unpaid Leave', leave_wfh:'💻 Work From Home Leave', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used only until the day before the closing date set below (default: 31 March), then it disappears.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the “Annual from last year” cells with the calculated carry-over, and set Sick = 30 days and Personal = 4 days for everyone in the table?', msg_ny_carry_done:'✅ Calculated (carry-over max 3 days; Sick 30, Personal 4) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
@@ -2694,7 +2701,7 @@ const I18N = {
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
     emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
-    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', btn_multi_pick:'📅 เลือกหลายวันไม่ติดกัน (ปฏิทิน)', rp_hint_multi:'คลิกวันที่ลา (จะเป็นปุ่มสีแดง) คลิกซ้ำเพื่อเอาออก', rp_title_multi:'เลือกวันลาแบบไม่ติดกัน', exp_scope_range:'เลือกช่วงวัน', btn_range_export:'📅 เลือกช่วงวันที่', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
+    exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', bridge_title:'⚠️ ขอความร่วมือไม่ลาหัวท้ายวันหยุดบริษัท', bridge_body:'วันที่คุณลาอยู่ติดกับช่วงวันหยุดบริษัทที่ต่อเนื่อง ({h} วันหยุด: {from} – {to}) ขอความร่วมือไม่ลาหัวท้ายวันหยุด เนื่องจากมีผลกระทบต่องาน', bridge_confirm:'ยืนยันลา', bridge_cancel:'รับทราบ ไม่ลาแล้ว', set_bridge_title:'เตือนเมื่อลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_bridge_desc:'เมื่อเปิด จะขึ้นหน้าต่างให้ยืนยันเมื่อวันลาอยู่ติดก่อน/หลังวันหยุดบริษัทต่อเนื่อง 3 วันขึ้นไป (นับเสาร์-อาทิตย์ที่คั่นเป็นส่วนของช่วงหยุด) ถ้าพนักงานกดยืนยัน ระบบจะส่งอีเมลแจ้ง admin เพิ่มด้วย', appr_title:'ผู้อนุมัติของคุณ', appr_none:'ยังไม่ได้กำหนดผู้อนุมัติ — คำขอจะส่งถึงผู้ดูแลระบบ', appr_admin_note:'ลาพักร้อนเกิน 3 วัน ผู้ดูแลระบบอนุมัติขั้นสุดท้าย', appr_change_photo:'📷 เปลี่ยนรูป', btn_multi_pick:'📅 เลือกหลายวันไม่ติดกัน (ปฏิทิน)', rp_hint_multi:'คลิกวันที่ลา (จะเป็นปุ่มสีแดง) คลิกซ้ำเพื่อเอาออก', rp_title_multi:'เลือกวันลาแบบไม่ติดกัน', exp_scope_range:'เลือกช่วงวัน', btn_range_export:'📅 เลือกช่วงวันที่', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
     ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
@@ -2821,7 +2828,7 @@ const I18N = {
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
-    leave_personal_unpaid:'💸 ลากิจแบบไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
+    leave_personal_unpaid:'💸 ลาโดยไม่รับค่าจ้าง', leave_wfh:'💻 ลาทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึงก่อน “วันปิดใช้” ที่ตั้งด้านล่าง 1 วัน (ค่าเริ่มต้น 31 มีนาคม) จากนั้นจะหายไป',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ด้วยค่ายกยอดที่คำนวณ และตั้งลาป่วย 30 วัน / ลากิจ 4 วัน ให้ทุกคนในตารางหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (ยกยอดสูงสุด 3 วัน, ลาป่วย 30, ลากิจ 4) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
@@ -3235,6 +3242,54 @@ function compressImageFile(file){
   });
 }
 
+
+// ── เตือนลาหัวท้ายวันหยุดบริษัทที่ติดกันหลายวัน ──
+const BRIDGE_MIN_HOLIDAY_DAYS = 3;   // วันหยุดบริษัทต่อเนื่อง (รวมเสาร์-อาทิตย์ที่คั่น) ตั้งแต่ 3 วันขึ้นไปจึงเตือน
+function isoAddDays(iso, n){ const d = new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function isOffDay(iso){ const w = new Date(iso+'T00:00:00Z').getUTCDay(); return w===0 || w===6 || holidaysCache.some(x=>x.holiday_date===iso); }
+function isCompanyHoliday(iso){ return holidaysCache.some(x=>x.holiday_date===iso); }
+// คืนช่วงหยุดต่อเนื่องที่เริ่มที่ startIso ไปทางทิศ dir (+1/-1) ; null ถ้าไม่ติดหรือสั้นเกินเกณฑ์
+function bridgeRun(startIso, dir){
+  let n = 0, hol = 0, cur = startIso, last = startIso;
+  while(isOffDay(cur) && n < 60){ if(isCompanyHoliday(cur)) hol++; last = cur; cur = isoAddDays(cur, dir); n++; }
+  if(hol < BRIDGE_MIN_HOLIDAY_DAYS) return null;
+  // ตัดเสาร์-อาทิตย์ปลายที่ไม่ใช่วันหยุดบริษัทออกจากข้อความช่วง
+  let a = dir>0 ? startIso : last, b = dir>0 ? last : startIso;
+  while(!isCompanyHoliday(a) && a<b) a = isoAddDays(a,1);
+  while(!isCompanyHoliday(b) && b>a) b = isoAddDays(b,-1);
+  return { from:a, to:b, holidays:hol };
+}
+function findBridgeHit(dates){
+  for(const d of dates){
+    if(isOffDay(d)) continue;                              // เฉพาะวันทำงานที่ลา
+    const next = bridgeRun(isoAddDays(d,1), +1) , prev = bridgeRun(isoAddDays(d,-1), -1);
+    if(next) return next; if(prev) return prev;
+  }
+  return null;
+}
+function leaveDatesOf(payloadDates){ return payloadDates; }
+function expandDates(a,b){ const out=[]; for(let d=a,i=0; d<=b && i<400; d=isoAddDays(d,1), i++) out.push(d); return out; }
+// คืน {proceed:boolean, confirmed:boolean}
+async function confirmBridgeIfNeeded(dates){
+  if(appSettingsCache['bridge_leave_warning']!=='true') return { proceed:true, confirmed:false };
+  if(!holidaysCache.length) await fetchHolidaysCache();
+  const hit = findBridgeHit(dates);
+  if(!hit) return { proceed:true, confirmed:false };
+  return new Promise(resolve=>{
+    let ov = document.getElementById('bridgeOverlay');
+    if(!ov){ ov = document.createElement('div'); ov.id = 'bridgeOverlay'; ov.className = 'rp-ov'; document.body.appendChild(ov); }
+    const body = t('bridge_body').replace('{h}', hit.holidays).replace('{from}', formatDMY(hit.from)).replace('{to}', formatDMY(hit.to));
+    ov.innerHTML = `<div class="rp-box" style="max-width:440px"><div class="rp-head"><b>${escHtml(t('bridge_title'))}</b></div>
+      <p style="margin:10px 0 16px;font-size:.9rem;line-height:1.55">${escHtml(body)}</p>
+      <div class="rp-foot" style="justify-content:flex-end">
+        <button type="button" class="btn btn-sm btn-outline" id="bridgeNo">${escHtml(t('bridge_cancel'))}</button>
+        <button type="button" class="btn btn-sm btn-danger" id="bridgeYes">${escHtml(t('bridge_confirm'))}</button></div></div>`;
+    ov.style.display = 'flex';
+    document.getElementById('bridgeNo').onclick = ()=>{ ov.style.display='none'; resolve({proceed:false, confirmed:false}); };
+    document.getElementById('bridgeYes').onclick = ()=>{ ov.style.display='none'; resolve({proceed:true, confirmed:true}); };
+  });
+}
+
 async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
   const unit=document.getElementById('reqUnit').value;
@@ -3258,11 +3313,13 @@ async function submitLeaveRequest(){
     const uniqueDates = [...new Set(dateInputs)].sort();
     if(!uniqueDates.length){ showToast(t('msg_pick_one_date'),'err'); return; }
     const att = await readRequiredAttachment(); if(!att.ok) return;
+    const bch = await confirmBridgeIfNeeded(uniqueDates); if(!bch.proceed) return;
 
     let okCount=0, failCount=0, firstError='';
     for(const d of uniqueDates){
       try{
         const p = { leave_type, reason, leave_unit:'day', start_date:d, end_date:d };
+        if(bch.confirmed) p.bridge_confirmed = true;
         if(att.dataUrl) p.attachment_base64 = att.dataUrl;
         await callApi('submit_leave_request', p);
         okCount++;
@@ -3303,6 +3360,8 @@ async function submitLeaveRequest(){
 
   const att = await readRequiredAttachment(); if(!att.ok) return;
   if(att.dataUrl) payload.attachment_base64 = att.dataUrl;
+  const bch2 = await confirmBridgeIfNeeded(expandDates(payload.start_date, payload.end_date)); if(!bch2.proceed) return;
+  if(bch2.confirmed) payload.bridge_confirmed = true;
 
   try{
     await callApi('submit_leave_request', payload);
@@ -4086,6 +4145,37 @@ function avatarHtml(person, px){
   const ini = escHtml(((person && person.name) || '?').slice(0,2).toUpperCase());
   return `<span class="avatar-ini" style="${st}font-size:${Math.round(px*.4)}px">${ini}</span>`;
 }
+
+// ── รูปโปรไฟล์: เอาเมาส์ชี้/คลิก → แสดงผู้อนุมัติของฉัน ──
+let myApproversCache = null;
+function approverPopHtml(){
+  const list = (myApproversCache||[]);
+  const rows = list.length
+    ? list.map((a,i)=>`<div class="ap-row"><b>${i+1}.</b> ${escHtml(a.name)} <small>${escHtml(a.employee_code)}</small></div>`).join('')
+    : `<div class="ap-row ap-none">${escHtml(t('appr_none'))}</div>`;
+  const note = appSettingsCache['annual_over_3_days_needs_admin']==='true' ? `<div class="ap-note">${escHtml(t('appr_admin_note'))}</div>` : '';
+  return `<div class="ap-title">${escHtml(t('appr_title'))}</div>${rows}${note}<button type="button" class="ap-photo" onclick="hideApproverPop();openPhotoModal(null)">${escHtml(t('appr_change_photo'))}</button>`;
+}
+function showApproverPop(){
+  const av = document.getElementById('userAvatar'); if(!av) return;
+  let pop = document.getElementById('approverPop');
+  if(!pop){ pop = document.createElement('div'); pop.id = 'approverPop'; pop.className = 'approver-pop';
+    pop.onmouseenter = ()=>{ clearTimeout(pop._t); }; pop.onmouseleave = ()=>hideApproverPop(true); document.body.appendChild(pop); }
+  clearTimeout(pop._t);
+  pop.innerHTML = approverPopHtml();
+  if(myApproversCache===null){ callApi('get_my_data').then(d=>{ myApproversCache=d.approvers||[]; pop.innerHTML=approverPopHtml(); }).catch(()=>{}); }
+  const r = av.getBoundingClientRect();
+  pop.style.display = 'block';
+  pop.style.top = (r.bottom + 8) + 'px';
+  pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth)) + 'px';
+}
+function hideApproverPop(delay){
+  const pop = document.getElementById('approverPop'); if(!pop) return;
+  clearTimeout(pop._t);
+  if(delay){ pop._t = setTimeout(()=>{ pop.style.display='none'; }, 250); } else pop.style.display = 'none';
+}
+document.addEventListener('click', ev=>{ const pop = document.getElementById('approverPop'); if(pop && pop.style.display==='block' && !pop.contains(ev.target) && !ev.target.closest('#userAvatar')) hideApproverPop(); });
+
 function renderMyAvatar(){
   const el = document.getElementById('userAvatar');
   if(el && currentUser) el.innerHTML = avatarHtml(currentUser, 30);
@@ -5027,6 +5117,7 @@ const SETTING_DEFS = [
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
+  { key: 'bridge_leave_warning', titleKey: 'set_bridge_title', descKey: 'set_bridge_desc' },
 ];
 
 // ── กลุ่มเงื่อนไขที่มีรายการประเภทการลา (เปิด/ปิดรายประเภท) ──
