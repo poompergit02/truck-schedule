@@ -6586,7 +6586,7 @@ const BgArt = (function(){
   // ───────── 2) ตัวสัตว์: สถานะการว่าย + อนุภาค ─────────
   const sharks = [];                                        // (ชื่อเดิม) รายการสัตว์ที่กำลังแสดง
   const view = { w: 0, h: 0, dpr: 1, mobile: false, zones: null };
-  const mouse = { x: -9999, y: -9999, active: false, down: false };
+  const mouse = { x: -9999, y: -9999, active: false };
   const foods = [], bubbles = [];                          // อาหารที่โรย + ฟองตอนกิน
   let running = false, rafId = null, lastT = 0, simT = 0, slowMs = 0, slowSince = 0, currentKey = 'off';
 
@@ -6620,7 +6620,7 @@ const BgArt = (function(){
       ax: 0, ay: 0, anchorT: 0,
       alpha: role === 'main' ? 1 : 0.62,                    // ตัวเล็ก = อยู่ไกลกว่า จางกว่า
       fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
-      munch: 0, dashT: 0,
+      munch: 0, fleeT: 0, fx: 0, fy: 0,
       ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n), el: new Uint8Array(n),
       m: new Float32Array(np*6),                            // เมทริกซ์ขยับของแต่ละชิ้นส่วน (m11,m12,m21,m22,tx,ty)
@@ -6687,7 +6687,7 @@ const BgArt = (function(){
     if(t > s.anchorT) pickAnchor(s, false);
     // --- อาหาร: ว่ายไปกินเม็ดที่ใกล้ที่สุด ---
     let chase = null, chaseD = 0;
-    if(foods.length && !calm){
+    if(foods.length && !calm && !(s.fleeT > 0)){
       let bd = 1e9;
       for(const f of foods){ if(f.eaten) continue; const d = Math.hypot(f.x - s.x, f.y - s.y); if(d < bd){ bd = d; chase = f; } }
       if(chase){
@@ -6702,7 +6702,7 @@ const BgArt = (function(){
       }
     }
     if(s.munch > 0) s.munch = Math.max(0, s.munch - dt/1.2);
-    if(s.dashT > 0) s.dashT = Math.max(0, s.dashT - dt);
+    if(s.fleeT > 0) s.fleeT = Math.max(0, s.fleeT - dt);
     const wob = A.wob || 1;
     let want = wob*(0.30*Math.sin(t*0.21 + s.p1) + 0.22*Math.sin(t*0.37 + s.p2));      // ส่ายซ้ายขวาเบาๆ ตามธรรมชาติ
     const dx = s.ax - s.x, dy = s.ay - s.y, dist = Math.hypot(dx, dy);
@@ -6712,7 +6712,7 @@ const BgArt = (function(){
       want += clamp(angDiff(Math.atan2(view.h/2 - s.y, view.w/2 - s.x), s.h)*1.5, -1.1, 1.1);
     }
     let boost = 1;
-    if(C.avoidMouse && mouse.active && !calm && !mouse.down && !s.dashT){          // หลบเมาส์ (ยกเว้นตอนกดค้างลูบ / ตอนพุ่ง)
+    if(C.avoidMouse && mouse.active && !calm && !s.fleeT){                         // หลบเมาส์
       const hxp = s.x + Math.cos(s.h)*s.L*0.34, hyp = s.y + Math.sin(s.h)*s.L*0.34;
       const d = Math.min(Math.hypot(mouse.x - s.x, mouse.y - s.y), Math.hypot(mouse.x - hxp, mouse.y - hyp));
       const reach = s.L*0.62 + C.mouseRadius;
@@ -6723,8 +6723,12 @@ const BgArt = (function(){
       }
     }
     if(chase) boost *= 0.9 + 1.4*clamp(chaseD/(s.L*0.9), 0, 1);                  // ไกลเร่ง ใกล้ชะลอ ไม่พุ่งเลยอาหาร                                                       // เห็นอาหาร → ว่ายเร็วขึ้น
-    if(s.dashT > 0) boost *= 1 + 1.6*Math.min(1, s.dashT/0.6);                    // ดับเบิลคลิก → พุ่ง
+    if(s.fleeT > 0){                                                              // ดับเบิลคลิก → ตกใจ ว่ายหนีจุดที่คลิก
+      want += clamp(angDiff(Math.atan2(s.y - s.fy, s.x - s.fx), s.h)*1.8, -1.6, 1.6);
+      boost *= 1 + 1.8*Math.min(1, s.fleeT/0.8);
+    }
     want = clamp(want, -1.15, 1.15);
+    if(s.fleeT > 0) want = clamp(want*1.3, -1.6, 1.6);
     if(chase) want = clamp(want*1.4, -1.6, 1.6);                                  // ตอนไล่อาหารเลี้ยวได้คม
     s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
     s.h += s.turn*dt;
@@ -6733,7 +6737,7 @@ const BgArt = (function(){
     s.x += Math.cos(s.h)*s.speed*dt;
     s.y += Math.sin(s.h)*s.speed*dt;
     s.omega = TAU*(0.42 + s.speed/(170 + s.L*0.2))*(0.9 + 0.1*Math.sin(t*0.3 + s.p3)); // เร็วขึ้น → กระดิก/ก้าวถี่ขึ้น
-    if(s.dashT > 0 || s.munch > 0.4) s.omega *= 1.5;                              // กระดิกถี่ขึ้นตอนพุ่ง/ตอนงับ
+    if(s.fleeT > 0 || s.munch > 0.4) s.omega *= 1.5;                              // กระดิกถี่ขึ้นตอนหนี/ตอนงับ
     s.phase += s.omega*dt;
 
     // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (ปลา/ฉลาม: หัวนิ่ง หางแกว่งมาก, สัตว์อื่น: โยกเบาๆ) ---
@@ -6783,8 +6787,8 @@ const BgArt = (function(){
     const sc2 = calm ? 0 : C.scatter;
     const dustP = C.dust*0.05*dt;                           // ความน่าจะเป็นต่ออนุภาคขอบต่อเฟรม
     const flap = Math.sin(s.phase*0.5);
-    const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius*(mouse.down ? 1.3 : 1);
-    const R = C.mouseRadius*(mouse.down ? 1.3 : 1), R2 = R*R;
+    const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius;
+    const R = C.mouseRadius, R2 = R*R;
     const damp = Math.max(0, 1 - Cd*dt);
     for(let i = 0; i < n; i++){
       const o = pA[i]*6;
@@ -6812,7 +6816,7 @@ const BgArt = (function(){
         const ddx = bx + ox[i] - mouse.x, ddy = by + oy[i] - mouse.y, d2 = ddx*ddx + ddy*ddy;
         if(d2 < R2){
           const d = Math.sqrt(d2) + 0.001, q = 1 - d/R;
-          const push = q*q*400*sc2*(mouse.down ? 1.8 : 1)*dt;                        // แรงผลักนุ่มนวล ไม่กระชาก
+          const push = q*q*400*sc2*dt;                        // แรงผลักนุ่มนวล ไม่กระชาก
           vx[i] += (ddx/d + (Math.random() - 0.5)*0.9)*push;  // ใส่ความสุ่มเล็กน้อย ให้กระจายเป็นฝุ่น ไม่เป็นวงกลมเรียบ
           vy[i] += (ddy/d + (Math.random() - 0.5)*0.9)*push;
         }
@@ -6867,8 +6871,9 @@ const BgArt = (function(){
       if(f.eaten || f.age > 22){ foods.splice(i, 1); continue; }
       if(f.y < floor){ f.y += 20*dt; f.x += Math.sin(f.age*2 + f.ph)*6*dt; }
       ctx.globalAlpha = Math.min(1, (22 - f.age)/3);
-      ctx.fillStyle = '#F6B26B'; ctx.beginPath(); ctx.arc(f.x, f.y, 3.4, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#FFE3B8'; ctx.beginPath(); ctx.arc(f.x - 1, f.y - 1, 1.3, 0, TAU); ctx.fill();
+      const pal = palOf(currentKey);                      // สีอาหารตามสีของสัตว์ที่แสดงอยู่
+      ctx.fillStyle = pal[5]; ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, TAU); ctx.fill();
+      ctx.fillStyle = pal[7]; ctx.beginPath(); ctx.arc(f.x - 1.2, f.y - 1.2, 1.7, 0, TAU); ctx.fill();
     }
     ctx.lineWidth = 1.2;
     for(let i = bubbles.length - 1; i >= 0; i--){
@@ -6881,8 +6886,6 @@ const BgArt = (function(){
   }
   const bgTarget = e => { const el = e.target; return el === document.body || el === document.documentElement || el === document.querySelector('main'); };   // คลิกเฉพาะที่ว่าง ไม่ทับปุ่ม/การ์ด
   let clickTimer = null;
-  function onDown(e){ mouse.down = e.button === 0 && bgTarget(e); }
-  function onUp(){ mouse.down = false; }
   function onClick(e){
     if(!bgTarget(e) || !sharks.length) return;
     const x = e.clientX, y = e.clientY;
@@ -6896,11 +6899,10 @@ const BgArt = (function(){
     if(!bgTarget(e) || !sharks.length) return;
     clearTimeout(clickTimer);
     const x = e.clientX, y = e.clientY;
-    let best = null, bd = 1e9;
-    sharks.forEach(s=>{ const d = Math.hypot(s.x - x, s.y - y); if(d < bd){ bd = d; best = s; } });
-    if(!best) return;
-    best.dashT = 1.4; best.ax = x; best.ay = y; best.anchorT = simT + 3;
-    for(let b = 0; b < 8; b++) bubbles.push({ x: best.x + rand(-10, 10), y: best.y + rand(-10, 10), vy: -rand(30, 80), vx: rand(-20, 20), r: rand(1.6, 4), life: rand(0.8, 1.4), age: 0 });
+    sharks.forEach(s=>{                                   // ทุกตัวตกใจหนีจากจุดที่ดับเบิลคลิก
+      s.fleeT = 2.2; s.fx = x; s.fy = y; s.anchorT = simT + 2.2;
+      for(let b = 0; b < 5; b++) bubbles.push({ x: s.x + rand(-10, 10), y: s.y + rand(-10, 10), vy: -rand(30, 80), vx: rand(-20, 20), r: rand(1.6, 4), life: rand(0.8, 1.4), age: 0 });
+    });
   }
 
   function frame(now){
@@ -6964,7 +6966,6 @@ const BgArt = (function(){
     if(still){ drawStill(); return; }
     window.addEventListener('mousemove', onMove, { passive: true });
     document.addEventListener('mouseleave', onLeave);
-    window.addEventListener('mousedown', onDown); window.addEventListener('mouseup', onUp);
     window.addEventListener('click', onClick); window.addEventListener('dblclick', onDbl);
     zoneTimer = setInterval(measureZones, 1500);            // หน้าเปลี่ยน กรอบเนื้อหาเปลี่ยน → วัดพื้นที่ว่างใหม่
     lastT = performance.now();
@@ -6978,10 +6979,9 @@ const BgArt = (function(){
     window.removeEventListener('resize', onResize);
     window.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseleave', onLeave);
-    window.removeEventListener('mousedown', onDown); window.removeEventListener('mouseup', onUp);
     window.removeEventListener('click', onClick); window.removeEventListener('dblclick', onDbl);
     clearTimeout(clickTimer); foods.length = 0; bubbles.length = 0;
-    mouse.active = false; mouse.down = false;
+    mouse.active = false;
     sharks.length = 0;                                       // เริ่มใหม่ตอนล็อกอินครั้งถัดไป
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
