@@ -409,7 +409,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 
 /* ══════════ DANGER ZONE ══════════ */
 .dur{display:inline-block;min-width:104px;white-space:nowrap;line-height:1.4}
-.scoped-admin .danger-card,.scoped-admin .ny-transfer-card,.scoped-admin button[onclick="deleteYearQuotas()"]{display:none!important}
+.scoped-admin .sc-hide,.scoped-admin #page-next_year > .card:not(#nyqCard),.scoped-admin .danger-card,.scoped-admin .ny-transfer-card,.scoped-admin button[onclick="deleteYearQuotas()"]{display:none!important}
 .danger-card{background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:var(--radius);padding:24px;margin-top:28px}
 .danger-card h3{color:var(--danger);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:6px}
 .danger-card p.hint{font-size:.82rem;color:#7a3a3a;margin-bottom:16px}
@@ -643,6 +643,21 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         </div>
         <div id="myCalGrid" class="cal-grid"></div>
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
+
+      <div class="card" id="myFreqCard">
+        <h3 style="margin:0 0 4px" data-i18n="h3_freq">📈 My leave frequency</h3>
+        <p class="hint" style="margin-bottom:12px" data-i18n="hint_freq">Line colours follow the leave type. Default shows 12 months; pick a month to see each day.</p>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <select id="myFreqYear" class="exp-select" onchange="loadMyFreq()"></select>
+          <select id="myFreqMonth" class="exp-select" onchange="renderMyFreq()"></select>
+          <select id="myFreqMetric" class="exp-select" onchange="renderMyFreq()">
+            <option value="count" data-i18n="freq_count">Number of requests</option>
+            <option value="days" data-i18n="freq_days">Leave days</option>
+          </select>
+        </div>
+        <div id="myFreqChart" style="width:100%;overflow-x:auto"></div>
+        <div id="myFreqLegend" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
 
       <div class="card" id="myYearGlanceCard">
@@ -1117,7 +1132,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <input type="text" id="nyqSearch" oninput="renderYearQuotas()" data-i18n-ph="ph_ny_search" placeholder="Search code, name or department" style="flex:1;min-width:180px;max-width:320px;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.88rem"/>
         </div>
         <div class="ny-hours-toggle"><label class="toggle-switch"><input type="checkbox" id="nyqShowHours" onchange="renderYearQuotas()"/><span class="toggle-track"></span></label><span data-i18n="ny_show_hours">Show hours column (for partial days)</span></div>
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+        <div class="sc-hide" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
           <div class="ny-hours-toggle" style="margin-top:0"><label class="toggle-switch"><input type="checkbox" id="nyqVisible" onchange="saveNyqVisibility()"/><span class="toggle-track"></span></label><b data-i18n="nyq_visible">Show next year's quotas to employees</b></div>
           <p class="hint" style="margin:6px 0 0" data-i18n="nyq_visible_hint">Employees see next year's quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.</p>
           <div class="nyq-months" id="nyqMonths"></div>
@@ -1289,11 +1304,11 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       <div class="field"><label data-i18n="em_sick_days">Sick Days</label><input type="number" id="neSick" value="30"/></div>
       <div class="field"><label data-i18n="em_personal_days">Personal Days</label><input type="number" id="nePersonal" value="4"/></div>
     </div>
-    <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div class="field sc-hide" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neAutoApprove" style="width:auto"/>
       <label style="margin:0" for="neAutoApprove" data-i18n="em_auto_approve">⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)</label>
     </div>
-    <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div class="field sc-hide" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neBypassConditions" style="width:auto"/>
       <label style="margin:0" for="neBypassConditions" data-i18n="em_emergency">🚨 Emergency Leave (temporarily skip all Settings conditions)</label>
       <select id="neBypassHours" style="width:auto;display:none;margin-left:6px">
@@ -2111,7 +2126,73 @@ async function loadMyLeave(){
     renderMyCalendar();
     populateCarryoverOption(data.balances);
     refreshPrevAnnualOptions(data.balances);
+    loadMyFreq();
   }catch(e){ showToast(e.message,'err'); if((e.raw||e.message).includes('เซสชัน')) doLogout(); }
+}
+
+
+// ── กราฟความถี่การลาของฉัน (เส้นต่อประเภท สีไล่เฉดตามตระกูลประเภท) ──
+const FREQ_COLORS = {
+  annual:'#2F7FD8', annual_urgent:'#0B4FA8', annual_prev:'#7CBBF2',
+  sick:'#2EAA5E', personal:'#F08A24', personal_unpaid:'#D9A441',
+  maternity:'#E5609B', paternity:'#9A63D6', priesthood:'#A67C52', wfh:'#1FA7A0', other:'#8A8F98'
+};
+let myFreqCache = [];
+function initMyFreqControls(){
+  const ys = document.getElementById('myFreqYear'), ms = document.getElementById('myFreqMonth');
+  if(!ys) return;
+  const y0 = new Date().getFullYear();
+  if(!ys.options.length){ let h=''; for(let y=y0-3;y<=y0+1;y++) h+=`<option value="${y}" ${y===y0?'selected':''}>${y}</option>`; ys.innerHTML=h; }
+  const names = currentLang==='th' ? ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'] : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const keep = ms.value || '0';
+  ms.innerHTML = `<option value="0">${escHtml(t('freq_all_year'))}</option>` + names.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('');
+  ms.value = keep;
+}
+async function loadMyFreq(){
+  initMyFreqControls();
+  const ys = document.getElementById('myFreqYear'); if(!ys) return;
+  try{
+    const data = await callApi('get_my_data', { requests_year: Number(ys.value) });
+    myFreqCache = (data.requests||[]).filter(r=>!['rejected_manager','rejected_admin'].includes(r.status));
+    renderMyFreq();
+  }catch(e){ /* non-fatal */ }
+}
+function renderMyFreq(){
+  const box = document.getElementById('myFreqChart'); if(!box) return;
+  const y = Number(document.getElementById('myFreqYear').value), m = Number(document.getElementById('myFreqMonth').value)||0;
+  const metric = document.getElementById('myFreqMetric').value;
+  const n = m ? new Date(y, m, 0).getDate() : 12;
+  const labels = m ? Array.from({length:n},(_,i)=>String(i+1)) : (currentLang==='th' ? ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'] : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+  const series = {};
+  myFreqCache.forEach(r=>{
+    const sd = String(r.start_date||''); if(sd.slice(0,4)!==String(y)) return;
+    const mo = Number(sd.slice(5,7)), da = Number(sd.slice(8,10));
+    if(m && mo!==m) return;
+    const idx = (m ? da : mo) - 1;
+    const arr = series[r.leave_type] || (series[r.leave_type] = new Array(n).fill(0));
+    arr[idx] += metric==='days' ? (r.leave_unit==='hour' ? Number(r.hours_count||0)/8 : Number(r.days_count||0)) : 1;
+  });
+  const types = Object.keys(series);
+  const legend = document.getElementById('myFreqLegend');
+  if(!types.length){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
+  const W=640, H=240, L=36, R=12, T=14, B=28;
+  let maxV = 0; types.forEach(k=>series[k].forEach(v=>{ if(v>maxV) maxV=v; }));
+  maxV = Math.max(1, Math.ceil(maxV)); const steps = Math.min(maxV, 5);
+  const xAt = i => L + (n===1 ? (W-L-R)/2 : i*(W-L-R)/(n-1));
+  const yAt = v => T + (H-T-B) * (1 - v/maxV);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:420px;height:auto" role="img">`;
+  for(let k=0;k<=steps;k++){ const v = maxV*k/steps, yy = yAt(v);
+    svg += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e6e1ee" stroke-width="1"/><text x="${L-6}" y="${yy+3}" text-anchor="end" font-size="10" fill="#8a8398">${Math.round(v*10)/10}</text>`; }
+  const every = n>16 ? 2 : 1;
+  labels.forEach((lb,i)=>{ if(i%every===0) svg += `<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8a8398">${escHtml(lb)}</text>`; });
+  types.forEach(k=>{
+    const col = FREQ_COLORS[k] || '#8A8F98';
+    const pts = series[k].map((v,i)=>`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+    series[k].forEach((v,i)=>{ svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(stripLeadingSymbols(getLeaveTypeLabel(k)))} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
+  });
+  box.innerHTML = svg + '</svg>';
+  legend.innerHTML = types.map(k=>`<span style="display:inline-flex;align-items:center;gap:5px"><i style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${FREQ_COLORS[k]||'#8A8F98'}"></i>${escHtml(stripLeadingSymbols(getLeaveTypeLabel(k)))}</span>`).join('');
 }
 
 // ── ถ้ามีโควตาพักร้อนยกยอด (annual_carry_YYYY) เหลืออยู่และยังไม่หมดอายุ ให้เพิ่มเป็นตัวเลือกในฟอร์มขอลา ──
@@ -2669,7 +2750,7 @@ const I18N = {
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_min:'min', tk_unit_minutes:'minutes', tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
-    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type. Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
@@ -2867,7 +2948,7 @@ const I18N = {
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_min:'นาที', tk_unit_minutes:'นาที', tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
-    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
@@ -4561,7 +4642,7 @@ function renderEmployeesTable(){
           <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
           <button class="btn btn-sm btn-outline" onclick="openEditEmployeeModal('${e.id}')">${escHtml(t('c_edit'))}</button>
           <button class="btn btn-sm btn-outline" onclick="resetEmployeePassword('${e.id}','${escAttr(e.name)}')">Reset PW</button>
-          ${e.role!=='admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">${escHtml(t('c_delete'))}</button>` : ''}
+          ${(e.role!=='admin' && !isScopedAdmin()) ? `<button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}','${escAttr(e.name)}')">${escHtml(t('c_delete'))}</button>` : ''}
         </td>
       </tr>`;
   }).join('') || `<tr><td colspan="8" class="empty-msg">${escHtml(t('tk_none2'))}</td></tr>`;
@@ -6505,7 +6586,8 @@ const BgArt = (function(){
   // ───────── 2) ตัวสัตว์: สถานะการว่าย + อนุภาค ─────────
   const sharks = [];                                        // (ชื่อเดิม) รายการสัตว์ที่กำลังแสดง
   const view = { w: 0, h: 0, dpr: 1, mobile: false, zones: null };
-  const mouse = { x: -9999, y: -9999, active: false };
+  const mouse = { x: -9999, y: -9999, active: false, down: false };
+  const foods = [], bubbles = [];                          // อาหารที่โรย + ฟองตอนกิน
   let running = false, rafId = null, lastT = 0, simT = 0, slowMs = 0, slowSince = 0, currentKey = 'off';
 
   const TAB_N = 96;                                         // ความละเอียดตารางเส้นกลางลำตัว
@@ -6538,6 +6620,7 @@ const BgArt = (function(){
       ax: 0, ay: 0, anchorT: 0,
       alpha: role === 'main' ? 1 : 0.62,                    // ตัวเล็ก = อยู่ไกลกว่า จางกว่า
       fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
+      munch: 0, dashT: 0,
       ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n), el: new Uint8Array(n),
       m: new Float32Array(np*6),                            // เมทริกซ์ขยับของแต่ละชิ้นส่วน (m11,m12,m21,m22,tx,ty)
@@ -6602,6 +6685,24 @@ const BgArt = (function(){
     s.fade = Math.min(1, s.fade + dt/1.8);
     // --- เป้าหมายและการเลี้ยว: เคลื่อนที่เป็นเส้นโค้งนุ่มนวล ไม่เปลี่ยนทิศแบบกระตุก ---
     if(t > s.anchorT) pickAnchor(s, false);
+    // --- อาหาร: ว่ายไปกินเม็ดที่ใกล้ที่สุด ---
+    let chase = null, chaseD = 0;
+    if(foods.length && !calm){
+      let bd = 1e9;
+      for(const f of foods){ if(f.eaten) continue; const d = Math.hypot(f.x - s.x, f.y - s.y); if(d < bd){ bd = d; chase = f; } }
+      if(chase){
+        s.ax = chase.x; s.ay = chase.y; s.anchorT = t + 1;
+        const hx0 = s.x + Math.cos(s.h)*s.L*0.34, hy0 = s.y + Math.sin(s.h)*s.L*0.34;
+        chaseD = Math.min(Math.hypot(chase.x - hx0, chase.y - hy0), Math.hypot(chase.x - s.x, chase.y - s.y));   // หัวหรือกลางลำตัวถึงอาหารก็งับได้
+        if(chaseD < Math.max(24, s.L*0.22)){
+          chase.eaten = true; s.munch = 1;
+          for(let b = 0; b < 10; b++) bubbles.push({ x: hx0 + rand(-6, 6), y: hy0 + rand(-6, 6), vy: -rand(40, 95), vx: rand(-14, 14), r: rand(1.6, 4.2), life: rand(0.9, 1.6), age: 0 });
+          chase = null;
+        }
+      }
+    }
+    if(s.munch > 0) s.munch = Math.max(0, s.munch - dt/1.2);
+    if(s.dashT > 0) s.dashT = Math.max(0, s.dashT - dt);
     const wob = A.wob || 1;
     let want = wob*(0.30*Math.sin(t*0.21 + s.p1) + 0.22*Math.sin(t*0.37 + s.p2));      // ส่ายซ้ายขวาเบาๆ ตามธรรมชาติ
     const dx = s.ax - s.x, dy = s.ay - s.y, dist = Math.hypot(dx, dy);
@@ -6611,7 +6712,7 @@ const BgArt = (function(){
       want += clamp(angDiff(Math.atan2(view.h/2 - s.y, view.w/2 - s.x), s.h)*1.5, -1.1, 1.1);
     }
     let boost = 1;
-    if(C.avoidMouse && mouse.active && !calm){                                    // หลบเมาส์
+    if(C.avoidMouse && mouse.active && !calm && !mouse.down && !s.dashT){          // หลบเมาส์ (ยกเว้นตอนกดค้างลูบ / ตอนพุ่ง)
       const hxp = s.x + Math.cos(s.h)*s.L*0.34, hyp = s.y + Math.sin(s.h)*s.L*0.34;
       const d = Math.min(Math.hypot(mouse.x - s.x, mouse.y - s.y), Math.hypot(mouse.x - hxp, mouse.y - hyp));
       const reach = s.L*0.62 + C.mouseRadius;
@@ -6621,7 +6722,10 @@ const BgArt = (function(){
         boost = 1 + k*0.35;
       }
     }
+    if(chase) boost *= 0.9 + 1.4*clamp(chaseD/(s.L*0.9), 0, 1);                  // ไกลเร่ง ใกล้ชะลอ ไม่พุ่งเลยอาหาร                                                       // เห็นอาหาร → ว่ายเร็วขึ้น
+    if(s.dashT > 0) boost *= 1 + 1.6*Math.min(1, s.dashT/0.6);                    // ดับเบิลคลิก → พุ่ง
     want = clamp(want, -1.15, 1.15);
+    if(chase) want = clamp(want*1.4, -1.6, 1.6);                                  // ตอนไล่อาหารเลี้ยวได้คม
     s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
     s.h += s.turn*dt;
     const base = (26 + s.L*0.07)*C.speed*(A.speed || 1)*(calm ? 0.5 : 1);         // px/วินาที
@@ -6629,6 +6733,7 @@ const BgArt = (function(){
     s.x += Math.cos(s.h)*s.speed*dt;
     s.y += Math.sin(s.h)*s.speed*dt;
     s.omega = TAU*(0.42 + s.speed/(170 + s.L*0.2))*(0.9 + 0.1*Math.sin(t*0.3 + s.p3)); // เร็วขึ้น → กระดิก/ก้าวถี่ขึ้น
+    if(s.dashT > 0 || s.munch > 0.4) s.omega *= 1.5;                              // กระดิกถี่ขึ้นตอนพุ่ง/ตอนงับ
     s.phase += s.omega*dt;
 
     // --- ตารางเส้นกลางลำตัวที่โค้งตามคลื่น (ปลา/ฉลาม: หัวนิ่ง หางแกว่งมาก, สัตว์อื่น: โยกเบาๆ) ---
@@ -6678,8 +6783,8 @@ const BgArt = (function(){
     const sc2 = calm ? 0 : C.scatter;
     const dustP = C.dust*0.05*dt;                           // ความน่าจะเป็นต่ออนุภาคขอบต่อเฟรม
     const flap = Math.sin(s.phase*0.5);
-    const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius;
-    const R = C.mouseRadius, R2 = R*R;
+    const useMouse = mouse.active && sc2 > 0 && Math.hypot(mouse.x - s.x, mouse.y - s.y) < s.L*0.62 + C.mouseRadius*(mouse.down ? 1.3 : 1);
+    const R = C.mouseRadius*(mouse.down ? 1.3 : 1), R2 = R*R;
     const damp = Math.max(0, 1 - Cd*dt);
     for(let i = 0; i < n; i++){
       const o = pA[i]*6;
@@ -6707,7 +6812,7 @@ const BgArt = (function(){
         const ddx = bx + ox[i] - mouse.x, ddy = by + oy[i] - mouse.y, d2 = ddx*ddx + ddy*ddy;
         if(d2 < R2){
           const d = Math.sqrt(d2) + 0.001, q = 1 - d/R;
-          const push = q*q*400*sc2*dt;                        // แรงผลักนุ่มนวล ไม่กระชาก
+          const push = q*q*400*sc2*(mouse.down ? 1.8 : 1)*dt;                        // แรงผลักนุ่มนวล ไม่กระชาก
           vx[i] += (ddx/d + (Math.random() - 0.5)*0.9)*push;  // ใส่ความสุ่มเล็กน้อย ให้กระจายเป็นฝุ่น ไม่เป็นวงกลมเรียบ
           vy[i] += (ddy/d + (Math.random() - 0.5)*0.9)*push;
         }
@@ -6754,6 +6859,50 @@ const BgArt = (function(){
     }
   }
 
+  // ───────── 4) เล่นกับสัตว์: อาหาร ฟอง ดับเบิลคลิก ─────────
+  function drawFx(dt){
+    const floor = Math.min(view.h - 30, view.h*0.88);
+    for(let i = foods.length - 1; i >= 0; i--){
+      const f = foods[i]; f.age += dt;
+      if(f.eaten || f.age > 22){ foods.splice(i, 1); continue; }
+      if(f.y < floor){ f.y += 20*dt; f.x += Math.sin(f.age*2 + f.ph)*6*dt; }
+      ctx.globalAlpha = Math.min(1, (22 - f.age)/3);
+      ctx.fillStyle = '#F6B26B'; ctx.beginPath(); ctx.arc(f.x, f.y, 3.4, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FFE3B8'; ctx.beginPath(); ctx.arc(f.x - 1, f.y - 1, 1.3, 0, TAU); ctx.fill();
+    }
+    ctx.lineWidth = 1.2;
+    for(let i = bubbles.length - 1; i >= 0; i--){
+      const b = bubbles[i]; b.age += dt;
+      if(b.age > b.life){ bubbles.splice(i, 1); continue; }
+      b.y += b.vy*dt; b.x += (b.vx + Math.sin(b.age*8 + i)*8)*dt;
+      ctx.globalAlpha = 0.75*(1 - b.age/b.life);
+      ctx.strokeStyle = '#E8F4FF'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+    }
+  }
+  const bgTarget = e => { const el = e.target; return el === document.body || el === document.documentElement || el === document.querySelector('main'); };   // คลิกเฉพาะที่ว่าง ไม่ทับปุ่ม/การ์ด
+  let clickTimer = null;
+  function onDown(e){ mouse.down = e.button === 0 && bgTarget(e); }
+  function onUp(){ mouse.down = false; }
+  function onClick(e){
+    if(!bgTarget(e) || !sharks.length) return;
+    const x = e.clientX, y = e.clientY;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(()=>{                         // รอดูว่าเป็นดับเบิลคลิกหรือไม่ ถ้าไม่ใช่ค่อยโรยอาหาร
+      if(foods.length >= 12) foods.shift();
+      foods.push({ x, y, age: 0, ph: Math.random()*TAU, eaten: false });
+    }, 230);
+  }
+  function onDbl(e){
+    if(!bgTarget(e) || !sharks.length) return;
+    clearTimeout(clickTimer);
+    const x = e.clientX, y = e.clientY;
+    let best = null, bd = 1e9;
+    sharks.forEach(s=>{ const d = Math.hypot(s.x - x, s.y - y); if(d < bd){ bd = d; best = s; } });
+    if(!best) return;
+    best.dashT = 1.4; best.ax = x; best.ay = y; best.anchorT = simT + 3;
+    for(let b = 0; b < 8; b++) bubbles.push({ x: best.x + rand(-10, 10), y: best.y + rand(-10, 10), vy: -rand(30, 80), vx: rand(-20, 20), r: rand(1.6, 4), life: rand(0.8, 1.4), age: 0 });
+  }
+
   function frame(now){
     if(!running) return;
     rafId = requestAnimationFrame(frame);
@@ -6769,6 +6918,7 @@ const BgArt = (function(){
       const sc = updateShark(sharks[i], dt, simT);
       drawShark(sharks[i], sc);
     }
+    drawFx(dt);
     ctx.globalAlpha = 1;
     // ป้องกันเครื่องช้า: ถ้าแต่ละเฟรมใช้เวลานานต่อเนื่อง ให้ตัดตัวเล็กออก
     const cost = performance.now() - t0;
@@ -6814,6 +6964,8 @@ const BgArt = (function(){
     if(still){ drawStill(); return; }
     window.addEventListener('mousemove', onMove, { passive: true });
     document.addEventListener('mouseleave', onLeave);
+    window.addEventListener('mousedown', onDown); window.addEventListener('mouseup', onUp);
+    window.addEventListener('click', onClick); window.addEventListener('dblclick', onDbl);
     zoneTimer = setInterval(measureZones, 1500);            // หน้าเปลี่ยน กรอบเนื้อหาเปลี่ยน → วัดพื้นที่ว่างใหม่
     lastT = performance.now();
     rafId = requestAnimationFrame(frame);
@@ -6826,7 +6978,10 @@ const BgArt = (function(){
     window.removeEventListener('resize', onResize);
     window.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseleave', onLeave);
-    mouse.active = false;
+    window.removeEventListener('mousedown', onDown); window.removeEventListener('mouseup', onUp);
+    window.removeEventListener('click', onClick); window.removeEventListener('dblclick', onDbl);
+    clearTimeout(clickTimer); foods.length = 0; bubbles.length = 0;
+    mouse.active = false; mouse.down = false;
     sharks.length = 0;                                       // เริ่มใหม่ตอนล็อกอินครั้งถัดไป
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
