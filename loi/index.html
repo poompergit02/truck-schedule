@@ -716,11 +716,14 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <select id="teamResultsYear" class="exp-select" onchange="loadTeamResults()"></select>
+          <label style="margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_month">Month</label>
+          <select id="teamResultsMonth" class="exp-select" onchange="renderTeamResults()"></select>
           <label style="margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_sort">Sort</label>
           <select id="teamResultsSort" class="exp-select" onchange="renderTeamResults()">
             <option value="asc" data-i18n="opt_sort_first">Earliest submitted first</option>
             <option value="desc" data-i18n="opt_sort_last">Latest submitted first</option>
           </select>
+          <button class="btn btn-outline btn-sm" onclick="exportTeamResultsExcel()" data-i18n="btn_export_team">📥 Export Excel</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
           <thead><tr>
@@ -1292,7 +1295,14 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
     </div>
     <div class="field" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <input type="checkbox" id="neBypassConditions" style="width:auto"/>
-      <label style="margin:0" for="neBypassConditions" data-i18n="em_emergency">🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)</label>
+      <label style="margin:0" for="neBypassConditions" data-i18n="em_emergency">🚨 Emergency Leave (temporarily skip all Settings conditions)</label>
+      <select id="neBypassHours" style="width:auto;display:none;margin-left:6px">
+        <option value="keep" data-i18n="em_emg_keep" style="display:none">Keep current expiry</option>
+        <option value="5" data-i18n="em_emg_5h">Expires in 5 hours</option>
+        <option value="24" data-i18n="em_emg_1d" selected>Expires in 1 day</option>
+        <option value="72" data-i18n="em_emg_3d">Expires in 3 days</option>
+        <option value="0" data-i18n="em_emg_none">No expiry (untick manually)</option>
+      </select>
     </div>
     <div class="err-text" id="addEmpErr"></div>
     <div class="modal-actions" style="flex-wrap:wrap">
@@ -2408,11 +2418,49 @@ function initMyReportsYearSelect(){
 let teamResultsCache = [];
 function initTeamResultsYearSelect(){
   const sel = document.getElementById('teamResultsYear');
-  if(sel.options.length) return;
-  const y0 = new Date().getFullYear();
-  let html = '';
-  for(let y=y0-2; y<=y0+1; y++) html += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
-  sel.innerHTML = html;
+  if(!sel.options.length){
+    const y0 = new Date().getFullYear();
+    let html = '';
+    for(let y=y0-2; y<=y0+1; y++) html += `<option value="${y}" ${y===y0?'selected':''}>${y}</option>`;
+    sel.innerHTML = html;
+  }
+  const ms = document.getElementById('teamResultsMonth');
+  if(ms){ const keep = ms.value || '0';
+    const names = currentLang==='th' ? ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'] : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    ms.innerHTML = `<option value="0">${escHtml(t('opt_all_months'))}</option>` + names.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('');
+    ms.value = keep;
+  }
+}
+// กรองตามเดือน: คำขอที่ช่วงวันลาตกอยู่ในเดือนที่เลือก (ข้ามเดือนก็นับ)
+function teamResultsFiltered(){
+  const y = Number(document.getElementById('teamResultsYear').value) || new Date().getFullYear();
+  const m = Number(document.getElementById('teamResultsMonth').value) || 0;
+  const dir = document.getElementById('teamResultsSort').value;
+  let rows = [...teamResultsCache];
+  if(m){
+    const a = `${y}-${String(m).padStart(2,'0')}-01`, b = `${y}-${String(m).padStart(2,'0')}-31`;
+    rows = rows.filter(r => (r.start_date||'') <= b && (r.end_date||r.start_date||'') >= a);
+  }
+  return rows.sort((a,b)=> dir==='asc' ? new Date(a.created_at)-new Date(b.created_at) : new Date(b.created_at)-new Date(a.created_at));
+}
+function exportTeamResultsExcel(){
+  const rows = teamResultsFiltered();
+  if(!rows.length){ showToast(t('tr_none'),'err'); return; }
+  const out = rows.map((r,i)=>({
+    '#': i+1,
+    [t('th_submitted_at')]: formatDateTimeBkk(r.created_at),
+    [t('exr_code')]: r.employee?.employee_code||'',
+    [t('exr_name')]: r.employee?.name||'',
+    [t('exr_dept')]: r.employee?.department||'',
+    [t('th_type')]: stripLeadingSymbols(getLeaveTypeLabel(r.leave_type)),
+    [t('th_dates')]: formatDuration(r),
+    [t('th_days')]: formatAmount(r),
+    [t('th_status')]: (STATUS_LABEL[r.status]||{label:r.status}).label,
+  }));
+  const y = document.getElementById('teamResultsYear').value, m = Number(document.getElementById('teamResultsMonth').value)||0;
+  const ws = XLSX.utils.json_to_sheet(out), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Team Results');
+  XLSX.writeFile(wb, `LOI_Team_Results_${y}${m?'-'+String(m).padStart(2,'0'):''}.xlsx`);
 }
 function formatDateTimeBkk(iso){
   if(!iso) return '—';
@@ -2431,10 +2479,7 @@ async function loadTeamResults(){
 }
 function renderTeamResults(){
   const body = document.getElementById('teamResultsBody');
-  const dir = document.getElementById('teamResultsSort').value;
-  const rows = [...teamResultsCache].sort((a,b)=> dir==='asc'
-    ? new Date(a.created_at) - new Date(b.created_at)
-    : new Date(b.created_at) - new Date(a.created_at));
+  const rows = teamResultsFiltered();
   if(!rows.length){ body.innerHTML = `<tr><td colspan="7" class="empty-msg">${escHtml(t('tr_none'))}</td></tr>`; return; }
   body.innerHTML = rows.map((r,i)=>{
     const st = STATUS_LABEL[r.status] || {label:r.status, cls:'badge-pending'};
@@ -2525,7 +2570,7 @@ const I18N = {
     em_mgr_ph:'e.g. 2400,2401 (in approval order)', em_password:'Password *', em_password_ph:'Temporary password',
     em_annual_days:'Annual Days', em_sick_days:'Sick Days', em_personal_days:'Personal Days',
     em_auto_approve:'⚡ Auto-approve (Executive — leave requests skip approval and deduct immediately)',
-    em_emergency:'🚨 Emergency Leave (temporarily skip all Settings conditions — remember to untick after use)',
+    em_emergency:'🚨 Emergency Leave (temporarily skip all Settings conditions)', em_emg_keep:'Keep current expiry', em_emg_5h:'Expires in 5 hours', em_emg_1d:'Expires in 1 day', em_emg_3d:'Expires in 3 days', em_emg_none:'No expiry (untick manually)', em_emg_until:'Expires',
     em_btn_editleave:'📝 Edit Leave Requests', em_btn_editbal:'💰 Edit Balances',
     el_title:'Leave Requests', el_none:'No requests',
     el_hint:"Editing here does not automatically adjust the employee's leave balance — use Edit Balances separately if needed. Every edit is logged.",
@@ -2624,7 +2669,7 @@ const I18N = {
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_min:'min', tk_unit_minutes:'minutes', tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
-    tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
@@ -2723,7 +2768,7 @@ const I18N = {
     em_mgr_ph:'เช่น 2400,2401 (เรียงลำดับอนุมัติ)', em_password:'รหัสผ่าน *', em_password_ph:'รหัสผ่านชั่วคราว',
     em_annual_days:'วันลาพักร้อน', em_sick_days:'วันลาป่วย', em_personal_days:'วันลากิจ',
     em_auto_approve:'⚡ อนุมัติอัตโนมัติ (ผู้บริหาร — คำขอลาข้ามขั้นตอนอนุมัติและหักวันลาทันที)',
-    em_emergency:'🚨 ลาฉุกเฉิน (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่าชั่วคราว — อย่าลืมติ๊กออกหลังใช้งาน)',
+    em_emergency:'🚨 ลาฉุกเฉิน (ข้ามเงื่อนไขทั้งหมดในหน้าตั้งค่าชั่วคราว)', em_emg_keep:'คงเวลาหมดอายุเดิม', em_emg_5h:'หมดอายุใน 5 ชั่วโมง', em_emg_1d:'หมดอายุใน 1 วัน', em_emg_3d:'หมดอายุใน 3 วัน', em_emg_none:'ไม่หมดอายุ (ต้องติ๊กออกเอง)', em_emg_until:'หมดอายุ',
     em_btn_editleave:'📝 แก้ไขใบลา', em_btn_editbal:'💰 แก้ไขโควตาวันลา',
     el_title:'ใบลา', el_none:'ไม่มีใบลา',
     el_hint:'การแก้ไขที่นี่ไม่ได้ปรับโควตาวันลาของพนักงานอัตโนมัติ — หากต้องการ ให้ใช้ "แก้ไขโควตาวันลา" แยกต่างหาก ทุกการแก้ไขจะถูกบันทึกไว้',
@@ -2822,7 +2867,7 @@ const I18N = {
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_min:'นาที', tk_unit_minutes:'นาที', tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
-    tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
@@ -4505,7 +4550,7 @@ function renderEmployeesTable(){
         <td>${e.email?escHtml(e.email):'—'}</td>
         <td>${e.department?escHtml(e.department):'—'}</td>
         <td>${e.position?escHtml(e.position):'—'}</td>
-        <td>${escHtml(roleText(e))}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?' <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency</span>':''}</td>
+        <td>${escHtml(roleText(e))}${e.auto_approve?' <span class="badge badge-approved" title="Auto-approve enabled">⚡ Auto</span>':''}${e.bypass_conditions?` <span class="badge badge-rejected" title="Emergency Leave — bypasses all Settings conditions">🚨 Emergency${e.bypass_until?' · '+escHtml(new Date(e.bypass_until).toLocaleString('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):''}</span>`:''}</td>
         <td style="font-size:.78rem">${managerNames||'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-outline" onclick="openPhotoModal('${e.id}')" data-i18n-title="photo_title" title="Photo">📷</button>
@@ -4837,7 +4882,7 @@ function renderCarryoverCandidates(){
         <td>${c.department?escHtml(c.department):'—'}</td>
         <td>${escHtml(formatDaysHoursNice(c.remaining_days).text)}</td>
         <td>${c.already_granted?'<span class="badge badge-approved">Already granted</span>':'<span class="badge badge-pending">Not yet</span>'}</td>
-        <td><button class="btn btn-sm btn-primary" ${c.already_granted?'disabled':''} onclick="grantAndNotifyCarryover('${c.employee_id}')">📧 Notify &amp; Grant 3 Days</button></td>
+        <td>${isScopedAdmin()?'—':`<button class="btn btn-sm btn-primary" ${c.already_granted?'disabled':''} onclick="grantAndNotifyCarryover('${c.employee_id}')">📧 Notify &amp; Grant 3 Days</button>`}</td>
       </tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -5779,6 +5824,16 @@ function applyScopeToEmployeeModal(){
   const pos = document.getElementById('nePosition');
   if(sc){ pos.value = currentUser.scope_position; pos.disabled = true; } else pos.disabled = false;
 }
+function syncBypassSel(emp){
+  const cb = document.getElementById('neBypassConditions'), sel = document.getElementById('neBypassHours');
+  const keepOpt = sel.querySelector('option[value="keep"]');
+  if(emp && emp.bypass_conditions){ keepOpt.style.display=''; keepOpt.disabled=false;
+    keepOpt.textContent = t('em_emg_keep') + (emp.bypass_until ? ' ('+new Date(emp.bypass_until).toLocaleString('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+')' : ' ('+t('em_emg_none')+')');
+    sel.value='keep';
+  } else { keepOpt.style.display='none'; keepOpt.disabled=true; sel.value='24'; }
+  const vis=()=>{ sel.style.display = cb.checked ? '' : 'none'; if(cb.checked && sel.value==='keep' && !(emp&&emp.bypass_conditions)) sel.value='24'; };
+  cb.onchange = vis; vis();
+}
 function openAddEmployeeModal(){
   editingEmployeeId = null;
   ['neCode','neName','neEmail','neDept','nePosition','neManagerCode','nePassword'].forEach(id=>document.getElementById(id).value='');
@@ -5789,7 +5844,7 @@ function openAddEmployeeModal(){
   document.getElementById('neSick').value=30;
   document.getElementById('nePersonal').value=4;
   document.getElementById('neAutoApprove').checked=false;
-  document.getElementById('neBypassConditions').checked=false;
+  document.getElementById('neBypassConditions').checked=false; syncBypassSel(null);
   document.getElementById('addEmpErr').textContent='';
   document.getElementById('addEmpModalTitle').textContent=t('em_add_title');
   applyScopeToEmployeeModal();
@@ -5815,7 +5870,7 @@ function openEditEmployeeModal(id){
   document.getElementById('nePosition').value = emp.position || '';
   document.getElementById('neRole').value = (emp.role==='admin' && emp.scope_position) ? 'admin_sb' : (emp.role || 'employee');
   document.getElementById('neAutoApprove').checked = !!emp.auto_approve;
-  document.getElementById('neBypassConditions').checked = !!emp.bypass_conditions;
+  document.getElementById('neBypassConditions').checked = !!emp.bypass_conditions; syncBypassSel(emp);
   applyScopeToEmployeeModal();
 
   // แปลง manager_id ในผังกลับเป็น employee_code เพื่อแสดงในช่องแก้ไข
@@ -5856,6 +5911,7 @@ async function submitAddOrEditEmployee(){
       auto_approve: document.getElementById('neAutoApprove').checked,
       bypass_conditions: document.getElementById('neBypassConditions').checked,
     };
+    { const hv = document.getElementById('neBypassHours').value; if(payload.bypass_conditions && hv!=='keep') payload.bypass_hours = Number(hv); }
     if(!payload.name){ errEl.textContent='Name is required'; return; }
     try{
       const res = await callApi('update_employee', payload);
@@ -5884,6 +5940,7 @@ async function submitAddOrEditEmployee(){
     auto_approve: document.getElementById('neAutoApprove').checked,
     bypass_conditions: document.getElementById('neBypassConditions').checked,
   };
+  { const hv = document.getElementById('neBypassHours').value; if(payload.bypass_conditions && hv!=='keep') payload.bypass_hours = Number(hv); }
   if(!payload.employee_code||!payload.name||!payload.password){ errEl.textContent='Employee code, name, and password are required'; return; }
   try{
     const res = await callApi('add_employee', payload);
