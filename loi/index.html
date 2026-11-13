@@ -6687,7 +6687,7 @@ const BgArt = (function(){
     if(t > s.anchorT) pickAnchor(s, false);
     // --- อาหาร: ว่ายไปกินเม็ดที่ใกล้ที่สุด ---
     let chase = null, chaseD = 0;
-    if(foods.length && !calm && !(s.fleeT > 0)){
+    if(foods.length && !(s.fleeT > 0)){                 // ใช้ได้แม้อยู่โหมด calm (ผู้ใช้ตั้ง OS ลดการเคลื่อนไหว) เพราะเป็นการกดเล่นเอง
       let bd = 1e9;
       for(const f of foods){ if(f.eaten) continue; const d = Math.hypot(f.x - s.x, f.y - s.y); if(d < bd){ bd = d; chase = f; } }
       if(chase){
