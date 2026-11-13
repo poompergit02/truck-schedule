@@ -768,7 +768,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <th class="sortable" data-sort="name" onclick="sortEmployees('name')" data-i18n="th_name">Name</th>
             <th class="sortable" data-sort="email" onclick="sortEmployees('email')" data-i18n="th_email">Email</th>
             <th class="sortable" data-sort="department" onclick="sortEmployees('department')" data-i18n="th_dept">Dept</th>
-            <th class="sortable" data-sort="position" onclick="sortEmployees('position')" data-i18n="th_position">Position</th>
+            <th class="sortable" data-sort="position" onclick="sortEmployees('position')" data-i18n="th_position">Branch</th>
             <th class="sortable" data-sort="role" onclick="sortEmployees('role')" data-i18n="th_role">Role</th>
             <th data-i18n="th_managers">Managers (in order)</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="employeesBody"></tbody>
@@ -1277,7 +1277,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       <div class="field"><label data-i18n="em_name">Name *</label><input type="text" id="neName"/></div>
       <div class="field"><label data-i18n="em_email">Email</label><input type="email" id="neEmail"/></div>
       <div class="field"><label data-i18n="em_dept">Department</label><input type="text" id="neDept"/></div>
-      <div class="field"><label data-i18n="em_position">Position</label><input type="text" id="nePosition"/></div>
+      <div class="field"><label data-i18n="em_position">Branch</label><input type="text" id="nePosition"/></div>
       <div class="field"><label data-i18n="em_role">Role</label>
         <select id="neRole"><option value="employee" data-i18n="em_role_employee">Employee</option><option value="manager" data-i18n="em_role_manager">Manager</option><option value="admin_sb" data-i18n="em_role_admin_sb">Branch admin — Sriracha (SB)</option><option value="admin" data-i18n="em_role_admin">Admin</option></select>
       </div>
@@ -1853,7 +1853,7 @@ async function callApi_noToken(action, params){
 const LOGIN_BG_BY_DAY = [
   36211478, // อาทิตย์ — Bali beach umbrellas  https://www.pexels.com/photo/aerial-view-of-colorful-beach-umbrellas-in-bali-36211478/
   35914239, // จันทร์ — two hikers              https://www.pexels.com/photo/two-hikers-resting-in-mountain-landscape-35914239/
-  29603100, // อังคาร — pink lake, Ukraine      https://www.pexels.com/photo/aerial-view-of-woman-relaxing-on-pink-lake-in-ukraine-29603100/
+  6199453,  // อังคาร — pink sky over empty pier at dusk  https://www.pexels.com/photo/pink-sky-over-empty-pier-at-dusk-6199453/
   19240417, // พุธ — dinner on lakeside          https://www.pexels.com/photo/man-and-woman-having-dinner-on-lakeside-19240417/
   5601489,  // พฤหัสบดี — beach silhouettes      https://www.pexels.com/photo/silhouette-of-people-near-beach-5601489/
   8677191,  // ศุกร์ — Nadezhda Moryak           https://www.pexels.com/photo/8677191/
@@ -1864,7 +1864,7 @@ function applyLoginBackground(){
     const wd = new Intl.DateTimeFormat('en-US', { weekday:'short', timeZone:'Asia/Bangkok' }).format(new Date());
     const day = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wd);
     const id = LOGIN_BG_BY_DAY[day < 0 ? 5 : day];
-    const url = `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1920`;
+    const url = `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=2560`;
     const img = new Image();
     img.onload = ()=>{ const el = document.getElementById('loginScreen'); if(el) el.style.setProperty('--login-bg', `url('${url}')`); };
     img.src = url;   // โหลดสำเร็จค่อยสลับ (ไม่ขึ้นรูปว่าง ถ้าโหลดไม่ได้ก็คงรูปสำรอง)
@@ -2453,7 +2453,7 @@ function exportTeamResultsExcel(){
     [t('exr_name')]: r.employee?.name||'',
     [t('exr_dept')]: r.employee?.department||'',
     [t('th_type')]: stripLeadingSymbols(getLeaveTypeLabel(r.leave_type)),
-    [t('th_dates')]: formatDuration(r),
+    [t('th_dates')]: formatDurationText(r),
     [t('th_days')]: formatAmount(r),
     [t('th_status')]: (STATUS_LABEL[r.status]||{label:r.status}).label,
   }));
@@ -2534,7 +2534,7 @@ const I18N = {
     photo_title:'📷 Profile Photo', photo_choose:'Choose photo', photo_remove:'Remove photo', photo_save:'Save', photo_cancel:'Cancel',
     photo_hint:'The photo is cropped to a square and resized automatically.', photo_saved:'Photo saved', photo_removed:'Photo removed',
     photo_err_type:'Please choose a valid image file', photo_click_title:'Click to change your photo',
-    sc_all_depts:'All departments', sc_all_positions:'All positions', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
+    sc_all_depts:'All departments', sc_all_positions:'All branches', sc_all_users:'All employees', sc_chart_title:'📊 Employees on leave per day',
     sc_chart_empty:'No approved leave in this month', sc_sum_people:'People on leave', sc_sum_total:'Total person-days', sc_sum_peak:'Busiest day',
     btn_prev:'← Prev', btn_next:'Next →',
     cal_team_title:'🗓 Team Leave Calendar', cal_my_title:'🗓️ My Leave Calendar',
@@ -2546,7 +2546,7 @@ const I18N = {
     exp_loi_hint:'One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.',
     exp_loi_btn:'Export LOI Data', exp_req_title:'Leave requests', exp_emp_title:'Employee list',
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
-    emp_all_depts:'All departments', emp_all_positions:'All positions', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Position', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
+    emp_all_depts:'All departments', emp_all_positions:'All branches', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Branch', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
     exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', bridge_title:'⚠️ Please avoid taking leave right before/after the company holiday', bridge_body:'Your leave is adjacent to a long company holiday ({h} holiday days: {from} – {to}). We kindly ask you not to take leave at the start or end of the holiday, as it affects our work.', bridge_confirm:'Confirm leave', bridge_cancel:'Understood — I will not take leave', set_bridge_title:'Warn when leave is adjacent to a long company holiday', set_bridge_desc:'When ON, a confirmation window appears if the leave date is right before/after 3+ consecutive company holiday days (weekends in between count as part of the break). If the employee confirms, admins are also emailed.', appr_title:'Your approvers', appr_none:'No approver assigned — requests go to the administrator', appr_admin_note:'Annual leave over 3 days is finally approved by the administrator', appr_change_photo:'📷 Change photo', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
@@ -2565,7 +2565,7 @@ const I18N = {
     c_cancel:'Cancel', c_close:'Close', c_edit:'Edit', c_delete:'Delete', c_save_changes:'Save Changes',
     em_add_title:'➕ Add Employee', em_add_btn:'Add Employee', em_edit_prefix:'Edit',
     em_code_hint:'Changing the code: the employee must log in with the new code. Their past leave requests, approver links and balances follow the new code automatically.', msg_code_empty:'Employee code cannot be empty', cf_code_change:'Change employee code {old} → {new}?\n\nThe employee must log in with the NEW code from now on. This is recorded in LOI Logs.', msg_code_changed:'✅ Code changed — tell the employee to log in with the new code {new}',
-    em_code:'Employee Code *', em_name:'Name *', em_email:'Email', em_dept:'Department', em_position:'Position', em_role:'Role',
+    em_code:'Employee Code *', em_name:'Name *', em_email:'Email', em_dept:'Department', em_position:'Branch', em_role:'Role',
     em_role_employee:'Employee', em_role_manager:'Manager', em_role_admin:'Admin', em_role_admin_sb:'Branch admin — Sriracha (SB)', em_mgr_codes:'Manager Code(s)',
     em_mgr_ph:'e.g. 2400,2401 (in approval order)', em_password:'Password *', em_password_ph:'Temporary password',
     em_annual_days:'Annual Days', em_sick_days:'Sick Days', em_personal_days:'Personal Days',
@@ -2732,7 +2732,7 @@ const I18N = {
     photo_title:'📷 รูปโปรไฟล์', photo_choose:'เลือกรูป', photo_remove:'ลบรูป', photo_save:'บันทึก', photo_cancel:'ยกเลิก',
     photo_hint:'ระบบจะครอปรูปเป็นสี่เหลี่ยมจัตุรัสและย่อขนาดให้อัตโนมัติ', photo_saved:'บันทึกรูปแล้ว', photo_removed:'ลบรูปแล้ว',
     photo_err_type:'กรุณาเลือกไฟล์รูปภาพที่ใช้งานได้', photo_click_title:'คลิกเพื่อเปลี่ยนรูปของคุณ',
-    sc_all_depts:'ทุกแผนก', sc_all_positions:'ทุกตำแหน่ง', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
+    sc_all_depts:'ทุกแผนก', sc_all_positions:'ทุกสาขา', sc_all_users:'พนักงานทั้งหมด', sc_chart_title:'📊 จำนวนคนลาต่อวัน',
     sc_chart_empty:'เดือนนี้ไม่มีวันลาที่อนุมัติแล้ว', sc_sum_people:'จำนวนคนที่ลา', sc_sum_total:'รวมคน-วัน', sc_sum_peak:'วันที่ลาเยอะสุด',
     btn_prev:'← ก่อนหน้า', btn_next:'ถัดไป →',
     cal_team_title:'🗓 ปฏิทินการลาของทีม', cal_my_title:'🗓️ ปฏิทินการลาของฉัน',
@@ -2744,7 +2744,7 @@ const I18N = {
     exp_loi_hint:'หนึ่งแถวต่อพนักงาน แต่ละประเภทการลามีคอลัมน์ "คงเหลือ" และ "ใช้ไปแล้ว" อยู่ติดกัน',
     exp_loi_btn:'Export ข้อมูล LOI', exp_req_title:'รายการคำขอลา', exp_emp_title:'รายชื่อพนักงาน',
     exp_scope_all:'ทุกคำขอ', exp_scope_month:'รายเดือน', exp_scope_year:'รายปี',
-    emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกตำแหน่ง', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'ตำแหน่ง', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
+    emp_all_depts:'ทุกแผนก', emp_all_positions:'ทุกสาขา', emp_all_roles:'ทุกบทบาท', btn_emp_reset:'ล้างตัวกรอง', ph_emp_search:'ค้นหารหัส ชื่อ หรืออีเมล', th_position:'สาขา', emp_count:'แสดง {n} จาก {m} คน', tk_none2:'ไม่พบพนักงานตามตัวกรอง',
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
     exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', bridge_title:'⚠️ ขอความร่วมือไม่ลาหัวท้ายวันหยุดบริษัท', bridge_body:'วันที่คุณลาอยู่ติดกับช่วงวันหยุดบริษัทที่ต่อเนื่อง ({h} วันหยุด: {from} – {to}) ขอความร่วมือไม่ลาหัวท้ายวันหยุด เนื่องจากมีผลกระทบต่องาน', bridge_confirm:'ยืนยันลา', bridge_cancel:'รับทราบ ไม่ลาแล้ว', set_bridge_title:'เตือนเมื่อลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_bridge_desc:'เมื่อเปิด จะขึ้นหน้าต่างให้ยืนยันเมื่อวันลาอยู่ติดก่อน/หลังวันหยุดบริษัทต่อเนื่อง 3 วันขึ้นไป (นับเสาร์-อาทิตย์ที่คั่นเป็นส่วนของช่วงหยุด) ถ้าพนักงานกดยืนยัน ระบบจะส่งอีเมลแจ้ง admin เพิ่มด้วย', appr_title:'ผู้อนุมัติของคุณ', appr_none:'ยังไม่ได้กำหนดผู้อนุมัติ — คำขอจะส่งถึงผู้ดูแลระบบ', appr_admin_note:'ลาพักร้อนเกิน 3 วัน ผู้ดูแลระบบอนุมัติขั้นสุดท้าย', appr_change_photo:'📷 เปลี่ยนรูป', btn_multi_pick:'📅 เลือกหลายวันไม่ติดกัน (ปฏิทิน)', rp_hint_multi:'คลิกวันที่ลา (จะเป็นปุ่มสีแดง) คลิกซ้ำเพื่อเอาออก', rp_title_multi:'เลือกวันลาแบบไม่ติดกัน', exp_scope_range:'เลือกช่วงวัน', btn_range_export:'📅 เลือกช่วงวันที่', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
@@ -2763,7 +2763,7 @@ const I18N = {
     c_cancel:'ยกเลิก', c_close:'ปิด', c_edit:'แก้ไข', c_delete:'ลบ', c_save_changes:'บันทึกการเปลี่ยนแปลง',
     em_add_title:'➕ เพิ่มพนักงาน', em_add_btn:'เพิ่มพนักงาน', em_edit_prefix:'แก้ไข',
     em_code_hint:'การเปลี่ยนรหัส: พนักงานต้องล็อกอินด้วยรหัสใหม่ ใบลาเก่า ผู้อนุมัติ และโควตาจะเปลี่ยนตามรหัสใหม่อัตโนมัติ', msg_code_empty:'รหัสพนักงานห้ามเป็นค่าว่าง', cf_code_change:'เปลี่ยนรหัสพนักงาน {old} → {new} ?\n\nพนักงานต้องล็อกอินด้วยรหัสใหม่นับจากนี้ และจะบันทึกไว้ใน LOI Logs', msg_code_changed:'✅ เปลี่ยนรหัสแล้ว — แจ้งพนักงานให้ล็อกอินด้วยรหัสใหม่ {new}',
-    em_code:'รหัสพนักงาน *', em_name:'ชื่อ *', em_email:'อีเมล', em_dept:'แผนก', em_position:'ตำแหน่ง', em_role:'บทบาท',
+    em_code:'รหัสพนักงาน *', em_name:'ชื่อ *', em_email:'อีเมล', em_dept:'แผนก', em_position:'สาขา', em_role:'บทบาท',
     em_role_employee:'พนักงาน', em_role_manager:'หัวหน้า', em_role_admin:'ผู้ดูแลระบบ', em_role_admin_sb:'ผู้ดูแลระบบสาขาศรีราชา', em_mgr_codes:'รหัสหัวหน้า',
     em_mgr_ph:'เช่น 2400,2401 (เรียงลำดับอนุมัติ)', em_password:'รหัสผ่าน *', em_password_ph:'รหัสผ่านชั่วคราว',
     em_annual_days:'วันลาพักร้อน', em_sick_days:'วันลาป่วย', em_personal_days:'วันลากิจ',
@@ -2797,7 +2797,7 @@ const I18N = {
     pg_reports_title:'ผลการลาของฉัน', pg_reports_sub:'ผลคำขอลาในอดีตของฉันเอง',
     th_type:'ประเภท', th_dates:'วันที่', th_days:'จำนวนวัน', th_amount:'จำนวน', th_reason:'เหตุผล', th_status:'สถานะ',
     th_action:'จัดการ', th_employee:'พนักงาน', th_code:'รหัส', th_name:'ชื่อ', th_email:'อีเมล', th_dept:'แผนก',
-    th_role:'ตำแหน่ง', th_managers:'หัวหน้า (ตามลำดับ)', th_date:'วันที่', th_label:'รายละเอียด', th_leavedate:'วันที่ลา',
+    th_role:'บทบาท', th_managers:'หัวหน้า (ตามลำดับ)', th_date:'วันที่', th_label:'รายละเอียด', th_leavedate:'วันที่ลา',
     th_daysleft:'วันคงเหลือ',
     btn_add_employee:'➕ เพิ่มพนักงาน', btn_import_excel:'📊 Import จาก Excel', btn_download_template:'⬇ ดาวน์โหลดเทมเพลต',
     btn_export_employees:'📥 Export พนักงานทั้งหมด', btn_submit_request:'ส่งคำขอลา', btn_add_holiday:'เพิ่มวันหยุด',
@@ -3128,6 +3128,11 @@ function formatDuration(r){
   }
   if(r.start_date===r.end_date) return `<span class="dur">${formatDMY(r.start_date)}</span>`;
   return `<span class="dur">${formatDMY(r.start_date)}<br>→ ${formatDMY(r.end_date)}</span>`;
+}
+function formatDurationText(r){
+  if(r.leave_unit==='hour') return `${formatDMY(r.start_date)} ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}`;
+  if(r.start_date===r.end_date) return formatDMY(r.start_date);
+  return `${formatDMY(r.start_date)} → ${formatDMY(r.end_date)}`;
 }
 function formatAmount(r){
   return r.leave_unit==='hour' ? `${r.hours_count} ${t('unit_hr_short')}` : `${r.days_count} ${t('unit_day_short')}`;
@@ -4913,7 +4918,7 @@ function exportCarryoverCandidates(){
 }
 
 
-// ── ตัวกรอง "ตำแหน่ง" (HQ / SB ...) ของทุกปุ่ม Export Excel ──
+// ── ตัวกรอง "สาขา" (HQ / SB ...) ของทุกปุ่ม Export Excel ──
 function populateExpPos(){
   const poss = Array.from(new Set(employeesCache.map(e=>(e.position||'').trim()).filter(Boolean))).sort();
   const html = `<option value="all">${escHtml(t('sc_all_positions'))}</option>` + poss.map(x=>`<option value="${escAttr(x)}">${escHtml(x)}</option>`).join('');
