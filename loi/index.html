@@ -6620,7 +6620,7 @@ const BgArt = (function(){
       ax: 0, ay: 0, anchorT: 0,
       alpha: role === 'main' ? 1 : 0.62,                    // ตัวเล็ก = อยู่ไกลกว่า จางกว่า
       fade: 0,                                              // ค่อยๆ ปรากฏ ไม่ผุดขึ้นมาทันที
-      munch: 0, fleeT: 0, fx: 0, fy: 0,
+      munch: 0, fleeT: 0, fx: 0, fy: 0, fed: 0, stage: 0, g: 1, gc: 1,
       ox: new Float32Array(n), oy: new Float32Array(n), vx: new Float32Array(n), vy: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n), el: new Uint8Array(n),
       m: new Float32Array(np*6),                            // เมทริกซ์ขยับของแต่ละชิ้นส่วน (m11,m12,m21,m22,tx,ty)
@@ -6676,7 +6676,7 @@ const BgArt = (function(){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     measureZones();
     if((!sharks.length && currentKey !== 'off') || wasMobile !== view.mobile) rebuildSharks();
-    else sharks.forEach(s=>{ s.L = lengthFor(s.role); s.scale = scaleOf(s); });
+    else sharks.forEach(s=>{ s.L = lengthFor(s.role)*s.gc; s.scale = scaleOf(s); });
   }
 
   // ───────── 3) อัปเดตการว่าย + อนุภาค ─────────
@@ -6696,10 +6696,27 @@ const BgArt = (function(){
         chaseD = Math.min(Math.hypot(chase.x - hx0, chase.y - hy0), Math.hypot(chase.x - s.x, chase.y - s.y));   // หัวหรือกลางลำตัวถึงอาหารก็งับได้
         if(chaseD < Math.max(24, s.L*0.22)){
           chase.eaten = true; s.munch = 1;
+          s.fed++;
+          if(s.fed >= 5){                                  // กินครบ 5 เม็ด: ตัวเล็ก→โตขึ้น, ตัวโต→แตกเป็น 2 ตัว
+            s.fed = 0;
+            if(s.stage === 0){ s.stage = 1; s.g = 1.5; }
+            else if(sharks.length < (view.mobile ? 4 : 9)){
+              s.stage = 0; s.g = 1;
+              const kid = makeShark('small', 1 + (sharks.length % 2));
+              kid.x = s.x; kid.y = s.y; kid.h = s.h + rand(-1.2, 1.2); kid.fade = 0.5;
+              kid.g = 1; kid.gc = 1; kid.L = lengthFor('small'); kid.scale = scaleOf(kid);
+              kid.s0 = true; sharks.push(kid);
+              for(let b = 0; b < 14; b++) bubbles.push({ x: s.x + rand(-20, 20), y: s.y + rand(-20, 20), vy: -rand(40, 110), vx: rand(-30, 30), r: rand(2, 5), life: rand(1, 1.8), age: 0 });
+            }
+          }
           for(let b = 0; b < 10; b++) bubbles.push({ x: hx0 + rand(-6, 6), y: hy0 + rand(-6, 6), vy: -rand(40, 95), vx: rand(-14, 14), r: rand(1.6, 4.2), life: rand(0.9, 1.6), age: 0 });
           chase = null;
         }
       }
+    }
+    if(Math.abs(s.gc - s.g) > 0.002){                                              // ค่อยๆ โต/หดอย่างนุ่มนวล
+      s.gc += (s.g - s.gc)*Math.min(1, dt*1.6);
+      s.L = lengthFor(s.role)*s.gc; s.scale = scaleOf(s);
     }
     if(s.munch > 0) s.munch = Math.max(0, s.munch - dt/1.2);
     if(s.fleeT > 0) s.fleeT = Math.max(0, s.fleeT - dt);
@@ -6871,9 +6888,12 @@ const BgArt = (function(){
       if(f.eaten || f.age > 22){ foods.splice(i, 1); continue; }
       if(f.y < floor){ f.y += 20*dt; f.x += Math.sin(f.age*2 + f.ph)*6*dt; }
       ctx.globalAlpha = Math.min(1, (22 - f.age)/3);
-      const pal = palOf(currentKey);                      // สีอาหารตามสีของสัตว์ที่แสดงอยู่
-      ctx.fillStyle = pal[5]; ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, TAU); ctx.fill();
-      ctx.fillStyle = pal[7]; ctx.beginPath(); ctx.arc(f.x - 1.2, f.y - 1.2, 1.7, 0, TAU); ctx.fill();
+      const pal = palOf(currentKey);                      // สีอาหารตามสีสัตว์ และกะพริบ 3 ระดับเหมือนพิกเซลริมขอบตัวสัตว์
+      const v = Math.sin(simT*BG_CONFIG.twinkleSpeed*2.4 + f.ph), lv = v > 0.45 ? 2 : (v > -0.25 ? 1 : 0);
+      const a0 = ctx.globalAlpha;
+      ctx.globalAlpha = a0*[0.35, 0.7, 1][lv];
+      ctx.fillStyle = pal[[3, 5, 6][lv]]; ctx.beginPath(); ctx.arc(f.x, f.y, 3.4 + lv*0.7, 0, TAU); ctx.fill();
+      ctx.fillStyle = pal[7]; ctx.beginPath(); ctx.arc(f.x - 1.1, f.y - 1.1, 1.5, 0, TAU); ctx.fill();
     }
     ctx.lineWidth = 1.2;
     for(let i = bubbles.length - 1; i >= 0; i--){
@@ -6884,7 +6904,13 @@ const BgArt = (function(){
       ctx.strokeStyle = '#E8F4FF'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
     }
   }
-  const bgTarget = e => { const el = e.target; return el === document.body || el === document.documentElement || el === document.querySelector('main'); };   // คลิกเฉพาะที่ว่าง ไม่ทับปุ่ม/การ์ด
+  const bgTarget = e => {                                 // คลิกเฉพาะที่ว่าง ไม่ทับปุ่ม/การ์ด
+    const el = e.target;
+    if(el === document.body || el === document.documentElement || el === document.querySelector('main')) return true;
+    // มือถือ: หน้าจอแคบ ไม่มีที่ว่างข้างเว็บ → แตะตรงไหนก็ให้อาหารได้ ยกเว้นปุ่ม/ช่องกรอก/ลิงก์/ตาราง/หน้าต่างป๊อปอัป
+    if(view.mobile && el && el.closest && !el.closest('button,a,input,select,textarea,label,summary,[onclick],table,.modal,.modal-overlay,.rp-ov,.approver-pop,.tabs,nav')) return true;
+    return false;
+  };
   let clickTimer = null;
   function onClick(e){
     if(!bgTarget(e) || !sharks.length) return;
@@ -6927,7 +6953,7 @@ const BgArt = (function(){
     slowMs = slowMs*0.95 + cost*0.05;
     if(slowMs > 14 && sharks.length > 1){
       if(!slowSince) slowSince = now;
-      if(now - slowSince > 2500){ sharks.length = 1; slowSince = 0; }
+      if(now - slowSince > 2500){ sharks.length = Math.max(1, sharks.length - 1); slowSince = 0; }
     } else slowSince = 0;
   }
 
