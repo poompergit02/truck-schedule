@@ -1202,6 +1202,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <label style="margin:0;font-size:.82rem;font-weight:600;color:var(--plum-700)" data-i18n="lbl_year">Year</label>
           <select id="myReportsYear" class="exp-select" onchange="loadMyResolvedRequests()"></select>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="exportMyResultsExcel()" data-i18n="btn_export_team">📥 Export Excel</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
           <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_status">Status</th></tr></thead>
@@ -1948,7 +1949,6 @@ async function enterApp(){
   }catch(e){ /* non-fatal, server still enforces regardless */ }
   refreshPrevAnnualOptions();
   applyLeaveDotColors();
-  showFlashAfterReload();
   BgArt.start(appSettingsCache['bg_animal']);   // เริ่มภาพพื้นหลังหลังล็อกอินเท่านั้น (หน้า login ไม่แสดง) — สัตว์ตามที่ admin เลือก หรือตามเดือนปัจจุบัน
 }
 
@@ -2576,11 +2576,27 @@ function renderTeamResults(){
   }).join('');
 }
 
+let myResultsCache = [];
+function exportMyResultsExcel(){
+  if(!myResultsCache.length){ showToast(t('tr_none'),'err'); return; }
+  const out = myResultsCache.map(r=>({
+    [t('th_type')]: stripLeadingSymbols(getLeaveTypeLabel(r.leave_type)),
+    [t('th_dates')]: formatDurationText(r),
+    [t('th_days')]: formatAmount(r),
+    [t('th_reason')]: r.reason || '',
+    [t('th_status')]: (STATUS_LABEL[r.status]||{label:r.status}).label,
+  }));
+  const y = document.getElementById('myReportsYear').value;
+  const ws = XLSX.utils.json_to_sheet(out), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'My Leave Results');
+  XLSX.writeFile(wb, `LOI_My_Leave_Results_${y}.xlsx`);
+}
 async function loadMyResolvedRequests(){
   const year = Number(document.getElementById('myReportsYear').value) || new Date().getFullYear();
   try{
     const data = await callApi('get_my_data', { requests_year: year });
     const resolved = data.requests.filter(r=>RESOLVED_STATUSES.includes(r.status));
+    myResultsCache = resolved;
     renderOwnRequestsTable('myReportsBody', resolved);
   }catch(e){ showToast(e.message,'err'); }
 }
@@ -2688,7 +2704,7 @@ const I18N = {
     lbl_leave_type:'Leave Type', lbl_duration:'Duration', lbl_start_date:'Start Date', lbl_end_date:'End Date', lbl_reason:'Reason',
     leave_annual:'🏖️ Annual / Vacation', leave_sick:'🤒 Sick Leave', leave_personal:'📝 Personal Leave', leave_other:'Other',
     leave_maternity:'🤱 Maternity Leave', leave_paternity:'🤝 Paternity Leave', leave_priesthood:'🙏 Priesthood Ordination Leave',
-    st_pending_manager:'Pending Manager', st_pending_admin:'Pending Admin', st_approved:'Approved',
+    st_wait_step:'Waiting for approver #{n}', st_pending_manager:'Pending Manager', st_pending_admin:'Pending Admin', st_approved:'Approved',
     st_rejected_manager:'Rejected (Manager)', st_rejected_admin:'Rejected (Admin)',
     set_nosameday_title:'Block same-day leave requests',
     set_nosameday_desc:"Employees can't submit a leave request that includes today's date — except Sick Leave, which is always allowed.",
@@ -2886,7 +2902,7 @@ const I18N = {
     lbl_leave_type:'ประเภทการลา', lbl_duration:'ระยะเวลา', lbl_start_date:'วันเริ่ม', lbl_end_date:'วันสิ้นสุด', lbl_reason:'เหตุผล',
     leave_annual:'🏖️ ลาพักร้อน', leave_sick:'🤒 ลาป่วย', leave_personal:'📝 ลากิจ', leave_other:'อื่นๆ',
     leave_maternity:'🤱 ลาคลอดบุตร', leave_paternity:'🤝 ลาดูแลภรรยาคลอดบุตร', leave_priesthood:'🙏 ลาอุปสมบท',
-    st_pending_manager:'รอหัวหน้าอนุมัติ', st_pending_admin:'รอ Admin อนุมัติ', st_approved:'อนุมัติแล้ว',
+    st_wait_step:'รอนุมัติลำดับ {n}', st_pending_manager:'รอหัวหน้าอนุมัติ', st_pending_admin:'รอ Admin อนุมัติ', st_approved:'อนุมัติแล้ว',
     st_rejected_manager:'ไม่อนุมัติ (หัวหน้า)', st_rejected_admin:'ไม่อนุมัติ (Admin)',
     set_nosameday_title:'ห้ามลาวันปัจจุบัน',
     set_nosameday_desc:'พนักงานยื่นคำขอลาที่รวมวันที่ปัจจุบันไม่ได้ ยกเว้นลาป่วยที่ทำได้เสมอ',
@@ -3224,11 +3240,13 @@ function renderOwnRequestsTable(bodyId, requests, showActions){
   const colCount = showActions ? 6 : 5;
   if(!requests.length){ body.innerHTML=`<tr><td colspan="${colCount}" class="empty-msg">No requests</td></tr>`; return; }
   body.innerHTML = requests.map(r=>{
-    const st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
-    const actionsCell = showActions ? `<td style="display:flex;gap:6px;flex-wrap:wrap">
+    let st=STATUS_LABEL[r.status]||{label:r.status,cls:'badge-pending'};
+    const locked = (r.approved_count||0) > 0;          // มีผู้อนุมัติอนุมัติไปแล้ว → แก้ไข/ยกเลิกเองไม่ได้
+    if(r.status==='pending_manager' && (r.current_step||1) > 1) st = { label: t('st_wait_step').replace('{n}', r.current_step), cls:'badge-pending' };
+    const actionsCell = showActions ? (locked ? `<td class="mono" style="color:var(--text-dim);font-size:.78rem">🔒</td>` : `<td style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm btn-outline" onclick="openEditMyRequestModal('${r.id}')">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="cancelMyRequest('${r.id}')">Cancel</button>
-    </td>` : '';
+    </td>`) : '';
     return `<tr>
       <td>${getLeaveTypeLabel(r.leave_type)}</td>
       <td class="mono">${formatDuration(r)}</td>
@@ -3421,17 +3439,20 @@ async function confirmBridgeIfNeeded(dates){
   });
 }
 
-// ส่งคำขอสำเร็จ → เก็บข้อความแจ้งเตือนไว้ แล้วรีโหลดหน้าเพื่อล้างข้อมูลฟอร์ม/ตัวเลือกทั้งหมด ข้อความจะแสดงหลังโหลดเสร็จ
-function flashAndReload(msgs){
-  try{ sessionStorage.setItem('loi_flash', JSON.stringify(msgs)); }catch(e){}
-  location.reload();
-}
-function showFlashAfterReload(){
-  try{
-    const raw = sessionStorage.getItem('loi_flash'); if(!raw) return;
-    sessionStorage.removeItem('loi_flash');
-    JSON.parse(raw).forEach(([m, type])=>showToast(m, type||undefined));
-  }catch(e){}
+// ส่งคำขอสำเร็จ → ล้างฟอร์มทั้งหมดให้ว่าง (ไม่รีโหลดหน้า ไม่ต้องล็อกอินใหม่) แล้วโหลดข้อมูลวันลาใหม่
+function resetLeaveForm(){
+  const $ = id => document.getElementById(id);
+  ['reqStart','reqEnd','reqHourDate','reqHalfDate','reqReason'].forEach(id=>{ const el=$(id); if(el){ el.value=''; el.dispatchEvent(new Event('input',{bubbles:true})); } });
+  ['reqStartConfirm','reqEndConfirm','reqHourDateConfirm','reqHalfDateConfirm'].forEach(id=>{ const el=$(id); if(el) el.textContent=''; });
+  const f=$('reqAttachment'); if(f) f.value='';
+  ['reqStartTime','reqEndTime'].forEach(id=>{ const sel=$(id+'_sel'); if(sel) sel.selectedIndex=0; });
+  const hs=$('reqHalfSlot'); if(hs) hs.selectedIndex=0;
+  $('multiDateRows').innerHTML='';
+  RP.s=null; RP.e=null; RP.hover=null; RP.set && RP.set.clear && RP.set.clear();
+  const ty=$('reqType'); if(ty){ ty.selectedIndex=0; }
+  onLeaveTypeChange();                      // คืนประเภท/ระยะเวลา = ค่าเริ่มต้น และซ่อน/แสดงช่องให้ตรง
+  $('reqUnit').value='day'; toggleLeaveUnit();
+  loadMyLeave();
 }
 async function submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
@@ -3469,12 +3490,8 @@ async function submitLeaveRequest(){
       }catch(e){ failCount++; if(!firstError) firstError = e.message; }
     }
     if(!okCount && failCount) showToast(t('msg_multi_fail').replace('{n}',failCount).replace('{err}',firstError),'err');
-    if(okCount){ flashAndReload([ [t('msg_multi_ok').replace('{ok}',okCount).replace('{total}',uniqueDates.length), ''], ...(failCount ? [[t('msg_multi_fail').replace('{n}',failCount).replace('{err}',firstError),'err']] : []) ]); return; }
-    document.getElementById('multiDateRows').innerHTML='';
-    addMultiDateRow();
-    document.getElementById('reqReason').value='';
-    attachInput.value='';
-    loadMyLeave();
+    if(okCount){ showToast(t('msg_multi_ok').replace('{ok}',okCount).replace('{total}',uniqueDates.length)); if(failCount) showToast(t('msg_multi_fail').replace('{n}',failCount).replace('{err}',firstError),'err'); resetLeaveForm(); }
+    else loadMyLeave();
     return;
   }
 
@@ -3508,7 +3525,8 @@ async function submitLeaveRequest(){
 
   try{
     await callApi('submit_leave_request', payload);
-    flashAndReload([[t('msg_submitted'), '']]);   // ส่งสำเร็จ → รีเฟรชหน้าล้างข้อมูลฟอร์มทั้งหมด
+    showToast(t('msg_submitted'));
+    resetLeaveForm();                           // ล้างข้อมูลที่กรอกให้ว่างทั้งหมด
     return;
   }catch(e){ showToast(e.message,'err'); }
 }
