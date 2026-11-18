@@ -588,7 +588,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
               <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
               <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
               <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
             </select>
           </div>
           <div class="field">
@@ -657,7 +657,6 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <input type="number" id="myYearGlanceYear" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderMyYearGlance()"/>
           </div>
           <div id="myYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
-          <div id="myYearGlanceList" class="yg-list"></div>
         </div>
       </div>
 
@@ -1212,7 +1211,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
 
       <div class="card" id="myFreqCard">
         <h3 style="margin:0 0 4px" data-i18n="h3_freq">📈 My leave frequency</h3>
-        <p class="hint" style="margin-bottom:12px" data-i18n="hint_freq">Line colours follow the leave type. Default shows 12 months; pick a month to see each day.</p>
+        <p class="hint" style="margin-bottom:12px" data-i18n="hint_freq">Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.</p>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
           <select id="myFreqYear" class="exp-select" onchange="loadMyFreq()"></select>
           <select id="myFreqMonth" class="exp-select" onchange="renderMyFreq()"></select>
@@ -1368,7 +1367,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
               <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
       <div class="field">
@@ -1469,7 +1468,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <option value="paternity" data-i18n="leave_paternity">🤝 Paternity Leave</option>
           <option value="priesthood" data-i18n="leave_priesthood">🙏 Priesthood Ordination Leave</option>
               <option value="personal_unpaid" data-i18n="leave_personal_unpaid">💸 Unpaid Leave</option>
-              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home Leave</option>
+              <option value="wfh" data-i18n="leave_wfh">🏠 Work From Home</option>
         </select>
       </div>
       <div class="field"><label>Unit</label>
@@ -1569,7 +1568,7 @@ function legendLeaveTypes(){ return Object.keys(LEAVE_TYPE_LABEL).filter(k=>k!==
 const LEAVE_TYPE_LABEL = {
   annual:'🏖️ Annual / Vacation', annual_prev:'📆 Annual leave from last year', annual_urgent:'🚨 Emergency Annual Leave', sick:'🤒 Sick Leave', personal:'📝 Personal Leave', other:'Other',
   maternity:'🤱 Maternity Leave', paternity:'🤝 Paternity Leave', priesthood:'🙏 Priesthood Ordination Leave',
-  personal_unpaid:'💸 Unpaid Leave', wfh:'💻 Work From Home Leave',
+  personal_unpaid:'💸 Unpaid Leave', wfh:'💻 Work From Home',
 };
 // ── โควตาพักร้อนยกยอด (carryover) มี leave_type เป็น "annual_carry_YYYY" แบบไดนามิก ──
 function getLeaveTypeLabel(type){
@@ -2138,6 +2137,7 @@ const FREQ_COLORS = {
   maternity:'#E5609B', paternity:'#9A63D6', priesthood:'#A67C52', wfh:'#1FA7A0', other:'#8A8F98'
 };
 let myFreqCache = [];
+function lightenHex(hex, f){ const n = parseInt(hex.slice(1),16); const c = [n>>16, (n>>8)&255, n&255].map(v=>Math.round(v + (255-v)*f)); return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''); }
 function initMyFreqControls(){
   const ys = document.getElementById('myFreqYear'), ms = document.getElementById('myFreqMonth');
   if(!ys) return;
@@ -2169,10 +2169,11 @@ function renderMyFreq(){
     const mo = Number(sd.slice(5,7)), da = Number(sd.slice(8,10));
     if(m && mo!==m) return;
     const idx = (m ? da : mo) - 1;
-    const arr = series[r.leave_type] || (series[r.leave_type] = new Array(n).fill(0));
+    const sk = r.status==='approved' ? r.leave_type : r.leave_type+'|p';   // อนุมัติแล้ว = เส้นทึบ, ยังรออนุมัติ = เส้นประ
+    const arr = series[sk] || (series[sk] = new Array(n).fill(0));
     arr[idx] += metric==='days' ? (r.leave_unit==='hour' ? Number(r.hours_count||0)/8 : Number(r.days_count||0)) : 1;
   });
-  const types = Object.keys(series);
+  const types = Object.keys(series).sort((a,b)=> a.replace('|p','').localeCompare(b.replace('|p','')) || (a.endsWith('|p')?1:0)-(b.endsWith('|p')?1:0));
   const legend = document.getElementById('myFreqLegend');
   if(!types.length){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
   const W=640, H=240, L=36, R=12, T=14, B=28;
@@ -2185,14 +2186,21 @@ function renderMyFreq(){
     svg += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e6e1ee" stroke-width="1"/><text x="${L-6}" y="${yy+3}" text-anchor="end" font-size="10" fill="#8a8398">${Math.round(v*10)/10}</text>`; }
   const every = n>16 ? 2 : 1;
   labels.forEach((lb,i)=>{ if(i%every===0) svg += `<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8a8398">${escHtml(lb)}</text>`; });
+  svg += `<defs><filter id="freqShadow" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity="0.38"/></filter></defs>`;
   types.forEach(k=>{
-    const col = FREQ_COLORS[k] || '#8A8F98';
+    const pend = k.endsWith('|p'), base = k.replace('|p','');
+    const col0 = FREQ_COLORS[base] || '#8A8F98', col = pend ? lightenHex(col0, 0.45) : col0;   // รออนุมัติ = สีอ่อนกว่า + เส้นประ + เงาดำไล่เฉด
+    const lbl = stripLeadingSymbols(getLeaveTypeLabel(base)) + (pend ? ' ('+t('freq_pending')+')' : '');
     const pts = series[k].map((v,i)=>`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(' ');
-    svg += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
-    series[k].forEach((v,i)=>{ svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(stripLeadingSymbols(getLeaveTypeLabel(k)))} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
+    svg += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="${pend?2.6:2.4}" ${pend?'stroke-dasharray="7 5" filter="url(#freqShadow)"':''} stroke-linejoin="round" stroke-linecap="round"/>`;
+    series[k].forEach((v,i)=>{ svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(lbl)} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
   });
   box.innerHTML = svg + '</svg>';
-  legend.innerHTML = types.map(k=>`<span style="display:inline-flex;align-items:center;gap:5px"><i style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${FREQ_COLORS[k]||'#8A8F98'}"></i>${escHtml(stripLeadingSymbols(getLeaveTypeLabel(k)))}</span>`).join('');
+  legend.innerHTML = types.map(k=>{
+    const pend = k.endsWith('|p'), base = k.replace('|p',''), c0 = FREQ_COLORS[base]||'#8A8F98', c = pend ? lightenHex(c0,0.45) : c0;
+    const swatch = pend ? `<i style="display:inline-block;width:18px;height:0;border-top:3px dashed ${c};filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.4))"></i>` : `<i style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${c}"></i>`;
+    return `<span style="display:inline-flex;align-items:center;gap:5px">${swatch}${escHtml(stripLeadingSymbols(getLeaveTypeLabel(base)))}${pend?' ('+escHtml(t('freq_pending'))+')':''}</span>`;
+  }).join('');
 }
 
 // ── ถ้ามีโควตาพักร้อนยกยอด (annual_carry_YYYY) เหลืออยู่และยังไม่หมดอายุ ให้เพิ่มเป็นตัวเลือกในฟอร์มขอลา ──
@@ -2766,13 +2774,13 @@ const I18N = {
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_min:'min', tk_unit_minutes:'minutes', tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
-    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type. Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_pending:'pending', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
     th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
-    leave_personal_unpaid:'💸 Unpaid Leave', leave_wfh:'💻 Work From Home Leave', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
+    leave_personal_unpaid:'💸 Unpaid Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
     set_prevfirst_title:'Use carried-over annual leave first', set_prevfirst_desc:'When ON, an employee who still has annual leave from last year left (not counting requests awaiting approval) cannot request normal annual leave until it is used up. Applies only to dates up to 31 March; Emergency accounts are exempt. Requires the carry-over setting above to be ON.',
     set_prevannual_title:'Annual leave carried over from last year', set_prevannual_desc:'When ON, employees can use the carried-over annual leave (up to 3 days, set in Next Year Planning or Edit Balances). It can be used only until the day before the closing date set below (default: 31 March), then it disappears.',
     ny_col_prevannual:'Annual from last year (max 3)', btn_ny_carry:'Calculate carry-over from remaining annual', cf_ny_carry:'Overwrite the “Annual from last year” cells with the calculated carry-over, and set Sick = 30 days and Personal = 4 days for everyone in the table?', msg_ny_carry_done:'✅ Calculated (carry-over max 3 days; Sick 30, Personal 4) — review, then press Save', eb_prev_max:'Annual leave from last year can be at most 3 days',
@@ -2964,13 +2972,13 @@ const I18N = {
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_min:'นาที', tk_unit_minutes:'นาที', tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
-    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา (เส้นทึบ = อนุมัติแล้ว เส้นประสีอ่อน = รออนุมัติ) ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_pending:'รออนุมัติ', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
     th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
-    leave_personal_unpaid:'💸 ลาโดยไม่รับค่าจ้าง', leave_wfh:'💻 ลาทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
+    leave_personal_unpaid:'💸 ลาโดยไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
     set_prevfirst_title:'ต้องใช้ลาพักร้อนยกยอดให้หมดก่อน', set_prevfirst_desc:'เมื่อเปิด พนักงานที่ยังมีลาพักร้อนจากปีที่แล้วเหลือ (ไม่นับคำขอที่รออนุมัติ) จะลาพักร้อนปกติไม่ได้จนกว่าจะใช้ยกยอดหมด ใช้กับวันลาที่ไม่เกิน 31 มีนาคมเท่านั้น บัญชี Emergency ได้รับยกเว้น และต้องเปิดสวิตช์ลาพักร้อนยกยอดด้านบนด้วย',
     set_prevannual_title:'ลาพักร้อนจากปีที่แล้ว (ยกยอด)', set_prevannual_desc:'เมื่อเปิด พนักงานจะใช้วันลาพักร้อนที่ยกมาจากปีที่แล้วได้ (สูงสุด 3 วัน ตั้งที่หน้าเตรียมข้อมูลปีหน้า หรือแก้ไขโควตา) ใช้ได้ถึงก่อน “วันปิดใช้” ที่ตั้งด้านล่าง 1 วัน (ค่าเริ่มต้น 31 มีนาคม) จากนั้นจะหายไป',
     ny_col_prevannual:'พักร้อนจากปีที่แล้ว (สูงสุด 3)', btn_ny_carry:'คำนวณยกยอดจากพักร้อนคงเหลือ', cf_ny_carry:'เขียนทับช่อง “พักร้อนจากปีที่แล้ว” ด้วยค่ายกยอดที่คำนวณ และตั้งลาป่วย 30 วัน / ลากิจ 4 วัน ให้ทุกคนในตารางหรือไม่?', msg_ny_carry_done:'✅ คำนวณแล้ว (ยกยอดสูงสุด 3 วัน, ลาป่วย 30, ลากิจ 4) ตรวจสอบแล้วกดบันทึก', eb_prev_max:'ลาพักร้อนจากปีที่แล้วตั้งได้สูงสุด 3 วัน',
@@ -4140,7 +4148,7 @@ function renderHolidayYearGlance(){
 function renderMyYearGlance(){
   const yi = document.getElementById('myYearGlanceYear');
   if(!yi.value) yi.value = new Date().getFullYear();
-  renderYearGlanceInto(Number(yi.value) || new Date().getFullYear(), 'myYearGlanceGrid', 'myYearGlanceList');
+  renderYearGlanceInto(Number(yi.value) || new Date().getFullYear(), 'myYearGlanceGrid');
 }
 function toggleMyYearGlance(){
   const body = document.getElementById('myYearGlanceBody');
