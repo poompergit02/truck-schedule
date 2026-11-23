@@ -748,6 +748,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       <div class="section-title" data-i18n="pg_employees_title">Employee Management</div>
       <div class="section-sub" data-i18n="pg_employees_sub">Add employees individually or import from Excel</div>
 
+      <label style="display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;font-size:.82rem;font-weight:600;color:var(--plum-700);cursor:pointer"><input type="checkbox" id="lsShowPending" onchange="lsPendingChanged()"/> <span data-i18n="ls_show_pending">Show pending leave</span></label>
       <div class="ls-wrap" id="leaveStrip"></div>
 
       <div class="card">
@@ -2692,7 +2693,7 @@ const I18N = {
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
     exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', tab_events:'🎉 Company Events', pg_events_title:'🎉 Company Events', pg_events_sub:'Announce an event on everyone\'s calendar — it is NOT a holiday, people can still take leave. Choose which branch sees it.', h3_add_event:'➕ Add an Event', btn_add_event:'Add Event', th_scope:'Visible to', scope_all:'All', ph_event_label:'e.g. New Year party / Company trip', ev_none:'No events yet', ev_fill:'Please fill in the date and label', ev_added:'✅ Event added', ev_deleted:'✅ Event deleted', ev_del_confirm:'Delete event "{x}"?', ev_upcoming:'📣 Upcoming company events', ev_note:'Announcements only — you can still request leave on these days.', bridge_title:'⚠️ Please avoid taking leave right before/after the company holiday', bridge_body:'Your leave is adjacent to a long company holiday ({h} holiday days: {from} – {to}). We kindly ask you not to take leave at the start or end of the holiday, as it affects our work.', bridge_confirm:'Confirm leave', bridge_cancel:'Understood — I will not take leave', set_tab_events:'🎉 Event บริษัท', pg_events_title:'🎉 Event บริษัท', pg_events_sub:'ประกาศกิจกรรมบนปฏิทินของทุกคน ไม่ใช่วันหยุด ยังลาได้ตามปกติ เลือกได้ว่าสาขาไหนเห็น', h3_add_event:'➕ เพิ่ม Event', btn_add_event:'เพิ่ม Event', th_scope:'ใครเห็น', scope_all:'ทั้งหมด', ph_event_label:'เช่น งานเลี้ยงปีใหม่ / เที่ยวบริษัท', ev_none:'ยังไม่มี Event', ev_fill:'กรุณากรอกวันที่และชื่อ Event', ev_added:'✅ เพิ่ม Event แล้ว', ev_deleted:'✅ ลบ Event แล้ว', ev_del_confirm:'ลบ Event "{x}" ?', ev_upcoming:'📣 Event บริษัทที่กำลังจะมาถึง', ev_note:'เป็นการแจ้งให้ทราบเท่านั้น วันเหล่านี้ยังขอลาได้ตามปกติ', bridge_title:'Warn when leave is adjacent to a long company holiday', set_bridge_desc:'When ON, a confirmation window appears if the leave date is right before/after 3+ consecutive company holiday days (weekends in between count as part of the break). If the employee confirms, admins are also emailed.', appr_title:'Your approvers', appr_none:'No approver assigned — requests go to the administrator', appr_admin_note:'Annual leave over 3 days is finally approved by the administrator', appr_change_photo:'📷 Change photo', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
-    ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
+    ls_show_pending:'Show pending leave', ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
     exp_unit_d:'days', exp_unit_h:'hours', exp_unit_m:'min', exp_col_total:'Quota', exp_col_current:'Current year', exp_col_plan:'Prepared', btn_ny_export_plan:'⬇ Export prepared quotas (Excel)', btn_nyq_export:'⬇ Export quotas of this year (Excel)', msg_export_none:'No data to export',
     exp_col_code:'Employee Code', exp_col_user:'User', exp_col_dept:'Department', exp_col_remaining:'Remaining', exp_col_used:'Used',
@@ -2890,7 +2891,7 @@ const I18N = {
     exp_entitle:'สิทธิ์', exp_sfx_used:'ใช้ไป', exp_sfx_remaining:'คงเหลือ',
     exp_tot_annual:'สิทธิ์วันลาพักร้อนปีนี้', exp_tot_prev:'วันลาพักร้อนสะสมจากปีที่แล้ว', exp_pick_move:'ใช้ ▲▼ เพื่อสลับลำดับ', bridge_title:'⚠️ ขอความร่วมือไม่ลาหัวท้ายวันหยุดบริษัท', bridge_body:'วันที่คุณลาอยู่ติดกับช่วงวันหยุดบริษัทที่ต่อเนื่อง ({h} วันหยุด: {from} – {to}) ขอความร่วมือไม่ลาหัวท้ายวันหยุด เนื่องจากมีผลกระทบต่องาน', bridge_confirm:'ยืนยันลา', bridge_cancel:'รับทราบ ไม่ลาแล้ว', set_bridge_title:'เตือนเมื่อลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_bridge_desc:'เมื่อเปิด จะขึ้นหน้าต่างให้ยืนยันเมื่อวันลาอยู่ติดก่อน/หลังวันหยุดบริษัทต่อเนื่อง 3 วันขึ้นไป (นับเสาร์-อาทิตย์ที่คั่นเป็นส่วนของช่วงหยุด) ถ้าพนักงานกดยืนยัน ระบบจะส่งอีเมลแจ้ง admin เพิ่มด้วย', appr_title:'ผู้อนุมัติของคุณ', appr_none:'ยังไม่ได้กำหนดผู้อนุมัติ — คำขอจะส่งถึงผู้ดูแลระบบ', appr_admin_note:'ลาพักร้อนเกิน 3 วัน ผู้ดูแลระบบอนุมัติขั้นสุดท้าย', appr_change_photo:'📷 เปลี่ยนรูป', btn_multi_pick:'📅 เลือกหลายวันไม่ติดกัน (ปฏิทิน)', rp_hint_multi:'คลิกวันที่ลา (จะเป็นปุ่มสีแดง) คลิกซ้ำเพื่อเอาออก', rp_title_multi:'เลือกวันลาแบบไม่ติดกัน', exp_scope_range:'เลือกช่วงวัน', btn_range_export:'📅 เลือกช่วงวันที่', btn_range_pick:'📅 เลือกช่วงวัน (ดู 2 เดือน)', rp_title:'เลือกช่วงวันลา', rp_hint:'คลิกวันเริ่มต้น แล้วคลิกวันสิ้นสุด', rp_apply:'ตกลง', rp_cancel:'ยกเลิก', rp_days:'เลือก {n} วัน', btn_ny_import_plan:'⬆ Import โควตาที่เตรียมไว้ (Excel)', msg_ny_import_done:'นำเข้า {n} คนลงตารางแล้ว — ตรวจสอบ แล้วกด "บันทึกโควตา"', msg_ny_import_bad:'รูปแบบไฟล์ไม่ถูกต้อง — ใช้ไฟล์จากปุ่ม Export โควตาที่เตรียมไว้', msg_ny_import_skip:' (ข้าม {n} รายการ: ไม่พบรหัส หรือค่าติดลบ)', exp_pick_pat01:'ลาพักร้อน01 (ชุดสำเร็จรูป 5 คอลัมน์)',
     exp_pick_all:'ทุกประเภทการลา', exp_pick_n:'เลือก {n} รายการ', exp_pick_others:'ประเภทอื่นๆ', exp_pick_none:'กรุณาเลือกประเภทการลาอย่างน้อย 1 รายการ',
-    ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
+    ls_show_pending:'แสดงวันลาที่ยังไม่อนุมัติ', ls_yesterday:'เมื่อวาน', ls_today:'วันนี้', ls_tomorrow:'พรุ่งนี้', ls_people:'คนลา', ls_pending:'รออนุมัติ', ls_none:'ไม่มีผู้ลา',
     exr_code:'รหัสพนักงาน', exr_name:'ชื่อ', exr_dept:'แผนก', exr_type:'ประเภทการลา', exr_unit:'หน่วย', exr_start:'วันที่เริ่มลา', exr_end:'วันที่สิ้นสุด', exr_stime:'เวลาเริ่ม', exr_etime:'เวลาสิ้นสุด', exr_days:'จำนวนวัน', exr_hours:'จำนวนชั่วโมง', exr_status:'สถานะ', exr_reason:'เหตุผล', exr_sub:'วันเวลาที่ยื่น', exr_unit_day:'วัน', exr_unit_hour:'ชั่วโมง',
     exp_unit_d:'วัน', exp_unit_h:'ชั่วโมง', exp_unit_m:'นาที', exp_col_total:'โควตา', exp_col_current:'ปีปัจจุบัน', exp_col_plan:'ที่เตรียมไว้', btn_ny_export_plan:'⬇ Export โควตาที่เตรียมไว้ (Excel)', btn_nyq_export:'⬇ Export โควตาปีนี้ (Excel)', msg_export_none:'ไม่มีข้อมูลให้ export',
     exp_col_code:'รหัสพนักงาน', exp_col_user:'ผู้ใช้', exp_col_dept:'แผนก', exp_col_remaining:'คงเหลือ', exp_col_used:'ใช้ไปแล้ว',
@@ -4683,29 +4684,44 @@ function bkkDateStr(offset){
   const d = new Date(base + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + offset);
   return d.toISOString().slice(0,10);
 }
+let lsCache = null;
+function lsPendingChanged(){
+  const on = !!document.getElementById('lsShowPending')?.checked;
+  try{ localStorage.setItem('loi_ls_pending', on?'1':'0'); }catch(e){}
+  renderLeaveStrip();
+}
+function renderLeaveStrip(){
+  const box = document.getElementById('leaveStrip'); if(!box || !lsCache) return;
+  const showPend = !!document.getElementById('lsShowPending')?.checked;
+  // ไม่โชว์วันเสาร์/อาทิตย์
+  const days = [-1,0,1].map(o=>({ o, date:bkkDateStr(o) })).filter(d=>{ const w = new Date(d.date+'T00:00:00Z').getUTCDay(); return w!==0 && w!==6; });
+  const names = { '-1':'ls_yesterday', '0':'ls_today', '1':'ls_tomorrow' };
+  const pend = x => x.status!=='approved';
+  const reqs = lsCache.filter(r=>showPend || !pend(r));
+  box.innerHTML = days.map(d=>{
+    const list = reqs.filter(r=>r.start_date<=d.date && r.end_date>=d.date);
+    const approvedPeople = new Set(list.filter(x=>!pend(x)).map(x=>x.employee?.id)).size;
+    const pendingPeople = new Set(list.filter(pend).map(x=>x.employee?.id)).size;
+    const dots = list.sort((x,y)=>pend(x)-pend(y)).slice(0,60).map(r=>{
+      const tm = r.leave_unit==='hour' && r.start_time ? ` ${String(r.start_time).slice(0,5)}–${String(r.end_time||'').slice(0,5)}` : '';
+      const tip = `${r.employee?.name||''} (${r.employee?.employee_code||''}) · ${stripLeadingSymbols(getLeaveTypeLabel(r.leave_type))}${tm}${pend(r)?' · '+t('ls_pending'):''}`;
+      return `<span class="cal-dot cal-dot-${escHtml(r.leave_type)}${pend(r)?' cal-dot-pending':''}" data-tip="${escHtml(tip)}"></span>`;
+    }).join('');
+    const [y,m,dd] = d.date.split('-');
+    return `<div class="ls-ticket${d.o===0?' ls-today':''}"><div class="ls-lbl">${escHtml(t(names[d.o]))}</div><div class="ls-date">${dd}/${m}/${y}</div>`
+      + `<div class="ls-num">${approvedPeople}<small>${escHtml(t('ls_people'))}</small></div>`
+      + (pendingPeople ? `<div class="ls-date">+${pendingPeople} ${escHtml(t('ls_pending'))}</div>` : '')
+      + `<div class="ls-dots">${dots}</div></div>`;
+  }).join('');
+}
 async function loadLeaveStrip(){
   const box = document.getElementById('leaveStrip'); if(!box) return;
-  const days = [-1,0,1].map(o=>({ o, date:bkkDateStr(o) }));
+  const cb = document.getElementById('lsShowPending');
+  if(cb && !cb.dataset.init){ cb.dataset.init='1'; let v='1'; try{ v = localStorage.getItem('loi_ls_pending') ?? '1'; }catch(e){} cb.checked = v!=='0'; }
   try{
-    const data = await callApi('get_leave_strip', { from:days[0].date, to:days[2].date });
-    const reqs = data.requests || [];
-    const names = { '-1':'ls_yesterday', '0':'ls_today', '1':'ls_tomorrow' };
-    box.innerHTML = days.map(d=>{
-      const list = reqs.filter(r=>r.start_date<=d.date && r.end_date>=d.date);
-      const pend = x => x.status!=='approved';
-      const approvedPeople = new Set(list.filter(x=>!pend(x)).map(x=>x.employee?.id)).size;
-      const pendingPeople = new Set(list.filter(pend).map(x=>x.employee?.id)).size;
-      const dots = list.sort((x,y)=>pend(x)-pend(y)).slice(0,60).map(r=>{
-        const tm = r.leave_unit==='hour' && r.start_time ? ` ${String(r.start_time).slice(0,5)}–${String(r.end_time||'').slice(0,5)}` : '';
-        const tip = `${r.employee?.name||''} (${r.employee?.employee_code||''}) · ${stripLeadingSymbols(getLeaveTypeLabel(r.leave_type))}${tm}${pend(r)?' · '+t('ls_pending'):''}`;
-        return `<span class="cal-dot cal-dot-${escHtml(r.leave_type)}${pend(r)?' cal-dot-pending':''}" data-tip="${escHtml(tip)}"></span>`;
-      }).join('');
-      const [y,m,dd] = d.date.split('-');
-      return `<div class="ls-ticket${d.o===0?' ls-today':''}"><div class="ls-lbl">${escHtml(t(names[d.o]))}</div><div class="ls-date">${dd}/${m}/${y}</div>`
-        + `<div class="ls-num">${approvedPeople}<small>${escHtml(t('ls_people'))}</small></div>`
-        + (pendingPeople ? `<div class="ls-date">+${pendingPeople} ${escHtml(t('ls_pending'))}</div>` : '')
-        + `<div class="ls-dots">${dots}</div></div>`;
-    }).join('');
+    const data = await callApi('get_leave_strip', { from:bkkDateStr(-1), to:bkkDateStr(1) });
+    lsCache = data.requests || [];
+    renderLeaveStrip();
   }catch(e){ box.innerHTML = ''; }
 }
 
