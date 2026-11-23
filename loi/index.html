@@ -213,7 +213,7 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .ls-dots{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto;padding-top:6px;border-top:1px dashed rgba(252,165,165,.35)}
 .ls-dots .cal-dot{position:relative;width:11px;height:11px;cursor:pointer}
 .ls-dots .cal-dot:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);white-space:nowrap;background:#000;color:#fff;border:1px solid #ef4444;border-radius:6px;padding:4px 8px;font-size:.72rem;z-index:40;pointer-events:none}
-.ls-dots .cal-dot.cal-dot-pending{box-shadow:inset 0 0 0 2px var(--dc)}
+.ls-dots .cal-dot.cal-dot-pending{box-shadow:inset 0 0 0 2.5px var(--dc),0 2px 3px rgba(0,0,0,.5)}
 .exp-select{padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-family:'Inter',sans-serif;font-size:.84rem;color:var(--ink);min-width:0;max-width:100%}
 .exp-tile-hero .exp-select{background:rgba(255,255,255,.10);border-color:rgba(231,217,190,.35);color:#fff}
 .exp-tile-hero .exp-select option{color:var(--ink)}
@@ -347,21 +347,27 @@ tr:hover td{background:var(--cream)}
 .yg-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
 .yg-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
-.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
-.cal-dot{--dc:var(--plum-600);width:9px;height:9px;border-radius:50%;background:var(--dc);cursor:default}
+.cal-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.cal-ev{position:absolute;top:3px;right:4px;font-size:.78rem;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));cursor:help}
+.cal-dot{--dc:var(--plum-600);--sh:transparent;width:11px;height:11px;border-radius:50%;cursor:default;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0,rgba(255,255,255,.35) 22%,rgba(255,255,255,0) 46%),linear-gradient(var(--sh),var(--sh)),radial-gradient(circle at 68% 82%,rgba(0,0,0,.38) 0,rgba(0,0,0,0) 62%),var(--dc);
+  box-shadow:0 2px 3px rgba(0,0,0,.5),inset -1px -2px 3px rgba(0,0,0,.28)}
+/* หลายจุดติดกันในช่องเดียว → ไล่เฉด เข้ม / ปกติ / อ่อน (เงาดำเท่ากัน) */
+.cal-dots .cal-dot:not(:only-child):nth-child(3n+1){--sh:rgba(0,0,0,.34)}
+.cal-dots .cal-dot:not(:only-child):nth-child(3n+3){--sh:rgba(255,255,255,.42)}
 /* คำขอที่ยังไม่อนุมัติ = วงกลมกลวง (สีขอบตามประเภทการลา) */
-.cal-dot.cal-dot-pending{background:transparent;box-shadow:inset 0 0 0 2px var(--dc)}
-.cal-dot-annual{--dc:var(--plum-600);background:var(--dc)}
-.cal-dot-sick{--dc:var(--success);background:var(--dc)}
-.cal-dot-personal{--dc:#2AA9A0;background:var(--dc)}
-.cal-dot-other{--dc:var(--text-faint);background:var(--dc)}
-.cal-dot-maternity{--dc:#E0679A;background:var(--dc)}
-.cal-dot-paternity{--dc:#3B82C4;background:var(--dc)}
-.cal-dot-priesthood{--dc:#C9A227;background:var(--dc)}
-.cal-dot-personal_unpaid{--dc:#E58F2A;background:var(--dc)}
-.cal-dot-annual_prev{--dc:#8B5CF6;background:var(--dc)}
-.cal-dot-annual_urgent{--dc:#DC2626;background:var(--dc)}
-.cal-dot-wfh{--dc:#6366F1;background:var(--dc)}
+.cal-dot.cal-dot-pending{background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.55) 0,rgba(255,255,255,0) 40%),transparent;box-shadow:inset 0 0 0 2.5px var(--dc),0 2px 3px rgba(0,0,0,.5)}
+.cal-dot-annual{--dc:var(--plum-600)}
+.cal-dot-sick{--dc:var(--success)}
+.cal-dot-personal{--dc:#2AA9A0}
+.cal-dot-other{--dc:var(--text-faint)}
+.cal-dot-maternity{--dc:#E0679A}
+.cal-dot-paternity{--dc:#3B82C4}
+.cal-dot-priesthood{--dc:#C9A227}
+.cal-dot-personal_unpaid{--dc:#E58F2A}
+.cal-dot-annual_prev{--dc:#8B5CF6}
+.cal-dot-annual_urgent{--dc:#DC2626}
+.cal-dot-wfh{--dc:#6366F1}
 .cal-cell[data-names]:hover::after{
   content:attr(data-names);position:absolute;bottom:100%;left:0;margin-bottom:4px;
   background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;font-size:.74rem;
@@ -644,6 +650,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <div id="myCalGrid" class="cal-grid"></div>
         <div id="myCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
       </div>
+
+      <div class="card" id="myEventsCard" style="display:none"></div>
 
       <div class="card" id="myYearGlanceCard">
         <div class="yg-head" onclick="toggleMyYearGlance()">
@@ -979,6 +987,29 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <input type="number" id="holidayYearGlance" style="width:100px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.86rem" onchange="renderHolidayYearGlance()"/>
         </div>
         <div id="holidayYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN: EVENT บริษัท (แจ้งเตือนกิจกรรม ไม่ใช่วันหยุด ยังลาได้ปกติ) -->
+    <div class="page" id="page-company_events">
+      <div class="section-title" data-i18n="pg_events_title">🎉 Company Events</div>
+      <div class="section-sub" data-i18n="pg_events_sub">Announce an event.</div>
+      <div class="card">
+        <h3 data-i18n="h3_add_event">➕ Add an Event</h3>
+        <div class="form-grid">
+          <div class="field"><label data-i18n="eo_date">Date</label><input type="date" id="evDate"/></div>
+          <div class="field"><label data-i18n="th_label">Label</label><input type="text" id="evLabel" data-i18n-ph="ph_event_label" placeholder="e.g. New Year party"/></div>
+          <div class="field"><label data-i18n="th_scope">Visible to</label>
+            <select id="evScope"><option value="all" data-i18n="scope_all">All</option><option value="HQ">HQ</option><option value="SB">SB</option></select></div>
+          <div class="field"><label data-i18n="lbl_holiday_color">Color</label><input type="color" id="evColor" value="#F59E0B" style="height:42px;padding:3px"/></div>
+        </div>
+        <button class="btn btn-primary" onclick="submitAddEvent()" data-i18n="btn_add_event">Add Event</button>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap" style="border:none"><table>
+          <thead><tr><th data-i18n="th_date">Date</th><th data-i18n="th_label">Label</th><th data-i18n="th_scope">Visible to</th><th data-i18n="lbl_holiday_color">Color</th><th data-i18n="th_action">Action</th></tr></thead>
+          <tbody id="eventsBody"></tbody>
+        </table></div>
       </div>
     </div>
 
@@ -1970,6 +2001,7 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
+      {id:'company_events', label:t('tab_events')},
       {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
       {id:'special_calendar', label:t('tab_special')},
@@ -1984,6 +2016,7 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
+      {id:'company_events', label:t('tab_events')},
       {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
       {id:'special_calendar', label:t('tab_special')},
@@ -2107,6 +2140,7 @@ function showPage(id, el){
   if(id==='settings') loadSettings();
   if(id==='logs'){ loadLogs(); ensureEmployeesLoaded(); }
   if(id==='holidays') loadHolidays();
+  if(id==='company_events') loadCompanyEvents();
   if(id==='next_year'){ initYearQuotas(); loadNextYearPlan(); ensureEmployeesLoaded(); }
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); if(!isScopedAdmin()) loadBgPicker(); ensureEmployeesLoaded(); }
   if(id==='special_calendar') loadSpecialCalendar();
@@ -2294,15 +2328,16 @@ function renderMyCalendar(){
     const dots = entries.map(e=>`<span class="cal-dot cal-dot-${e.leaveType}${e.pending?' cal-dot-pending':''}"></span>`).join('');
     const dateStr = `${myCalYear}-${pad(myCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const evTitles = eventTitlesOf(dateStr), evBadge = eventBadgeOf(dateStr);
     const entryNames = entries.map(e=>{
       const typeLabel = getLeaveTypeLabel(e.leaveType);
       const reasonPart = e.reason ? ` — ${e.reason}` : '';
       return `${typeLabel} (${e.statusLabel})${reasonPart}${e.suffix||''}`;
     });
-    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...entryNames] : entryNames;
+    const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...entryNames];
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
     html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
-      <div class="cal-daynum">${d}</div>
+      <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
   }
@@ -2653,7 +2688,7 @@ const I18N = {
     exp_scope_all:'All requests', exp_scope_month:'By month', exp_scope_year:'By year',
     emp_all_depts:'All departments', emp_all_positions:'All branches', emp_all_roles:'All roles', btn_emp_reset:'Clear filters', ph_emp_search:'Search code, name or email', th_position:'Branch', emp_count:'Showing {n} of {m}', tk_none2:'No employees match the filters',
     exp_entitle:'Entitlement: ', exp_sfx_used:' — used', exp_sfx_remaining:' — remaining',
-    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', bridge_title:'⚠️ Please avoid taking leave right before/after the company holiday', bridge_body:'Your leave is adjacent to a long company holiday ({h} holiday days: {from} – {to}). We kindly ask you not to take leave at the start or end of the holiday, as it affects our work.', bridge_confirm:'Confirm leave', bridge_cancel:'Understood — I will not take leave', set_bridge_title:'Warn when leave is adjacent to a long company holiday', set_bridge_desc:'When ON, a confirmation window appears if the leave date is right before/after 3+ consecutive company holiday days (weekends in between count as part of the break). If the employee confirms, admins are also emailed.', appr_title:'Your approvers', appr_none:'No approver assigned — requests go to the administrator', appr_admin_note:'Annual leave over 3 days is finally approved by the administrator', appr_change_photo:'📷 Change photo', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
+    exp_tot_annual:'Entitlement: Annual leave this year', exp_tot_prev:'Annual leave carried over from last year', exp_pick_move:'Reorder with ▲▼', tab_events:'🎉 Company Events', pg_events_title:'🎉 Company Events', pg_events_sub:'Announce an event on everyone\'s calendar — it is NOT a holiday, people can still take leave. Choose which branch sees it.', h3_add_event:'➕ Add an Event', btn_add_event:'Add Event', th_scope:'Visible to', scope_all:'All', ph_event_label:'e.g. New Year party / Company trip', ev_none:'No events yet', ev_fill:'Please fill in the date and label', ev_added:'✅ Event added', ev_deleted:'✅ Event deleted', ev_del_confirm:'Delete event "{x}"?', ev_upcoming:'📣 Upcoming company events', ev_note:'Announcements only — you can still request leave on these days.', bridge_title:'⚠️ Please avoid taking leave right before/after the company holiday', bridge_body:'Your leave is adjacent to a long company holiday ({h} holiday days: {from} – {to}). We kindly ask you not to take leave at the start or end of the holiday, as it affects our work.', bridge_confirm:'Confirm leave', bridge_cancel:'Understood — I will not take leave', set_tab_events:'🎉 Event บริษัท', pg_events_title:'🎉 Event บริษัท', pg_events_sub:'ประกาศกิจกรรมบนปฏิทินของทุกคน ไม่ใช่วันหยุด ยังลาได้ตามปกติ เลือกได้ว่าสาขาไหนเห็น', h3_add_event:'➕ เพิ่ม Event', btn_add_event:'เพิ่ม Event', th_scope:'ใครเห็น', scope_all:'ทั้งหมด', ph_event_label:'เช่น งานเลี้ยงปีใหม่ / เที่ยวบริษัท', ev_none:'ยังไม่มี Event', ev_fill:'กรุณากรอกวันที่และชื่อ Event', ev_added:'✅ เพิ่ม Event แล้ว', ev_deleted:'✅ ลบ Event แล้ว', ev_del_confirm:'ลบ Event "{x}" ?', ev_upcoming:'📣 Event บริษัทที่กำลังจะมาถึง', ev_note:'เป็นการแจ้งให้ทราบเท่านั้น วันเหล่านี้ยังขอลาได้ตามปกติ', bridge_title:'Warn when leave is adjacent to a long company holiday', set_bridge_desc:'When ON, a confirmation window appears if the leave date is right before/after 3+ consecutive company holiday days (weekends in between count as part of the break). If the employee confirms, admins are also emailed.', appr_title:'Your approvers', appr_none:'No approver assigned — requests go to the administrator', appr_admin_note:'Annual leave over 3 days is finally approved by the administrator', appr_change_photo:'📷 Change photo', btn_multi_pick:'📅 Pick non-consecutive dates (calendar)', rp_hint_multi:'Click each leave date (turns red). Click again to remove it.', rp_title_multi:'Select specific dates', exp_scope_range:'Date range', btn_range_export:'📅 Select date range', btn_range_pick:'📅 Pick date range (2 months)', rp_title:'Select leave period', rp_hint:'Click the start date, then the end date', rp_apply:'Apply', rp_cancel:'Cancel', rp_days:'{n} day(s) selected', btn_ny_import_plan:'⬆ Import prepared quotas (Excel)', msg_ny_import_done:'Imported {n} employees into the table — review, then press Save quotas', msg_ny_import_bad:'File format not recognised — use the file from "Export prepared quotas"', msg_ny_import_skip:' ({n} skipped: unknown code or negative value)', exp_pick_pat01:'Annual leave 01 (preset: 5 columns)',
     exp_pick_all:'All leave types', exp_pick_n:'{n} selected', exp_pick_others:'Other types', exp_pick_none:'Select at least one leave type',
     ls_yesterday:'Yesterday', ls_today:'Today', ls_tomorrow:'Tomorrow', ls_people:'on leave', ls_pending:'pending', ls_none:'No one',
     exr_code:'Code', exr_name:'Name', exr_dept:'Department', exr_type:'Leave type', exr_unit:'Unit', exr_start:'Start date', exr_end:'End date', exr_stime:'Start time', exr_etime:'End time', exr_days:'Days', exr_hours:'Hours', exr_status:'Status', exr_reason:'Reason', exr_sub:'Submitted at', exr_unit_day:'Day', exr_unit_hour:'Hour',
@@ -4000,11 +4035,62 @@ let employeesCache = [];
 let holidaysCache = []; // ใช้ overlay สีแดงในทั้ง My Leave Calendar และ Team Leave Calendar
 let holidayImportRows = [];
 
+
+// ── Event บริษัท (แจ้งเตือนเฉยๆ ไม่ใช่วันหยุด ไม่บล็อกการลา) ──
+let eventsCache = [];
+const evColorOf = e => (e && /^#[0-9a-fA-F]{6}$/.test(e.color||'')) ? e.color : '#F59E0B';
+function eventsOn(dateStr){ return eventsCache.filter(e=>String(e.event_date).slice(0,10)===dateStr); }
+function eventTitlesOf(dateStr){ return eventsOn(dateStr).map(e=>`🎉 ${e.label}`); }
+function eventBadgeOf(dateStr){ const ev = eventsOn(dateStr); return ev.length ? `<span class="cal-ev">🎉</span>` : ''; }
+const scopeLabel = sc => sc==='all' ? t('scope_all') : sc;
+async function fetchEventsCache(){
+  try{ const d = await callApi('get_company_events'); eventsCache = d.events || []; }catch(e){ /* non-fatal */ }
+}
+async function loadCompanyEvents(){
+  if(isScopedAdmin()){ const sel=document.getElementById('evScope'); sel.value=String(currentUser.scope_position).toUpperCase(); sel.disabled=true; }
+  try{
+    await fetchEventsCache();
+    const body = document.getElementById('eventsBody');
+    body.innerHTML = eventsCache.length ? eventsCache.map(e=>`<tr>
+      <td class="mono">${formatDMY(String(e.event_date).slice(0,10))}</td><td>${escHtml(e.label)}</td>
+      <td><span class="badge badge-pending">${escHtml(scopeLabel(e.scope))}</span></td>
+      <td><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${evColorOf(e)}"></span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteCompanyEvent('${e.id}','${escAttr(e.label)}')">🗑️</button></td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty-msg">${escHtml(t('ev_none'))}</td></tr>`;
+  }catch(e){ showToast(e.message,'err'); }
+}
+async function submitAddEvent(){
+  const event_date = document.getElementById('evDate').value, label = document.getElementById('evLabel').value.trim();
+  if(!event_date || !label){ showToast(t('ev_fill'),'err'); return; }
+  try{
+    await callApi('add_company_event', { event_date, label, scope: document.getElementById('evScope').value, color: document.getElementById('evColor').value });
+    showToast(t('ev_added'));
+    document.getElementById('evDate').value=''; document.getElementById('evLabel').value='';
+    loadCompanyEvents();
+  }catch(e){ showToast(e.message,'err'); }
+}
+async function deleteCompanyEvent(id, label){
+  if(!confirm(t('ev_del_confirm').replace('{x}', label))) return;
+  try{ await callApi('delete_company_event', { id }); showToast(t('ev_deleted')); loadCompanyEvents(); }catch(e){ showToast(e.message,'err'); }
+}
+function renderMyEvents(){
+  const card = document.getElementById('myEventsCard'); if(!card) return;
+  const today = bkkDateStr(0), until = bkkDateStr(60);
+  const list = eventsCache.filter(e=>{ const d=String(e.event_date).slice(0,10); return d>=today && d<=until; });
+  card.style.display = list.length ? 'block' : 'none';
+  if(!list.length) return;
+  card.innerHTML = `<h3 style="margin:0 0 8px">${escHtml(t('ev_upcoming'))}</h3>` + list.map(e=>
+    `<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${evColorOf(e)}"></span><span class="mono">${formatDMY(String(e.event_date).slice(0,10))}</span> — ${escHtml(e.label)}</div>`).join('') +
+    `<p class="hint" style="margin:8px 0 0">${escHtml(t('ev_note'))}</p>`;
+}
+
 async function fetchHolidaysCache(){
   try{
     const data = await callApi('get_company_holidays');
     holidaysCache = data.holidays || [];
   }catch(e){ /* non-fatal */ }
+  await fetchEventsCache();
+  if(typeof renderMyEvents==='function') renderMyEvents();
 }
 
 // ── สีของวันหยุดบริษัท (เลือกได้ตอนเพิ่ม/แก้ไข — ไม่ได้เลือกจะเป็นสีแดงเหมือนเดิม) ──
@@ -4054,7 +4140,7 @@ function applyLeaveDotColors(){
   const m = dotColorMap();
   let st = document.getElementById('dotColorStyle');
   if(!st){ st = document.createElement('style'); st.id = 'dotColorStyle'; document.head.appendChild(st); }
-  st.textContent = DOT_TYPES.map(k=>`.cal-dot-${k}{--dc:${m[k]};background:var(--dc)}`).join('\n');
+  st.textContent = DOT_TYPES.map(k=>`.cal-dot-${k}{--dc:${m[k]}}`).join('\n');
 }
 function renderDotColorEditor(){
   const g = document.getElementById('dotColorGrid');
@@ -4549,17 +4635,18 @@ function renderSpecialCalendar(requests){
     const people = dayMap[d];
     const dateStr = `${specialCalYear}-${pad(specialCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const evTitles = eventTitlesOf(dateStr), evBadge = eventBadgeOf(dateStr);
     const peopleNames = people.map(p=>{
       const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
-    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...peopleNames];
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
     html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
-      <div class="cal-daynum">${d}</div>
+      <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
   }
@@ -6229,17 +6316,18 @@ function renderCalendar(requests){
     const people = dayMap[d];
     const dateStr = `${calYear}-${pad(calMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
+    const evTitles = eventTitlesOf(dateStr), evBadge = eventBadgeOf(dateStr);
     const peopleNames = people.map(p=>{
       const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
       return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
     });
-    const allNames = holiday ? [`🏖️ ${holiday.label}`, ...peopleNames] : peopleNames;
+    const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...peopleNames];
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
     html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
-      <div class="cal-daynum">${d}</div>
+      <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
   }
