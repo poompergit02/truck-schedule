@@ -700,7 +700,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <button class="btn btn-sm btn-primary" onclick="submitBulkDecision()" data-i18n="btn_apply_selected">Apply to Selected</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
-          <thead><tr><th></th><th data-i18n="th_employee">Employee</th><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_action">Action</th></tr></thead>
+          <thead><tr><th></th><th data-i18n="th_employee">Employee</th><th data-i18n="th_type">Type</th><th data-i18n="th_dates">Dates</th><th data-i18n="th_days">Days</th><th data-i18n="th_quota">Leave balance</th><th data-i18n="th_reason">Reason</th><th data-i18n="th_action">Action</th></tr></thead>
           <tbody id="approvalsBody"></tbody>
         </table></div>
       </div>
@@ -730,6 +730,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <option value="asc" data-i18n="opt_sort_first">Earliest submitted first</option>
             <option value="desc" data-i18n="opt_sort_last">Latest submitted first</option>
           </select>
+          <label style="display:flex;align-items:center;gap:6px;margin:0 0 0 12px;font-size:.82rem;font-weight:600;color:var(--plum-700);cursor:pointer"><input type="checkbox" id="teamResultsShowPending" onchange="renderTeamResults()"/> <span data-i18n="lbl_show_pending">Show pending requests</span></label>
           <button class="btn btn-outline btn-sm" onclick="exportTeamResultsExcel()" data-i18n="btn_export_team">📥 Export Excel</button>
         </div>
         <div class="table-wrap" style="border:none"><table>
@@ -2215,11 +2216,11 @@ function renderMyFreq(){
   maxV = Math.max(1, Math.ceil(maxV)); const steps = Math.min(maxV, 5);
   const xAt = i => L + (n===1 ? (W-L-R)/2 : i*(W-L-R)/(n-1));
   const yAt = v => T + (H-T-B) * (1 - v/maxV);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:420px;height:auto" role="img">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${n>16?640:420}px;height:auto" role="img">`;
   for(let k=0;k<=steps;k++){ const v = maxV*k/steps, yy = yAt(v);
     svg += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e6e1ee" stroke-width="1"/><text x="${L-6}" y="${yy+3}" text-anchor="end" font-size="10" fill="#8a8398">${Math.round(v*10)/10}</text>`; }
-  const every = n>16 ? 2 : 1;
-  labels.forEach((lb,i)=>{ if(i%every===0) svg += `<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8a8398">${escHtml(lb)}</text>`; });
+  const xfs = n>16 ? 9 : 10;   // แสดงครบทุกวัน (30/31 วัน) ไม่ข้าม
+  labels.forEach((lb,i)=>{ svg += `<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" font-size="${xfs}" fill="#8a8398">${escHtml(lb)}</text>`; });
   svg += `<defs><filter id="freqShadow" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity="0.38"/></filter></defs>`;
   types.forEach(k=>{
     const pend = k.endsWith('|p'), base = k.replace('|p','');
@@ -2560,7 +2561,8 @@ function teamResultsFiltered(){
   const y = Number(document.getElementById('teamResultsYear').value) || new Date().getFullYear();
   const m = Number(document.getElementById('teamResultsMonth').value) || 0;
   const dir = document.getElementById('teamResultsSort').value;
-  let rows = [...teamResultsCache];
+  const showPend = !!document.getElementById('teamResultsShowPending')?.checked;
+  let rows = teamResultsCache.filter(r => showPend || !['pending_manager','pending_admin'].includes(r.status));
   if(m){
     const a = `${y}-${String(m).padStart(2,'0')}-01`, b = `${y}-${String(m).padStart(2,'0')}-31`;
     rows = rows.filter(r => (r.start_date||'') <= b && (r.end_date||r.start_date||'') >= a);
@@ -2812,7 +2814,7 @@ const I18N = {
     btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_pending:'pending', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
-    th_submitted_at:'Submitted at', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
+    th_submitted_at:'Submitted at', th_quota:'Leave balance', quota_left:'Left', quota_of:'of', quota_after:'After this:', lbl_show_pending:'Show pending requests', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
     leave_personal_unpaid:'💸 Unpaid Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
@@ -3010,7 +3012,7 @@ const I18N = {
     btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา (เส้นทึบ = อนุมัติแล้ว เส้นประสีอ่อน = รออนุมัติ) ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_pending:'รออนุมัติ', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
-    th_submitted_at:'ยื่นเมื่อ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
+    th_submitted_at:'ยื่นเมื่อ', th_quota:'โควตาวันลา', quota_left:'เหลือ', quota_of:'จากทั้งหมด', quota_after:'หลังอนุมัติเหลือ', lbl_show_pending:'แสดงรายการที่รออนุมัติ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
     leave_personal_unpaid:'💸 ลาโดยไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
@@ -3957,6 +3959,21 @@ async function refreshPendingDot(){
   }catch(e){ /* เงียบไว้ ไม่รบกวนผู้ใช้ */ }
 }
 
+// ── โควตาวันลาของผู้ขอ (แสดงในหน้าคำขอของทีม ให้ผู้อนุมัติตัดสินใจ) ──
+function fmtDH(n){
+  const f = formatDaysHoursNice(Math.max(0, Number(n)||0));
+  return f.compact ? f.text : `${f.text} ${t(f.text==='1' ? 'tk_unit_day' : 'tk_unit_days')}`;
+}
+function quotaCellHtml(r){
+  const q = r.quota;
+  if(!q) return `<span style="color:var(--text-dim)">—</span>`;
+  const reqDays = Number(r.days_count)||0;
+  const after = Math.round((q.remaining - reqDays) * 10000) / 10000;
+  const warn = after < -1e-6;
+  return `<div style="font-weight:600;color:var(--plum-700)">${escHtml(t('quota_left'))} ${escHtml(fmtDH(q.remaining))}</div>
+    <div style="font-size:.72rem;color:var(--text-dim)">${escHtml(t('quota_of'))} ${escHtml(fmtDH(q.total))}</div>
+    <div style="font-size:.72rem;${warn?'color:#c0392b;font-weight:700':'color:var(--text-dim)'}">${escHtml(t('quota_after'))} ${warn?'−':''}${escHtml(fmtDH(Math.abs(after)))}</div>`;
+}
 async function loadApprovals(){
   document.getElementById('approvalsSub').textContent =
     currentUser.role==='manager' ? t('approvalsub_mgr') : t('approvalsub_admin');
@@ -3966,7 +3983,7 @@ async function loadApprovals(){
     const data = await callApi('get_pending_approvals');
     setPendingDot(data.requests.length);
     const body=document.getElementById('approvalsBody');
-    if(!data.requests.length){ body.innerHTML='<tr><td colspan="7" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
+    if(!data.requests.length){ body.innerHTML='<tr><td colspan="8" class="empty-msg">No pending requests 🎉</td></tr>'; return; }
     body.innerHTML = data.requests.map(r=>`
       <tr>
         <td><input type="checkbox" class="approvalCheckbox" value="${r.id}"/></td>
@@ -3974,6 +3991,7 @@ async function loadApprovals(){
         <td>${getLeaveTypeLabel(r.leave_type)}</td>
         <td class="mono">${formatDuration(r)}</td>
         <td>${formatAmount(r)}</td>
+        <td>${quotaCellHtml(r)}</td>
         <td>${r.reason?escHtml(r.reason):'—'}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-primary" onclick="openDecisionModal('${r.id}','${escAttr(r.employee?.name||'')}','${r.start_date}','${r.end_date}')">Review</button>
