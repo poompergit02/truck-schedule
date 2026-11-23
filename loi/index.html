@@ -203,6 +203,11 @@ nav.tabs{background:var(--white);border-bottom:1px solid var(--line);padding:0 2
 .exp-pick-mv:hover{background:#ece6f5}
 .exp-pick-mv-sp{display:inline-block;width:24px}
 .exp-pick-panel hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.ls-switch-row{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-size:.82rem;font-weight:600;color:var(--plum-700)}
+.ls-switch{position:relative;width:42px;height:24px;border-radius:999px;border:none;background:#c9c3d4;cursor:pointer;padding:0;transition:background .2s;box-shadow:inset 0 1px 3px rgba(0,0,0,.3)}
+.ls-switch .ls-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .2s}
+.ls-switch[aria-checked=true]{background:var(--plum-600,#7c3aed)}
+.ls-switch[aria-checked=true] .ls-knob{transform:translateX(18px)}
 .ls-wrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-start;margin:0 0 16px}
 .ls-ticket{position:relative;width:172px;height:172px;box-sizing:border-box;padding:14px 14px 12px;border-radius:14px;color:#fff;background:linear-gradient(145deg,#141414 0%,#2a0b0b 100%);border:1.5px solid #b91c1c;box-shadow:0 6px 16px rgba(185,28,28,.25);display:flex;flex-direction:column}
 .ls-ticket.ls-today{border-color:#ef4444;box-shadow:0 6px 20px rgba(239,68,68,.45)}
@@ -748,8 +753,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
       <div class="section-title" data-i18n="pg_employees_title">Employee Management</div>
       <div class="section-sub" data-i18n="pg_employees_sub">Add employees individually or import from Excel</div>
 
-      <label style="display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;font-size:.82rem;font-weight:600;color:var(--plum-700);cursor:pointer"><input type="checkbox" id="lsShowPending" onchange="lsPendingChanged()"/> <span data-i18n="ls_show_pending">Show pending leave</span></label>
-      <div class="ls-wrap" id="leaveStrip"></div>
+      <div class="ls-wrap" id="leaveStrip" style="margin-bottom:8px"></div>
+      <div class="ls-switch-row"><button type="button" class="ls-switch" id="lsShowPending" role="switch" aria-checked="true" onclick="lsPendingChanged()"><span class="ls-knob"></span></button><span data-i18n="ls_show_pending">Show pending leave</span></div>
 
       <div class="card">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -990,11 +995,8 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         </div>
         <div id="holidayYearGlanceGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px"></div>
       </div>
-    </div>
 
-    <!-- ADMIN: EVENT บริษัท (แจ้งเตือนกิจกรรม ไม่ใช่วันหยุด ยังลาได้ปกติ) -->
-    <div class="page" id="page-company_events">
-      <div class="section-title" data-i18n="pg_events_title">🎉 Company Events</div>
+      <div class="section-title" style="margin-top:28px" data-i18n="pg_events_title">🎉 Company Events</div>
       <div class="section-sub" data-i18n="pg_events_sub">Announce an event.</div>
       <div class="card">
         <h3 data-i18n="h3_add_event">➕ Add an Event</h3>
@@ -2003,7 +2005,6 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
-      {id:'company_events', label:t('tab_events')},
       {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
       {id:'special_calendar', label:t('tab_special')},
@@ -2018,7 +2019,6 @@ function buildTabs(){
       {id:'send_document', label:t('tab_send_document')},
       {id:'logs', label:t('tab_logs')},
       {id:'holidays', label:t('tab_holidays')},
-      {id:'company_events', label:t('tab_events')},
       {id:'next_year', label:t('tab_nextyear')},
       {id:'login_progress', label:t('tab_login_progress')},
       {id:'special_calendar', label:t('tab_special')},
@@ -2141,8 +2141,7 @@ function showPage(id, el){
   if(id==='reports'){ initMyReportsYearSelect(); loadMyResolvedRequests(); loadMyFreq(); loadMyDocuments(); }
   if(id==='settings') loadSettings();
   if(id==='logs'){ loadLogs(); ensureEmployeesLoaded(); }
-  if(id==='holidays') loadHolidays();
-  if(id==='company_events') loadCompanyEvents();
+  if(id==='holidays'){ loadHolidays(); loadCompanyEvents(); }
   if(id==='next_year'){ initYearQuotas(); loadNextYearPlan(); ensureEmployeesLoaded(); }
   if(id==='login_progress'){ loadNeverLoggedIn(); loadLoginStats(); if(!isScopedAdmin()) loadBgPicker(); ensureEmployeesLoaded(); }
   if(id==='special_calendar') loadSpecialCalendar();
@@ -4685,17 +4684,28 @@ function bkkDateStr(offset){
   return d.toISOString().slice(0,10);
 }
 let lsCache = null;
+// กล่อง: วันทำงานก่อนหน้า / วันนี้ / วันทำงานถัดไป (ข้ามเสาร์-อาทิตย์ เช่น วันจันทร์ → กล่องแรกเป็นวันศุกร์, วันศุกร์ → กล่องที่ 3 เป็นวันจันทร์)
+function lsDays(){
+  const isWk = date => { const w = new Date(date+'T00:00:00Z').getUTCDay(); return w!==0 && w!==6; };
+  let po=-1; while(!isWk(bkkDateStr(po))) po--;
+  let no=1;  while(!isWk(bkkDateStr(no))) no++;
+  const out=[{o:po,date:bkkDateStr(po)}];
+  if(isWk(bkkDateStr(0))) out.push({o:0,date:bkkDateStr(0)});
+  out.push({o:no,date:bkkDateStr(no)});
+  return out;
+}
 function lsPendingChanged(){
-  const on = !!document.getElementById('lsShowPending')?.checked;
+  const sw = document.getElementById('lsShowPending'); const on = sw.getAttribute('aria-checked')!=='true';
+  sw.setAttribute('aria-checked', on?'true':'false');
   try{ localStorage.setItem('loi_ls_pending', on?'1':'0'); }catch(e){}
   renderLeaveStrip();
 }
 function renderLeaveStrip(){
   const box = document.getElementById('leaveStrip'); if(!box || !lsCache) return;
-  const showPend = !!document.getElementById('lsShowPending')?.checked;
-  // ไม่โชว์วันเสาร์/อาทิตย์
-  const days = [-1,0,1].map(o=>({ o, date:bkkDateStr(o) })).filter(d=>{ const w = new Date(d.date+'T00:00:00Z').getUTCDay(); return w!==0 && w!==6; });
-  const names = { '-1':'ls_yesterday', '0':'ls_today', '1':'ls_tomorrow' };
+  const showPend = document.getElementById('lsShowPending')?.getAttribute('aria-checked')!=='false';
+  const days = lsDays();
+  const wdName = date => new Intl.DateTimeFormat(currentLang==='th'?'th-TH':'en-GB',{weekday:'long',timeZone:'UTC'}).format(new Date(date+'T00:00:00Z'));
+  const lblOf = d => d.o===0 ? t('ls_today') : d.o===-1 ? t('ls_yesterday') : d.o===1 ? t('ls_tomorrow') : wdName(d.date);
   const pend = x => x.status!=='approved';
   const reqs = lsCache.filter(r=>showPend || !pend(r));
   box.innerHTML = days.map(d=>{
@@ -4708,7 +4718,7 @@ function renderLeaveStrip(){
       return `<span class="cal-dot cal-dot-${escHtml(r.leave_type)}${pend(r)?' cal-dot-pending':''}" data-tip="${escHtml(tip)}"></span>`;
     }).join('');
     const [y,m,dd] = d.date.split('-');
-    return `<div class="ls-ticket${d.o===0?' ls-today':''}"><div class="ls-lbl">${escHtml(t(names[d.o]))}</div><div class="ls-date">${dd}/${m}/${y}</div>`
+    return `<div class="ls-ticket${d.o===0?' ls-today':''}"><div class="ls-lbl">${escHtml(lblOf(d))}</div><div class="ls-date">${dd}/${m}/${y}</div>`
       + `<div class="ls-num">${approvedPeople}<small>${escHtml(t('ls_people'))}</small></div>`
       + (pendingPeople ? `<div class="ls-date">+${pendingPeople} ${escHtml(t('ls_pending'))}</div>` : '')
       + `<div class="ls-dots">${dots}</div></div>`;
@@ -4717,9 +4727,9 @@ function renderLeaveStrip(){
 async function loadLeaveStrip(){
   const box = document.getElementById('leaveStrip'); if(!box) return;
   const cb = document.getElementById('lsShowPending');
-  if(cb && !cb.dataset.init){ cb.dataset.init='1'; let v='1'; try{ v = localStorage.getItem('loi_ls_pending') ?? '1'; }catch(e){} cb.checked = v!=='0'; }
+  if(cb && !cb.dataset.init){ cb.dataset.init='1'; let v='1'; try{ v = localStorage.getItem('loi_ls_pending') ?? '1'; }catch(e){} cb.setAttribute('aria-checked', v!=='0'?'true':'false'); }
   try{
-    const data = await callApi('get_leave_strip', { from:bkkDateStr(-1), to:bkkDateStr(1) });
+    const data = await callApi('get_leave_strip', (()=>{ const d=lsDays(); return { from:d[0].date, to:d[d.length-1].date }; })());
     lsCache = data.requests || [];
     renderLeaveStrip();
   }catch(e){ box.innerHTML = ''; }
