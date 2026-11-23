@@ -1123,15 +1123,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           </select>
           <button class="btn btn-sm btn-outline" onclick="exportSpecialCalExcel()" data-i18n="btn_export_special">📥 Export Excel</button>
         </div>
-      </div>
-
-      <!-- SECTION: bar chart -->
-      <div class="card">
-        <h3 data-i18n="sc_chart_title">📊 Employees on leave per day</h3>
-        <p class="hint" style="margin-bottom:6px"><span data-i18n="sc_chart_hint">Follows the month and filters selected above</span> · <span class="mono" id="specialChartMonth"></span></p>
-        <div class="sc-summary" id="specialCalSummary"></div>
-        <div class="sc-chart" id="specialCalChart"></div>
-        <div class="sc-x" id="specialCalChartX"></div>
+        <div class="ls-switch-row" style="margin:12px 0 0"><button type="button" class="ls-switch" id="scShowPending" role="switch" aria-checked="false" onclick="toggleSpecialPending()"><span class="ls-knob"></span></button><span data-i18n="sc_show_pending">Show pending requests (hollow dots)</span></div>
       </div>
 
       <!-- SECTION: calendar -->
@@ -1139,6 +1131,16 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
         <h3 data-i18n="sc_cal_title">🗓 Calendar</h3>
         <div id="specialCalGrid" class="cal-grid"></div>
         <div id="specialCalLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--text-dim)"></div>
+      </div>
+
+      <!-- SECTION: bar chart -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between"><h3 data-i18n="sc_chart_title" style="margin:0">📊 Employees on leave per day</h3>
+          <div class="seg" id="scChartMode"><button type="button" class="btn btn-sm btn-primary" data-mode="month" onclick="setSpecialChartMode('month')" data-i18n="sc_mode_month">Month</button><button type="button" class="btn btn-sm btn-outline" data-mode="year" onclick="setSpecialChartMode('year')" data-i18n="sc_mode_year">Year</button></div></div>
+        <p class="hint" style="margin-bottom:6px"><span data-i18n="sc_chart_hint">Follows the month and filters selected above</span> · <span class="mono" id="specialChartMonth"></span></p>
+        <div class="sc-summary" id="specialCalSummary"></div>
+        <div class="sc-chart" id="specialCalChart"></div>
+        <div class="sc-x" id="specialCalChartX"></div>
       </div>
     </div>
     <!-- ADMIN: NEXT YEAR PLANNING (เตรียมโควตาปีหน้า แล้วย้ายไปแทนที่โควตาจริงตามวันที่กำหนด) -->
@@ -2683,7 +2685,7 @@ const I18N = {
     cal_team_title:'🗓 Team Leave Calendar', cal_my_title:'🗓️ My Leave Calendar',
     cal_team_sub_admin:'Approved leave across the whole organization',
     cal_team_sub_mgr:'Approved leave for employees who report to you (at any approval step)',
-    sc_cal_title:'🗓 Calendar', sc_chart_hint:'Follows the month and filters selected above',
+    sc_show_pending:'Show pending requests (hollow dots)', sc_mode_month:'Month', sc_mode_year:'Year', sc_cal_title:'🗓 Calendar', sc_chart_hint:'Follows the month and filters selected above',
     exp_title:'Export Data', exp_sub:'Download reports as Excel files',
     exp_loi_title:'LOI Data — leave balance & usage',
     exp_loi_hint:'One row per employee. For each leave type, the "Remaining" and "Used" columns sit side by side.',
@@ -2881,7 +2883,7 @@ const I18N = {
     cal_team_title:'🗓 ปฏิทินการลาของทีม', cal_my_title:'🗓️ ปฏิทินการลาของฉัน',
     cal_team_sub_admin:'วันลาที่อนุมัติแล้วของพนักงานทั้งองค์กร',
     cal_team_sub_mgr:'วันลาที่อนุมัติแล้วของพนักงานที่อยู่ภายใต้การอนุมัติของคุณ (ทุกลำดับขั้น)',
-    sc_cal_title:'🗓 ปฏิทิน', sc_chart_hint:'แสดงตามเดือนและตัวกรองด้านบน',
+    sc_show_pending:'แสดงรายการที่รออนุมัติ (จุดวงกลมกลวง)', sc_mode_month:'รายเดือน', sc_mode_year:'รายปี', sc_cal_title:'🗓 ปฏิทิน', sc_chart_hint:'แสดงตามเดือนและตัวกรองด้านบน',
     exp_title:'Export ข้อมูล', exp_sub:'ดาวน์โหลดรายงานเป็นไฟล์ Excel',
     exp_loi_title:'ข้อมูล LOI — วันลาคงเหลือและที่ใช้ไปแล้ว',
     exp_loi_hint:'หนึ่งแถวต่อพนักงาน แต่ละประเภทการลามีคอลัมน์ "คงเหลือ" และ "ใช้ไปแล้ว" อยู่ติดกัน',
@@ -4424,7 +4426,7 @@ let myApproversCache = null;
 function approverPopHtml(){
   const list = (myApproversCache||[]);
   const rows = list.length
-    ? list.map((a,i)=>`<div class="ap-row"><b>${i+1}.</b> ${escHtml(a.name)} <small>${escHtml(a.employee_code)}</small></div>`).join('')
+    ? list.map((a,i)=>`<div class="ap-row"><b>${i+1}.</b> ${escHtml(a.name)}</div>`).join('')
     : `<div class="ap-row ap-none">${escHtml(t('appr_none'))}</div>`;
   const note = appSettingsCache['annual_over_3_days_needs_admin']==='true' ? `<div class="ap-note">${escHtml(t('appr_admin_note'))}</div>` : '';
   return `<div class="ap-title">${escHtml(t('appr_title'))}</div>${rows}${note}<button type="button" class="ap-photo" onclick="hideApproverPop();openPhotoModal(null)">${escHtml(t('appr_change_photo'))}</button>`;
@@ -4532,13 +4534,26 @@ let specialCalYear = new Date().getFullYear();
 let specialCalMonth = new Date().getMonth()+1;
 let specialCalDeptPopulated = false;
 
+let specialLoadKey = '';
+let specialChartMode = 'month';
 function shiftSpecialCalendarMonth(delta){
   specialCalMonth += delta;
   if(specialCalMonth<1){ specialCalMonth=12; specialCalYear--; }
   if(specialCalMonth>12){ specialCalMonth=1; specialCalYear++; }
   loadSpecialCalendar();
 }
-
+function specialPendingOn(){ return document.getElementById('scShowPending')?.getAttribute('aria-checked')==='true'; }
+function toggleSpecialPending(){
+  const sw = document.getElementById('scShowPending'); const on = !specialPendingOn();
+  sw.setAttribute('aria-checked', on?'true':'false');
+  try{ localStorage.setItem('loi_sc_pending', on?'1':'0'); }catch(e){}
+  loadSpecialCalendar();
+}
+function setSpecialChartMode(m){
+  specialChartMode = m;
+  document.querySelectorAll('#scChartMode button').forEach(b=>{ b.className = 'btn btn-sm ' + (b.dataset.mode===m ? 'btn-primary' : 'btn-outline'); });
+  applySpecialCalFilters();
+}
 let specialCalRequests = [];
 let specialCalUserLabel = '';
 
@@ -4558,23 +4573,35 @@ async function loadSpecialCalendar(){
       specialCalDeptPopulated = true;
     }catch(e){ /* non-fatal */ }
   }
+  const sw = document.getElementById('scShowPending');
+  if(sw && !sw.dataset.init){ sw.dataset.init='1'; let v='0'; try{ v = localStorage.getItem('loi_sc_pending') ?? '0'; }catch(e){} sw.setAttribute('aria-checked', v==='1'?'true':'false'); }
   const dept = document.getElementById('specialCalDept').value;
   try{
-    const data = await callApi('get_special_leave_calendar', { year: specialCalYear, month: specialCalMonth, department: dept });
-    await fetchHolidaysCache();
-    specialCalRequests = data.requests || [];
+    const key = `${specialCalYear}|${dept}|${specialPendingOn()}`;
+    if(key !== specialLoadKey){
+      const data = await callApi('get_special_leave_calendar', { year: specialCalYear, month: specialCalMonth, department: dept, full_year: true, include_pending: specialPendingOn() });
+      await fetchHolidaysCache();
+      specialCalRequests = data.requests || [];
+      specialLoadKey = key;
+    }
     populateSpecialCalUsers();
     applySpecialCalFilters();
   }catch(e){ showToast(e.message,'err'); }
 }
 
 // รายชื่อใน dropdown "เลือกตาม user" มาจากคนที่มีวันลาในเดือน/แผนกที่โหลดมา
+function specialReqInMonth(r){
+  const pad = n => String(n).padStart(2,'0');
+  const ms = `${specialCalYear}-${pad(specialCalMonth)}-01`, me = `${specialCalYear}-${pad(specialCalMonth)}-${pad(new Date(specialCalYear, specialCalMonth, 0).getDate())}`;
+  return r.start_date <= me && r.end_date >= ms;
+}
 function populateSpecialCalUsers(){
   const sel = document.getElementById('specialCalUser');
   const keep = sel.value || 'all';
   const people = {};
   specialCalRequests.forEach(r=>{
     const c = r.employee?.employee_code; if(!c) return;
+    if(specialChartMode!=='year' && !specialReqInMonth(r)) return;
     people[c] = r.employee?.name || c;
   });
   if(keep!=='all' && !people[keep] && specialCalUserLabel) people[keep] = specialCalUserLabel; // คงตัวเลือกเดิมไว้แม้เดือนนี้ไม่มีวันลา
@@ -4590,12 +4617,12 @@ function applySpecialCalFilters(){
   if(u!=='all') specialCalUserLabel = sel.options[sel.selectedIndex]?.textContent.replace(/\s*\([^)]*\)\s*$/,'') || '';
   const list = u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u);
   renderSpecialChart(list);
-  renderSpecialCalendar(list);
+  renderSpecialCalendar(list.filter(specialReqInMonth));
 }
 
 function exportSpecialCalExcel(){
   const u = document.getElementById('specialCalUser').value;
-  const list = (u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u))
+  const list = (u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u)).filter(specialReqInMonth)
     .slice().sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date)) || String(a.employee?.employee_code||'').localeCompare(String(b.employee?.employee_code||'')));
   if(!list.length){ showToast(t('tr_none'),'err'); return; }
   const out = list.map((r,i)=>({
@@ -4614,11 +4641,13 @@ function exportSpecialCalExcel(){
 }
 
 function renderSpecialChart(requests){
-  const _m = document.getElementById('specialChartMonth'); if(_m) _m.textContent = `${MONTH_NAMES_EN[specialCalMonth-1]} ${specialCalYear}`;
+  const yearMode = specialChartMode==='year';
+  const _m = document.getElementById('specialChartMonth'); if(_m) _m.textContent = yearMode ? String(specialCalYear) : `${MONTH_NAMES_EN[specialCalMonth-1]} ${specialCalYear}`;
   const pad = n => String(n).padStart(2,'0');
-  const daysInMonth = new Date(specialCalYear, specialCalMonth, 0).getDate();
-  const monthStart = `${specialCalYear}-${pad(specialCalMonth)}-01`;
-  const monthEnd = `${specialCalYear}-${pad(specialCalMonth)}-${pad(daysInMonth)}`;
+  const daysInMonth = yearMode ? 366 : new Date(specialCalYear, specialCalMonth, 0).getDate();
+  const monthStart = yearMode ? `${specialCalYear}-01-01` : `${specialCalYear}-${pad(specialCalMonth)}-01`;
+  const monthEnd = yearMode ? `${specialCalYear}-12-31` : `${specialCalYear}-${pad(specialCalMonth)}-${pad(daysInMonth)}`;
+  if(yearMode) return renderSpecialYearChart(requests, monthStart, monthEnd);
   const perDay = {}; for(let d=1; d<=daysInMonth; d++) perDay[d] = new Set();
   const everyone = new Set();
   requests.forEach(r=>{
@@ -4648,6 +4677,35 @@ function renderSpecialChart(requests){
     `<span>${escHtml(t('sc_sum_peak'))}: <b>${peakDay} ${escHtml(MONTH_NAMES_EN[specialCalMonth-1])} (${max})</b></span>`;
 }
 
+// กราฟรายปี: จำนวนคนลาต่อวัน ตลอดทั้งปี (ป้ายแกนเป็นชื่อเดือน)
+function renderSpecialYearChart(requests, ys, ye){
+  const chart = document.getElementById('specialCalChart'), summary = document.getElementById('specialCalSummary');
+  document.getElementById('specialCalChartX').innerHTML = '';
+  const perDay = {}; const everyone = new Set();
+  requests.forEach(r=>{
+    const who = r.employee?.employee_code || r.employee?.name || r.id;
+    const start = r.start_date < ys ? ys : r.start_date, end = r.end_date > ye ? ye : r.end_date;
+    let cur = new Date(start+'T00:00:00Z'); const endD = new Date(end+'T00:00:00Z');
+    while(cur <= endD){ const k = cur.toISOString().slice(0,10); (perDay[k] = perDay[k] || new Set()).add(who); everyone.add(who); cur.setUTCDate(cur.getUTCDate()+1); }
+  });
+  const daily = []; let totalDays = 0, max = 0, peak = '';
+  for(let c = new Date(ys+'T00:00:00Z'); c <= new Date(ye+'T00:00:00Z'); c.setUTCDate(c.getUTCDate()+1)){
+    const k = c.toISOString().slice(0,10), n = perDay[k] ? perDay[k].size : 0;
+    daily.push({ date:k, count:n }); totalDays += n; if(n>max){ max=n; peak=k; }
+  }
+  if(!max){ chart.innerHTML = `<div class="empty-msg" style="width:100%;align-self:center">${escHtml(t('sc_chart_empty'))}</div>`; summary.innerHTML=''; return; }
+  const W=680,H=200,padL=34,padR=14,padT=14,padB=26, innerW=W-padL-padR, innerH=H-padT-padB, n=daily.length;
+  const x = i => padL + innerW*i/(n-1), y = v => padT + innerH - (v/max)*innerH;
+  const pts = daily.map((d,i)=>[x(i),y(d.count)]);
+  const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area = line + ` L${x(n-1).toFixed(1)},${(padT+innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT+innerH).toFixed(1)} Z`;
+  const hit = pts.map((p,i)=> daily[i].count ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2" fill="var(--plum-700)"><title>${escAttr(formatDMY(daily[i].date))}: ${daily[i].count}</title></circle>` : '').join('');
+  const labels = daily.map((d,i)=> d.date.slice(8)==='01' ? `<text x="${x(i).toFixed(1)}" y="${H-8}" font-size="9" text-anchor="middle" fill="var(--text-dim)">${escHtml(MONTH_NAMES_EN[Number(d.date.slice(5,7))-1].slice(0,3))}</text>` : '').join('');
+  const yTicks = [0,0.5,1].map(f=>{ const val=Math.round(max*f), yy=y(val); return `<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="var(--line-soft)"/><text x="4" y="${(yy+3).toFixed(1)}" font-size="9" fill="var(--text-dim)">${val}</text>`; }).join('');
+  chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block"><defs><linearGradient id="scYG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--plum-600)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--plum-600)" stop-opacity="0"/></linearGradient></defs>${yTicks}<path d="${area}" fill="url(#scYG)"/><path d="${line}" fill="none" stroke="var(--plum-700)" stroke-width="1.6"/>${hit}${labels}</svg>`;
+  summary.innerHTML = `<span>${escHtml(t('sc_sum_people'))}: <b>${everyone.size}</b></span><span>${escHtml(t('sc_sum_total'))}: <b>${totalDays}</b></span><span>${escHtml(t('sc_sum_peak'))}: <b>${escHtml(formatDMY(peak))} (${max})</b></span>`;
+}
+
 function renderSpecialCalendar(requests){
   const grid = document.getElementById('specialCalGrid');
   const daysInMonth = new Date(specialCalYear, specialCalMonth, 0).getDate();
@@ -4668,7 +4726,7 @@ function renderSpecialCalendar(requests){
       const day = cur.getUTCDate();
       if(dayMap[day]) dayMap[day].push({
         name: r.employee?.name||'?', code: r.employee?.employee_code||'',
-        leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix,
+        leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, pending: !!r.status && r.status!=='approved',
       });
       cur.setUTCDate(cur.getUTCDate()+1);
     }
@@ -4684,11 +4742,11 @@ function renderSpecialCalendar(requests){
     const peopleNames = people.map(p=>{
       const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
-      return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}`;
+      return `${p.name} (${p.code}) — ${typeLabel}${reasonPart}${p.suffix||''}${p.pending?' · '+t('ls_pending'):''}`;
     });
     const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...peopleNames];
     const names = allNames.join('\n');
-    const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
+    const dots = people.slice().sort((a,b)=>(a.pending?1:0)-(b.pending?1:0)).slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}${p.pending?' cal-dot-pending':''}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
     html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>${evBadge}
