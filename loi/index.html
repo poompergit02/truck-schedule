@@ -1121,6 +1121,7 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
           <select id="specialCalUser" onchange="applySpecialCalFilters()" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;max-width:220px">
             <option value="all" data-i18n="sc_all_users">All employees</option>
           </select>
+          <button class="btn btn-sm btn-outline" onclick="exportSpecialCalExcel()" data-i18n="btn_export_special">📥 Export Excel</button>
         </div>
       </div>
 
@@ -2814,7 +2815,7 @@ const I18N = {
     btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_pending:'pending', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
-    th_submitted_at:'Submitted at', th_quota:'Leave balance', quota_left:'Left', quota_of:'of', quota_after:'After this:', lbl_show_pending:'Show pending requests', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
+    th_submitted_at:'Submitted at', th_quota:'Leave balance', quota_left:'Left', quota_of:'of', quota_after:'After this:', lbl_show_pending:'Show pending requests', btn_export_special:'📥 Export Excel', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
     set_annualadmin_title:'Annual leave over 3 days needs Admin approval',
     set_annualadmin_desc:'When ON, an annual (vacation) leave request longer than 3 days — counting other approved/pending annual leave close to the same dates, so it cannot be split to avoid the rule — needs Admin as one extra final approver after the managers.',
     leave_personal_unpaid:'💸 Unpaid Leave', leave_wfh:'💻 Work From Home', leave_annual_prev:'📆 Annual leave from last year', leave_annual_urgent:'🚨 Emergency Annual Leave',
@@ -3012,7 +3013,7 @@ const I18N = {
     btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา (เส้นทึบ = อนุมัติแล้ว เส้นประสีอ่อน = รออนุมัติ) ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_pending:'รออนุมัติ', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
-    th_submitted_at:'ยื่นเมื่อ', th_quota:'โควตาวันลา', quota_left:'เหลือ', quota_of:'จากทั้งหมด', quota_after:'หลังอนุมัติเหลือ', lbl_show_pending:'แสดงรายการที่รออนุมัติ', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
+    th_submitted_at:'ยื่นเมื่อ', th_quota:'โควตาวันลา', quota_left:'เหลือ', quota_of:'จากทั้งหมด', quota_after:'หลังอนุมัติเหลือ', lbl_show_pending:'แสดงรายการที่รออนุมัติ', btn_export_special:'📥 Export Excel', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
     set_annualadmin_title:'ลาพักร้อนเกิน 3 วัน ต้องให้ Admin อนุมัติเป็นคนสุดท้าย',
     set_annualadmin_desc:'เมื่อเปิด คำขอลาพักร้อนที่เกิน 3 วัน (นับรวมกับพักร้อนที่อนุมัติแล้วหรือรออนุมัติที่อยู่ใกล้ช่วงเวลาเดียวกันด้วย กันการแบ่งยื่นเพื่อเลี่ยงเงื่อนไข) ต้องผ่าน Admin อนุมัติเพิ่มอีกขั้นหลังหัวหน้าทุกคนอนุมัติแล้ว',
     leave_personal_unpaid:'💸 ลาโดยไม่รับค่าจ้าง', leave_wfh:'💻 ทำงานที่บ้าน (Work From Home)', leave_annual_prev:'📆 ลาพักร้อนจากปีที่แล้ว', leave_annual_urgent:'🚨 ลาพักร้อนฉุกเฉิน',
@@ -3499,7 +3500,13 @@ function resetLeaveForm(){
   $('reqUnit').value='day'; toggleLeaveUnit();
   loadMyLeave();
 }
+let _submittingLeave = false;
 async function submitLeaveRequest(){
+  if(_submittingLeave) return;
+  _submittingLeave = true;
+  try{ await _submitLeaveRequest(); } finally { _submittingLeave = false; }
+}
+async function _submitLeaveRequest(){
   const leave_type=document.getElementById('reqType').value;
   const unit=document.getElementById('reqUnit').value;
   const reason=document.getElementById('reqReason').value.trim();
@@ -4584,6 +4591,26 @@ function applySpecialCalFilters(){
   const list = u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u);
   renderSpecialChart(list);
   renderSpecialCalendar(list);
+}
+
+function exportSpecialCalExcel(){
+  const u = document.getElementById('specialCalUser').value;
+  const list = (u==='all' ? specialCalRequests : specialCalRequests.filter(r=>(r.employee?.employee_code||'')===u))
+    .slice().sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date)) || String(a.employee?.employee_code||'').localeCompare(String(b.employee?.employee_code||'')));
+  if(!list.length){ showToast(t('tr_none'),'err'); return; }
+  const out = list.map((r,i)=>({
+    '#': i+1,
+    [t('exr_code')]: r.employee?.employee_code||'',
+    [t('exr_name')]: r.employee?.name||'',
+    [t('exr_dept')]: r.employee?.department||'',
+    [t('th_type')]: stripLeadingSymbols(getLeaveTypeLabel(r.leave_type)),
+    [t('th_dates')]: formatDurationText(r),
+    [t('th_days')]: formatAmount(r),
+    [t('th_status')]: (STATUS_LABEL[r.status]||{label:r.status||''}).label,
+  }));
+  const ws = XLSX.utils.json_to_sheet(out), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Special Calendar');
+  XLSX.writeFile(wb, `LOI_Special_Calendar_${specialCalYear}-${String(specialCalMonth).padStart(2,'0')}.xlsx`);
 }
 
 function renderSpecialChart(requests){
