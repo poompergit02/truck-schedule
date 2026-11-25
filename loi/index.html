@@ -2211,8 +2211,13 @@ function renderMyFreq(){
     const arr = series[sk] || (series[sk] = new Array(n).fill(0));
     arr[idx] += metric==='days' ? (r.leave_unit==='hour' ? Number(r.hours_count||0)/8 : Number(r.days_count||0)) : 1;
   });
+  const yearMode = !m;
+  const YEAR_PAL = ['#2F80ED','#1FA971','#F2994A','#9B51E0','#EB5757','#00A8B5','#C9A400'];   // รายปี: ใช้พาเลตต์แยกสีให้ต่างกันชัด (ไม่ใช้สีที่ admin ตั้งต่อประเภท)
   const types = Object.keys(series).sort((a,b)=> a.replace('|p','').localeCompare(b.replace('|p','')) || (a.endsWith('|p')?1:0)-(b.endsWith('|p')?1:0));
   const legend = document.getElementById('myFreqLegend');
+  const baseList = [...new Set(types.map(k=>k.replace('|p','')))];
+  const colOf = base => yearMode ? YEAR_PAL[baseList.indexOf(base) % YEAR_PAL.length] : (FREQ_COLORS[base] || '#8A8F98');
+  const offOf = base => yearMode ? (baseList.indexOf(base) - (baseList.length-1)/2) * 3 : 0;   // เลื่อนเส้นเล็กน้อยกันเส้นทับกัน
   if(!types.length){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
   const W=640, H=240, L=36, R=12, T=14, B=28;
   let maxV = 0; types.forEach(k=>series[k].forEach(v=>{ if(v>maxV) maxV=v; }));
@@ -2227,15 +2232,15 @@ function renderMyFreq(){
   svg += `<defs><filter id="freqShadow" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity="0.38"/></filter></defs>`;
   types.forEach(k=>{
     const pend = k.endsWith('|p'), base = k.replace('|p','');
-    const col0 = FREQ_COLORS[base] || '#8A8F98', col = pend ? lightenHex(col0, 0.45) : col0;   // รออนุมัติ = สีอ่อนกว่า + เส้นประ + เงาดำไล่เฉด
+    const col0 = colOf(base), off = offOf(base), col = pend ? lightenHex(col0, 0.45) : col0;   // รออนุมัติ = สีอ่อนกว่า + เส้นประ + เงาดำไล่เฉด
     const lbl = stripLeadingSymbols(getLeaveTypeLabel(base)) + (pend ? ' ('+t('freq_pending')+')' : '');
-    const pts = series[k].map((v,i)=>`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(' ');
+    const pts = series[k].map((v,i)=>`${(xAt(i)+off).toFixed(1)},${yAt(v).toFixed(1)}`).join(' ');
     svg += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="${pend?2.6:2.4}" ${pend?'stroke-dasharray="7 5" filter="url(#freqShadow)"':''} stroke-linejoin="round" stroke-linecap="round"/>`;
-    series[k].forEach((v,i)=>{ svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(lbl)} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
+    series[k].forEach((v,i)=>{ svg += `<circle cx="${(xAt(i)+off).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(lbl)} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
   });
   box.innerHTML = svg + '</svg>';
   legend.innerHTML = types.map(k=>{
-    const pend = k.endsWith('|p'), base = k.replace('|p',''), c0 = FREQ_COLORS[base]||'#8A8F98', c = pend ? lightenHex(c0,0.45) : c0;
+    const pend = k.endsWith('|p'), base = k.replace('|p',''), c0 = colOf(base), c = pend ? lightenHex(c0,0.45) : c0;
     const swatch = pend ? `<i style="display:inline-block;width:18px;height:0;border-top:3px dashed ${c};filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.4))"></i>` : `<i style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${c}"></i>`;
     return `<span style="display:inline-flex;align-items:center;gap:5px">${swatch}${escHtml(stripLeadingSymbols(getLeaveTypeLabel(base)))}${pend?' ('+escHtml(t('freq_pending'))+')':''}</span>`;
   }).join('');
@@ -2765,7 +2770,7 @@ const I18N = {
     set_prevclose_title:'Closing date for “Annual leave from last year”', set_prevclose_desc:'Usable until the day before this date each year (default 1 April = usable through 31 March). Emergency accounts ignore it.',
     set_exempt_hdr:'Exceptions (ON = allowed)', set_att_list_hdr:'Leave types',
     set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
-    set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
+    set_att_sickhol_lbl:'🤒 Sick leave next to a company holiday', set_att_sickhol_note:'Medical certificate — when the day before/after the leave (or a day within it) is a company holiday, e.g. Mon holiday + sick Tue', set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
     cal_legend_approved:'Approved (solid)', cal_legend_pending:'Pending approval (hollow)',
     h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
@@ -2963,7 +2968,7 @@ const I18N = {
     set_prevclose_title:'วันที่ปิดใช้ “ลาพักร้อนจากปีที่แล้ว”', set_prevclose_desc:'ใช้ได้ถึงก่อนวันที่นี้ 1 วัน ในทุกปี (ค่าเริ่มต้น 1 เมษายน = ใช้ได้ถึง 31 มีนาคม) บัญชี Emergency ไม่ถูกจำกัด',
     set_exempt_hdr:'ข้อยกเว้น (เปิด = ลาได้)', set_att_list_hdr:'ประเภทการลา',
     set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
-    set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
+    set_att_sickhol_lbl:'🤒 ลาป่วยติดวันหยุดบริษัท', set_att_sickhol_note:'ใบรับรองแพทย์ — เมื่อวันก่อน/หลังวันลา (หรือวันในช่วงที่ลา) เป็นวันหยุดบริษัท เช่น จันทร์หยุดบริษัท แล้วลาป่วยอังคาร', set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
     cal_legend_approved:'อนุมัติแล้ว (ทึบ)', cal_legend_pending:'รออนุมัติ (กลวง)',
     h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
@@ -3374,7 +3379,9 @@ function checkAttachmentRequirement(){
   const dateVal = unit==='hour' ? document.getElementById('reqHourDate').value
                 : unit==='half' ? document.getElementById('reqHalfDate').value
                 : document.getElementById('reqStart').value;
-  if(!dateVal || leaveType!=='sick' || appSettingsCache['sick_leave_monfri_requires_attachment']!=='true'){
+  const monFriOn = appSettingsCache['sick_leave_monfri_requires_attachment']==='true';
+  const holOn = appSettingsCache['sick_leave_holiday_adjacent_requires_attachment']==='true';
+  if(!dateVal || leaveType!=='sick' || (!monFriOn && !holOn)){
     wrap.style.display='none';
     return;
   }
@@ -3382,12 +3389,22 @@ function checkAttachmentRequirement(){
   const endVal = unit==='day' ? (document.getElementById('reqEnd').value || dateVal) : dateVal;
   let need = false;
   const sd = new Date(dateVal+'T00:00:00Z'), ed = new Date(endVal+'T00:00:00Z');
-  for(let d = new Date(sd), i = 0; d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){
-    const w = d.getUTCDay(); // 0=Sun 1=Mon 5=Fri
-    if(w===1 || w===5){ need = true; break; }
+  if(monFriOn){
+    for(let d = new Date(sd), i = 0; d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){
+      const w = d.getUTCDay(); // 0=Sun 1=Mon 5=Fri
+      if(w===1 || w===5){ need = true; break; }
+    }
+    // ลาป่วยตั้งแต่ 3 วันทำงานขึ้นไป (ไม่นับเสาร์-อาทิตย์/วันหยุด) ก็ต้องแนบ
+    if(!need && unit==='day' && clientWorkingDays(dateVal, endVal) >= 3) need = true;
   }
-  // ลาป่วยตั้งแต่ 3 วันทำงานขึ้นไป (ไม่นับเสาร์-อาทิตย์/วันหยุด) ก็ต้องแนบ
-  if(!need && unit==='day' && clientWorkingDays(dateVal, endVal) >= 3) need = true;
+  // ติดวันหยุดบริษัท: วันก่อนวันแรก / วันหลังวันสุดท้าย / วันใดๆ ในช่วงที่ลา เป็นวันหยุดบริษัท
+  if(!need && holOn){
+    const isHol = iso => holidaysCache.some(x=>x.holiday_date===iso);
+    const before = new Date(sd); before.setUTCDate(before.getUTCDate()-1);
+    const after = new Date(ed); after.setUTCDate(after.getUTCDate()+1);
+    if(isHol(before.toISOString().slice(0,10)) || isHol(after.toISOString().slice(0,10))) need = true;
+    for(let d = new Date(sd), i = 0; !need && d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){ if(isHol(d.toISOString().slice(0,10))) need = true; }
+  }
   wrap.style.display = need ? 'block' : 'none';
 }
 
@@ -5508,6 +5525,7 @@ const ATTACH_LIST = [
   { key:'sick_leave_monfri_requires_attachment', type:'sick', noteKey:'set_att_sick_note' },
   { key:'personal_leave_requires_attachment', type:'personal', noteKey:'set_att_personal_note' },
   { key:'wfh_requires_photo', type:'wfh', noteKey:'set_att_wfh_note' },
+  { key:'sick_leave_holiday_adjacent_requires_attachment', type:'sick', labelKey:'set_att_sickhol_lbl', noteKey:'set_att_sickhol_note' },
 ];
 // ตัวเลือกวันที่ปิดใช้ลาพักร้อนจากปีที่แล้ว — แสดงใต้สวิตช์ leave_prev_year_annual
 function prevCloseHtml(settings){
@@ -5542,7 +5560,7 @@ function renderSettingsGroups(settings){
       <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_grp_attach_title'))}</h4><p>${escHtml(t('set_grp_attach_desc'))}</p></div></div>
       <details class="setting-details" open><summary>${escHtml(t('set_att_list_hdr'))}</summary>
       <div class="setting-sublist">
-        ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
+        ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(a.labelKey ? t(a.labelKey) : getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
       </div></details>
     </div>`;
   return exemptHtml + attachHtml;
@@ -6659,7 +6677,10 @@ function bgSym(g, sx, sy, segs){
     ]) };
 })();
 
-const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop'];  // ลำดับในรายการเลือก (dropdown)
+// ─── 02 · วาฬนาร์วาล ผิว/สีการกะพริบแบบหอยเชลล์ (ส้มทองไล่เฉด) ───
+BG_ANIMALS['narwhal2'] = Object.assign({}, BG_ANIMALS['narwhal'], { th: '02', en: '02', colors: BG_ANIMALS['scallop'].colors.slice() });
+
+const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop','narwhal2'];  // ลำดับในรายการเลือก (dropdown)
 
 
 // ══════════ BG ART — ภาพพื้นหลังอนุภาคพิกเซล สัตว์ประจำเดือน (ว่ายอยู่ด้านหลังเนื้อหา) ══════════
@@ -6668,7 +6689,7 @@ const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop'];  // �
 // อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และสัตว์หลบเมาส์
 // ปรับแต่งทุกอย่างได้ที่ BG_CONFIG ด้านล่างที่เดียว (สีและรูปร่างของสัตว์แต่ละตัวแก้ที่ BG_ANIMALS)
 const BG_CONFIG = {
-  // ── เลือกสัตว์: 'shark' | 'jellyfish' | 'whale' | 'crab' | 'narwhal' | 'scallop' | 'off' = ปิด ──
+  // ── เลือกสัตว์: 'shark' | 'jellyfish' | 'whale' | 'crab' | 'narwhal' | 'scallop' | 'narwhal2' | 'off' = ปิด ──
   // (ค่านี้ admin ตั้งได้ในหน้า "ความคืบหน้าการล็อกอิน" → ภาพพื้นหลัง และถูกเก็บใน Settings ของระบบ ค่าด้านล่างใช้เมื่อยังไม่เคยตั้ง)
   animal: 'shark',
 
