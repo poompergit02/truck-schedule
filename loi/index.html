@@ -2220,7 +2220,14 @@ function renderMyFreq(){
   const offOf = base => yearMode ? (baseList.indexOf(base) - (baseList.length-1)/2) * 3 : 0;   // เลื่อนเส้นเล็กน้อยกันเส้นทับกัน
   if(!types.length){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
   const W=640, H=240, L=36, R=12, T=14, B=28;
-  let maxV = 0; types.forEach(k=>series[k].forEach(v=>{ if(v>maxV) maxV=v; }));
+  // รายปี: รวมทุกประเภทเป็น "เส้นเดียว" (อนุมัติแล้ว) + เส้นประอ่อน (รออนุมัติ) สีไล่ผสมตามสัดส่วนประเภทของแต่ละเดือน
+  const grp = { a:{}, p:{} };   // ต่อกลุ่ม: base → array
+  types.forEach(k=>{ const g = k.endsWith('|p') ? 'p' : 'a'; grp[g][k.replace('|p','')] = series[k]; });
+  const totOf = g => Array.from({length:n},(_,i)=>Object.values(grp[g]).reduce((a,arr)=>a+arr[i],0));
+  const totA = totOf('a'), totP = totOf('p');
+  let maxV = 0;
+  if(yearMode){ [...totA, ...totP].forEach(v=>{ if(v>maxV) maxV=v; }); }
+  else types.forEach(k=>series[k].forEach(v=>{ if(v>maxV) maxV=v; }));
   maxV = Math.max(1, Math.ceil(maxV)); const steps = Math.min(maxV, 5);
   const xAt = i => L + (n===1 ? (W-L-R)/2 : i*(W-L-R)/(n-1));
   const yAt = v => T + (H-T-B) * (1 - v/maxV);
@@ -2230,7 +2237,35 @@ function renderMyFreq(){
   const xfs = n>16 ? 9 : 10;   // แสดงครบทุกวัน (30/31 วัน) ไม่ข้าม
   labels.forEach((lb,i)=>{ svg += `<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" font-size="${xfs}" fill="#8a8398">${escHtml(lb)}</text>`; });
   svg += `<defs><filter id="freqShadow" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity="0.38"/></filter></defs>`;
-  types.forEach(k=>{
+  if(yearMode){
+    const hex2rgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+    const rgb2hex = c => '#'+c.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+    const mixAt = (g,i)=>{ let tot=0, acc=[0,0,0]; for(const [b,arr] of Object.entries(grp[g])){ const v=arr[i]; if(v>0){ const c=hex2rgb(colOf(b)); acc=acc.map((x,j)=>x+c[j]*v); tot+=v; } } return tot ? rgb2hex(acc.map(x=>x/tot)) : null; };
+    const drawBlend = (g, tot, pend, gid)=>{
+      if(!tot.some(v=>v>0)) return;
+      let cols = tot.map((v,i)=>mixAt(g,i));
+      // จุดที่ว่าง (0) ให้รับสีจากจุดข้างเคียง ไม่ให้ไล่เฉดกลายเป็นสีเทา
+      let last=null; cols = cols.map(c=>{ if(c) last=c; return c||last; }); last=null; cols = cols.reverse().map(c=>{ if(c) last=c; return c||last; }).reverse();
+      const sc = c => pend ? lightenHex(c, 0.35) : c;
+      const stops = cols.map((c,i)=>`<stop offset="${(((xAt(i)-L)/(W-L-R))*100).toFixed(1)}%" stop-color="${sc(c)}"/>`).join('');
+      svg += `<defs><linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${L}" x2="${W-R}" y1="0" y2="0">${stops}</linearGradient>`
+           + `<linearGradient id="${gid}A" gradientUnits="userSpaceOnUse" x1="${L}" x2="${W-R}" y1="0" y2="0">${cols.map((c,i)=>`<stop offset="${(((xAt(i)-L)/(W-L-R))*100).toFixed(1)}%" stop-color="${sc(c)}" stop-opacity="${pend?0.07:0.2}"/>`).join('')}</linearGradient></defs>`;
+      const pts = tot.map((v,i)=>[xAt(i), yAt(v)]);
+      const line = pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');
+      if(!pend) svg += `<path d="${line} L${xAt(n-1).toFixed(1)},${yAt(0)} L${xAt(0).toFixed(1)},${yAt(0)} Z" fill="url(#${gid}A)" stroke="none"/>`;
+      svg += `<path d="${line}" fill="none" stroke="#000" stroke-opacity="${pend?0.10:0.22}" stroke-width="${pend?3:5}" transform="translate(0,3)" stroke-linejoin="round" stroke-linecap="round" filter="url(#freqBlur)"/>`;   // เงาดำนุ่มๆ ใต้เส้น
+      svg += `<path d="${line}" fill="none" stroke="url(#${gid})" stroke-width="${pend?3:4}" ${pend?'stroke-dasharray="7 5"':''} stroke-linejoin="round" stroke-linecap="round"/>`;
+      tot.forEach((v,i)=>{
+        if(pend && !v) return;
+        const parts = Object.entries(grp[g]).filter(([b,arr])=>arr[i]>0).map(([b,arr])=>`${stripLeadingSymbols(getLeaveTypeLabel(b))}: ${Math.round(arr[i]*100)/100}`).join(', ');
+        svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?4.6:2.2}" fill="${v>0?sc(cols[i]):'#fff'}" stroke="${v>0?'#fff':sc(cols[i])}" stroke-width="${v>0?1.6:1.3}" ${v>0?'filter="url(#freqShadow)"':''}><title>${escHtml(labels[i])}${pend?' ('+escHtml(t('freq_pending'))+')':''} — ${escHtml(parts||'0')}</title></circle>`;
+      });
+    };
+    svg += `<defs><filter id="freqBlur" x="-5%" y="-30%" width="110%" height="170%"><feGaussianBlur stdDeviation="2.2"/></filter></defs>`;
+    drawBlend('p', totP, true, 'fgP');
+    drawBlend('a', totA, false, 'fgA');
+  }
+  (yearMode ? [] : types).forEach(k=>{
     const pend = k.endsWith('|p'), base = k.replace('|p','');
     const col0 = colOf(base), off = offOf(base), col = pend ? lightenHex(col0, 0.45) : col0;   // รออนุมัติ = สีอ่อนกว่า + เส้นประ + เงาดำไล่เฉด
     const lbl = stripLeadingSymbols(getLeaveTypeLabel(base)) + (pend ? ' ('+t('freq_pending')+')' : '');
@@ -2239,7 +2274,7 @@ function renderMyFreq(){
     series[k].forEach((v,i)=>{ svg += `<circle cx="${(xAt(i)+off).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="${v>0?3.6:2}" fill="${v>0?col:'#fff'}" stroke="${col}" stroke-width="1.5"><title>${escHtml(lbl)} · ${escHtml(labels[i])}: ${Math.round(v*100)/100}</title></circle>`; });
   });
   box.innerHTML = svg + '</svg>';
-  legend.innerHTML = types.map(k=>{
+  legend.innerHTML = (yearMode ? types.filter(k=>!k.endsWith('|p')) : types).map(k=>{
     const pend = k.endsWith('|p'), base = k.replace('|p',''), c0 = colOf(base), c = pend ? lightenHex(c0,0.45) : c0;
     const swatch = pend ? `<i style="display:inline-block;width:18px;height:0;border-top:3px dashed ${c};filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.4))"></i>` : `<i style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${c}"></i>`;
     return `<span style="display:inline-flex;align-items:center;gap:5px">${swatch}${escHtml(stripLeadingSymbols(getLeaveTypeLabel(base)))}${pend?' ('+escHtml(t('freq_pending'))+')':''}</span>`;
@@ -2770,7 +2805,7 @@ const I18N = {
     set_prevclose_title:'Closing date for “Annual leave from last year”', set_prevclose_desc:'Usable until the day before this date each year (default 1 April = usable through 31 March). Emergency accounts ignore it.',
     set_exempt_hdr:'Exceptions (ON = allowed)', set_att_list_hdr:'Leave types',
     set_grp_attach_title:'Required attachments', set_grp_attach_desc:'Switch ON the leave types that must attach a file when requesting.',
-    set_att_sickhol_lbl:'🤒 Sick leave next to a company holiday', set_att_sickhol_note:'Medical certificate — when the day before/after the leave (or a day within it) is a company holiday, e.g. Mon holiday + sick Tue', set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
+    set_att_sickhol_lbl:'🤒 Sick leave next to a company holiday', set_att_sickhol_note:'Medical certificate — company holiday joined to a weekend (Mon holiday + sick Tue), or sick day sandwiched between holidays (Tue & Thu holiday + sick Wed)', set_att_sick_note:'Medical certificate — if the range includes Mon/Fri or is 3+ working days', set_att_personal_note:'Any file (image or PDF)', set_att_wfh_note:'Photo',
     set_pattach_title:'Require an attachment for personal leave', set_pattach_desc:'When ON, every personal leave (ลากิจ) request must attach a file (image or PDF).',
     cal_legend_approved:'Approved (solid)', cal_legend_pending:'Pending approval (hollow)',
     h3_dotcolors:'🎨 Leave type dot colors', hint_dotcolors:'The dot color of each leave type on everyone\'s calendar. Change it if two colors look too similar.', btn_dotcolors_reset:'Reset to default colors',
@@ -2968,7 +3003,7 @@ const I18N = {
     set_prevclose_title:'วันที่ปิดใช้ “ลาพักร้อนจากปีที่แล้ว”', set_prevclose_desc:'ใช้ได้ถึงก่อนวันที่นี้ 1 วัน ในทุกปี (ค่าเริ่มต้น 1 เมษายน = ใช้ได้ถึง 31 มีนาคม) บัญชี Emergency ไม่ถูกจำกัด',
     set_exempt_hdr:'ข้อยกเว้น (เปิด = ลาได้)', set_att_list_hdr:'ประเภทการลา',
     set_grp_attach_title:'ต้องแนบไฟล์', set_grp_attach_desc:'เปิดประเภทการลาที่ต้องแนบไฟล์ตอนขอลา',
-    set_att_sickhol_lbl:'🤒 ลาป่วยติดวันหยุดบริษัท', set_att_sickhol_note:'ใบรับรองแพทย์ — เมื่อวันก่อน/หลังวันลา (หรือวันในช่วงที่ลา) เป็นวันหยุดบริษัท เช่น จันทร์หยุดบริษัท แล้วลาป่วยอังคาร', set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
+    set_att_sickhol_lbl:'🤒 ลาป่วยติดวันหยุดบริษัท', set_att_sickhol_note:'ใบรับรองแพทย์ — วันหยุดบริษัทที่ติดเสาร์-อาทิตย์ (จันทร์หยุด ลาอังคาร) หรือลาคั่นกลางวันหยุด (อังคาร&พฤหัสหยุด ลาพุธ) ส่วนพุธหยุดแล้วลาพฤหัสไม่ต้องแนบ', set_att_sick_note:'ใบรับรองแพทย์ — เมื่อช่วงที่ลามีวันจันทร์/ศุกร์ หรือลาตั้งแต่ 3 วันทำงาน', set_att_personal_note:'ไฟล์อะไรก็ได้ (รูปภาพหรือ PDF)', set_att_wfh_note:'รูปภาพ',
     set_pattach_title:'ลากิจต้องแนบไฟล์', set_pattach_desc:'เมื่อเปิด คำขอลากิจทุกครั้งต้องแนบไฟล์ (รูปภาพหรือ PDF)',
     cal_legend_approved:'อนุมัติแล้ว (ทึบ)', cal_legend_pending:'รออนุมัติ (กลวง)',
     h3_dotcolors:'🎨 สีจุดประเภทการลา', hint_dotcolors:'สีจุดของแต่ละประเภทการลาในปฏิทินของทุกคน เปลี่ยนได้หากสีใกล้เคียงกันจนสับสน', btn_dotcolors_reset:'คืนค่าสีเริ่มต้น',
@@ -3398,14 +3433,26 @@ function checkAttachmentRequirement(){
     if(!need && unit==='day' && clientWorkingDays(dateVal, endVal) >= 3) need = true;
   }
   // ติดวันหยุดบริษัท: วันก่อนวันแรก / วันหลังวันสุดท้าย / วันใดๆ ในช่วงที่ลา เป็นวันหยุดบริษัท
-  if(!need && holOn){
-    const isHol = iso => holidaysCache.some(x=>x.holiday_date===iso);
-    const before = new Date(sd); before.setUTCDate(before.getUTCDate()-1);
-    const after = new Date(ed); after.setUTCDate(after.getUTCDate()+1);
-    if(isHol(before.toISOString().slice(0,10)) || isHol(after.toISOString().slice(0,10))) need = true;
-    for(let d = new Date(sd), i = 0; !need && d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){ if(isHol(d.toISOString().slice(0,10))) need = true; }
-  }
+  if(!need && holOn) need = sickTouchesHolidayRule(dateVal, endVal);
   wrap.style.display = need ? 'block' : 'none';
+}
+
+// กฎลาป่วยติดวันหยุดบริษัท (ต้องตรงกับ backend):
+//  • วันหยุดบริษัทที่ "ติดกับเสาร์-อาทิตย์" ด้านใดด้านหนึ่งของช่วงลา (ไล่วันหยุดต่อเนื่อง จ.หยุด+ลา อ. / ลา พฤ. + ศ.หยุด)
+//  • หรือช่วงลา "คั่นกลาง" วันหยุดบริษัททั้งสองด้าน (อ.&พฤ.หยุด ลา พ.) หรือมีวันหยุดบริษัทอยู่ในช่วงที่ลา
+//  • วันหยุดที่ไม่ติดเสาร์-อาทิตย์และไม่ได้คั่นกลาง (เช่น พ.หยุด ลา พฤ.) ไม่ต้องแนบ
+function sickTouchesHolidayRule(startIso, endIso){
+  const isHol = iso => holidaysCache.some(x=>x.holiday_date===iso);
+  const sd = new Date(startIso+'T00:00:00Z'), ed = new Date((endIso||startIso)+'T00:00:00Z');
+  const run = (from, step)=>{ const out = { hol:false, wk:false, any:false }; const d = new Date(from);
+    for(let i=0;i<14;i++){ d.setUTCDate(d.getUTCDate()+step); const w = d.getUTCDay(), iso = d.toISOString().slice(0,10);
+      const wk = (w===0||w===6), h = isHol(iso); if(!wk && !h) break; out.any = true; if(h) out.hol = true; if(wk) out.wk = true; }
+    return out; };
+  const back = run(sd,-1), fwd = run(ed,1);
+  if((back.hol && back.wk) || (fwd.hol && fwd.wk)) return true;
+  if(back.hol && fwd.hol) return true;
+  for(let d = new Date(sd), i=0; d <= ed && i < 400; d.setUTCDate(d.getUTCDate()+1), i++){ if(isHol(d.toISOString().slice(0,10))) return true; }
+  return false;
 }
 
 // นับวันทำงานในช่วงวันที่ (ตัดเสาร์-อาทิตย์และวันหยุดบริษัทที่โหลดไว้) — ใช้เดาว่าลาป่วยครบ 3 วันหรือยัง (backend นับจริงอีกครั้ง)
@@ -6678,7 +6725,7 @@ function bgSym(g, sx, sy, segs){
 })();
 
 // ─── 02 · วาฬนาร์วาล ผิว/สีการกะพริบแบบหอยเชลล์ (ส้มทองไล่เฉด) ───
-BG_ANIMALS['narwhal2'] = Object.assign({}, BG_ANIMALS['narwhal'], { th: '02', en: '02', colors: BG_ANIMALS['scallop'].colors.slice() });
+BG_ANIMALS['narwhal2'] = Object.assign({}, BG_ANIMALS['narwhal'], { th: '02', en: '02', colors: BG_ANIMALS['scallop'].colors.slice(), edgeDepth: 2, edgeKeep: 0.35 });
 
 const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop','narwhal2'];  // ลำดับในรายการเลือก (dropdown)
 
@@ -6827,7 +6874,8 @@ const BgArt = (function(){
       const sh = Math.round(t*(P - 1));
       const lvl = (kind === 2 || kind === 3) ? 2 : (depth < 2 ? (al < 0.5 ? 0 : 1) : (al < 0.18 ? 0 : (al < 0.5 ? 1 : 2)));
       bucket[i] = sh*3 + lvl;
-      if(depth < 3 && (kind === 1 || kind === 4 || kind === 5)) bucket[i] = nb;
+      const edgeD = A.edgeDepth !== undefined ? A.edgeDepth : 3, edgeKeep = A.edgeKeep !== undefined ? A.edgeKeep : 1;   // ต่อสัตว์: ความหนา/สัดส่วนพิกเซลริมขอบที่กะพริบ
+      if(depth < edgeD && (kind === 1 || kind === 4 || kind === 5) && Math.random() < edgeKeep) bucket[i] = nb;
       x0[i] = p.x; y0[i] = p.y; pid8[i] = p.pid;
       fin[i] = part.fin ? part.fin(p.x, p.y) : 0;
       edge[i] = (depth < 2 && kind !== 3) ? 1 : 0;
