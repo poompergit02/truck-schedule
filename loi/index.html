@@ -333,6 +333,7 @@ tr:hover td{background:var(--cream)}
 .cal-cell.empty{background:transparent;border:none}
 .cal-cell-holiday{background:var(--danger-bg);border-color:var(--hc,var(--danger))}
 .cal-cell-holiday .cal-daynum{color:var(--hc,var(--danger));font-weight:700}
+.cal-cell-event{background:color-mix(in srgb,var(--ec,#F59E0B) 24%,#fff)!important;border-color:var(--ec,#F59E0B)!important;box-shadow:inset 0 0 0 1px var(--ec,#F59E0B)}
 @supports (background:color-mix(in srgb,red 10%,white)){
   .cal-cell-holiday{background:color-mix(in srgb,var(--hc,var(--danger)) 14%,#fff)}
   .cal-cell-holiday .cal-daynum{color:color-mix(in srgb,var(--hc,var(--danger)) 70%,#000)}
@@ -2380,7 +2381,8 @@ function renderMyCalendar(){
     });
     const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...entryNames];
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
+    const cx = cellExtra(holiday, dateStr);
+    html += `<div class="cal-cell${holidayCls}${cx.cls}"${cx.style}${allNames.length?` data-names="${escAttr(allNames.join('\n'))}"`:''}>
       <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -2815,7 +2817,7 @@ const I18N = {
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
     ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
     ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
-    set_notifycancel_title:'Notify employee when admin cancels their leave',
+    set_adminfinal_title:'Email admin when the last approver approves', set_adminfinal_desc:'When the final approver in the chain approves a request (every employee, every branch), also send an email to admin (branch admins only receive their own branch).', set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
     h3_newrequest:'New Leave Request', lbl_unit_multi:'Multiple specific dates',
     lbl_specific_dates:'Specific Dates (same leave type applies to all)', btn_add_date:'+ Add Date',
@@ -3013,7 +3015,7 @@ const I18N = {
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
     ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
     ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
-    set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
+    set_adminfinal_title:'แจ้ง admin ทางอีเมลเมื่อหัวหน้าลำดับสุดท้ายอนุมัติ', set_adminfinal_desc:'เมื่อหัวหน้าลำดับสุดท้ายในสายอนุมัติอนุมัติครบ (ทุกคน ทุกสาขา) ให้ส่งอีเมลแจ้ง admin ด้วย (admin สาขาจะได้รับเฉพาะสาขาตัวเอง)', set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
     h3_newrequest:'ยื่นคำขอลาใหม่', lbl_unit_multi:'หลายวันที่ไม่ติดกัน',
     lbl_specific_dates:'เลือกวันที่ (ใช้ประเภทการลาเดียวกันทุกวัน)', btn_add_date:'+ เพิ่มวันที่',
@@ -4132,6 +4134,12 @@ let eventsCache = [];
 const evColorOf = e => (e && /^#[0-9a-fA-F]{6}$/.test(e.color||'')) ? e.color : '#F59E0B';
 function eventsOn(dateStr){ return eventsCache.filter(e=>String(e.event_date).slice(0,10)===dateStr); }
 function eventTitlesOf(dateStr){ return eventsOn(dateStr).map(e=>`🎉 ${e.label}`); }
+function eventColorOn(dateStr){ const ev = eventsOn(dateStr); return ev.length ? evColorOf(ev[0]) : null; }
+function cellExtra(holiday, dateStr){   // class + style ของช่องปฏิทิน: สีวันหยุด (--hc) และสี Event (--ec)
+  const ec = eventColorOn(dateStr);
+  const st = [holiday ? `--hc:${holidayColorOf(holiday)}` : '', ec ? `--ec:${ec}` : ''].filter(Boolean).join(';');
+  return { cls: ec ? ' cal-cell-event' : '', style: st ? ` style="${st}"` : '' };
+}
 function eventBadgeOf(dateStr){ const ev = eventsOn(dateStr); return ev.length ? `<span class="cal-ev">🎉</span>` : ''; }
 const scopeLabel = sc => sc==='all' ? t('scope_all') : sc;
 async function fetchEventsCache(){
@@ -4803,6 +4811,7 @@ function renderSpecialCalendar(requests){
     const dateStr = `${specialCalYear}-${pad(specialCalMonth)}-${pad(d)}`;
     const holiday = holidaysCache.find(h=>h.holiday_date===dateStr);
     const evTitles = eventTitlesOf(dateStr), evBadge = eventBadgeOf(dateStr);
+    people.sort((a,b)=>(a.pending?1:0)-(b.pending?1:0));   // ลำดับเดียวกันทั้งจุดและรายชื่อใน tooltip
     const peopleNames = people.map(p=>{
       const typeLabel = getLeaveTypeLabel(p.leaveType);
       const reasonPart = p.reason ? ` — ${p.reason}` : '';
@@ -4810,9 +4819,10 @@ function renderSpecialCalendar(requests){
     });
     const allNames = [...(holiday ? [`🏖️ ${holiday.label}`] : []), ...evTitles, ...peopleNames];
     const names = allNames.join('\n');
-    const dots = people.slice().sort((a,b)=>(a.pending?1:0)-(b.pending?1:0)).slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}${p.pending?' cal-dot-pending':''}"></span>`).join('');
+    const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}${p.pending?' cal-dot-pending':''}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
+    const cx = cellExtra(holiday, dateStr);
+    html += `<div class="cal-cell${holidayCls}${cx.cls}"${cx.style}${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -5560,6 +5570,7 @@ const SETTING_DEFS = [
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
   { key: 'bridge_leave_warning', titleKey: 'set_bridge_title', descKey: 'set_bridge_desc' },
+  { key: 'notify_admin_final_approval', titleKey: 'set_adminfinal_title', descKey: 'set_adminfinal_desc' },
 ];
 
 // ── กลุ่มเงื่อนไขที่มีรายการประเภทการลา (เปิด/ปิดรายประเภท) ──
@@ -6520,7 +6531,8 @@ function renderCalendar(requests){
     const names = allNames.join('\n');
     const dots = people.slice(0,8).map(p=>`<span class="cal-dot cal-dot-${p.leaveType}"></span>`).join('');
     const holidayCls = holiday ? ' cal-cell-holiday' : '';
-    html += `<div class="cal-cell${holidayCls}"${holiday?holidayStyleAttr(holiday):''}${allNames.length?` data-names="${escAttr(names)}"`:''}>
+    const cx = cellExtra(holiday, dateStr);
+    html += `<div class="cal-cell${holidayCls}${cx.cls}"${cx.style}${allNames.length?` data-names="${escAttr(names)}"`:''}>
       <div class="cal-daynum">${d}</div>${evBadge}
       <div class="cal-dots">${dots}</div>
     </div>`;
