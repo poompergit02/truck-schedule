@@ -96,7 +96,8 @@ header{
 .header-right{display:flex;align-items:center;gap:14px}
 .approver-pop{display:none;position:fixed;z-index:500;min-width:230px;max-width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.2);padding:12px 14px;font-size:.84rem}
 .approver-pop .ap-title{font-weight:700;color:var(--plum-900);margin-bottom:6px}
-.approver-pop .ap-row{padding:3px 0;color:var(--ink)}.approver-pop .ap-row small{color:var(--text-dim);margin-left:4px}
+.approver-pop .ap-row{padding:3px 0;color:var(--ink);display:flex;align-items:center;gap:8px}.approver-pop .ap-row .avatar-img,.approver-pop .ap-row .avatar-ini{flex:0 0 auto;border-radius:50%;object-fit:cover}
+.approver-pop .ap-scroll{max-height:200px;overflow:auto}.approver-pop .ap-row small{color:var(--text-dim);margin-left:4px}
 .approver-pop .ap-none{color:var(--text-dim)}
 .approver-pop .ap-note{margin-top:6px;font-size:.74rem;color:var(--text-dim)}
 .approver-pop .ap-photo{margin-top:10px;width:100%;border:1px solid var(--line);background:var(--line-soft);border-radius:8px;padding:6px;cursor:pointer;font-size:.8rem}
@@ -2158,6 +2159,7 @@ async function loadMyLeave(){
     const data = await callApi('get_my_data');
     if(data.employee && currentUser) currentUser.bypass_conditions = !!data.employee.bypass_conditions;   // ข้อมูลตอนล็อกอินไม่มีฟิลด์นี้ → ดึงจาก get_my_data
     myApproversCache = data.approvers || [];
+    myApprovees = data.approvees || [];
     renderBalances(data.balances);
     renderNextYearBlock(data.next_year);
     myLeaveRequestsCache = data.requests || [];
@@ -2817,7 +2819,7 @@ const I18N = {
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
     ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
     ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
-    set_adminfinal_title:'Email admin when the last approver approves', set_adminfinal_desc:'When the final approver in the chain approves a request (every employee, every branch), also send an email to admin (branch admins only receive their own branch).', set_notifycancel_title:'Notify employee when admin cancels their leave',
+    set_adminfinal_title:'Email admin when the last approver approves', set_adminfinal_desc:'When the final approver in the chain approves a request (every employee, every branch), also send an email to admin (branch admins only receive their own branch).', set_grp_warn_title:'⚠️ Warn when requesting leave', set_grp_warn_desc:'Switch ON the warnings that ask the requester to confirm once more before sending.', set_warn_list_hdr:'Warning list', set_warn_bridge:'Leave next to a long company holiday', set_warn_urgent:'🚨 Emergency annual leave', set_warn_urgent_note:'Confirm that the requester will not receive the company diligence bonus', urgent_title:'⚠️ Emergency annual leave', urgent_body:'If you take emergency annual leave, you will not receive the company diligence bonus. Do you want to continue?', appr_team_title:'People who request approval from you', appr_step:'(step {n})', set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
     h3_newrequest:'New Leave Request', lbl_unit_multi:'Multiple specific dates',
     lbl_specific_dates:'Specific Dates (same leave type applies to all)', btn_add_date:'+ Add Date',
@@ -3015,7 +3017,7 @@ const I18N = {
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
     ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
     ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
-    set_adminfinal_title:'แจ้ง admin ทางอีเมลเมื่อหัวหน้าลำดับสุดท้ายอนุมัติ', set_adminfinal_desc:'เมื่อหัวหน้าลำดับสุดท้ายในสายอนุมัติอนุมัติครบ (ทุกคน ทุกสาขา) ให้ส่งอีเมลแจ้ง admin ด้วย (admin สาขาจะได้รับเฉพาะสาขาตัวเอง)', set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
+    set_adminfinal_title:'แจ้ง admin ทางอีเมลล์เมื่อหัวหน้าลำดับสุดท้ายอนุมัติ', set_adminfinal_desc:'เมื่อหัวหน้าลำดับสุดท้ายในสายอนุมัติอนุมัติครบ (ทุกคน ทุกสาขา) ให้ส่งอีเมลแจ้ง admin ด้วย (admin สาขาจะได้รับเฉพาะสาขาตัวเอง)', set_grp_warn_title:'⚠️ เตือนเมื่อลา', set_grp_warn_desc:'เปิดรายการที่ต้องการให้ขึ้นหน้าต่างเตือน ให้ผู้ขอยืนยันอีกรอบก่อนส่งคำขอ', set_warn_list_hdr:'รายการเตือน', set_warn_bridge:'ลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_warn_urgent:'🚨 ลาพักร้อนฉุกเฉิน', set_warn_urgent_note:'ยืนยันอีกรอบว่าจะไม่ได้รับเบี้ยขยันของบริษัท', urgent_title:'⚠️ ลาพักร้อนฉุกเฉิน', urgent_body:'หากลาพักร้อนฉุกเฉิน จะไม่ได้รับเบี้ยขยันของบริษัท ต้องการดำเนินการต่อหรือไม่?', appr_team_title:'คนที่ขออนุมัติกับคุณ', appr_step:'(ลำดับ {n})', set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
     h3_newrequest:'ยื่นคำขอลาใหม่', lbl_unit_multi:'หลายวันที่ไม่ติดกัน',
     lbl_specific_dates:'เลือกวันที่ (ใช้ประเภทการลาเดียวกันทุกวัน)', btn_add_date:'+ เพิ่มวันที่',
@@ -3532,6 +3534,22 @@ function findBridgeHit(dates){
 }
 function leaveDatesOf(payloadDates){ return payloadDates; }
 function expandDates(a,b){ const out=[]; for(let d=a,i=0; d<=b && i<400; d=isoAddDays(d,1), i++) out.push(d); return out; }
+// ลาพักร้อนฉุกเฉิน: ยืนยันอีกรอบว่าจะไม่ได้รับเบี้ยขยัน (เปิด/ปิดที่ Settings: urgent_leave_warning)
+function confirmUrgentIfNeeded(leaveType){
+  if(leaveType!=='annual_urgent' || appSettingsCache['urgent_leave_warning']!=='true') return Promise.resolve(true);
+  return new Promise(resolve=>{
+    let ov = document.getElementById('urgentOverlay');
+    if(!ov){ ov = document.createElement('div'); ov.id = 'urgentOverlay'; ov.className = 'rp-ov'; document.body.appendChild(ov); }
+    ov.innerHTML = `<div class="rp-box" style="max-width:440px"><div class="rp-head"><b>${escHtml(t('urgent_title'))}</b></div>
+      <p style="margin:10px 0 16px;font-size:.9rem;line-height:1.55">${escHtml(t('urgent_body'))}</p>
+      <div class="rp-foot" style="justify-content:flex-end">
+        <button type="button" class="btn btn-sm btn-outline" id="urgentNo">${escHtml(t('bridge_cancel'))}</button>
+        <button type="button" class="btn btn-sm btn-danger" id="urgentYes">${escHtml(t('bridge_confirm'))}</button></div></div>`;
+    ov.style.display = 'flex';
+    document.getElementById('urgentNo').onclick = ()=>{ ov.style.display='none'; resolve(false); };
+    document.getElementById('urgentYes').onclick = ()=>{ ov.style.display='none'; resolve(true); };
+  });
+}
 // คืน {proceed:boolean, confirmed:boolean}
 async function confirmBridgeIfNeeded(dates){
   if(appSettingsCache['bridge_leave_warning']!=='true') return { proceed:true, confirmed:false };
@@ -3597,6 +3615,7 @@ async function _submitLeaveRequest(){
     const uniqueDates = [...new Set(dateInputs)].sort();
     if(!uniqueDates.length){ showToast(t('msg_pick_one_date'),'err'); return; }
     const att = await readRequiredAttachment(); if(!att.ok) return;
+    if(!(await confirmUrgentIfNeeded(document.getElementById('reqType').value))) return;
     const bch = await confirmBridgeIfNeeded(uniqueDates); if(!bch.proceed) return;
 
     let okCount=0, failCount=0, firstError='';
@@ -3640,6 +3659,7 @@ async function _submitLeaveRequest(){
 
   const att = await readRequiredAttachment(); if(!att.ok) return;
   if(att.dataUrl) payload.attachment_base64 = att.dataUrl;
+  if(!(await confirmUrgentIfNeeded(document.getElementById('reqType').value))) return;
   const bch2 = await confirmBridgeIfNeeded(expandDates(payload.start_date, payload.end_date)); if(!bch2.proceed) return;
   if(bch2.confirmed) payload.bridge_confirmed = true;
 
@@ -4495,13 +4515,15 @@ function avatarHtml(person, px){
 
 // ── รูปโปรไฟล์: เอาเมาส์ชี้/คลิก → แสดงผู้อนุมัติของฉัน ──
 let myApproversCache = null;
+let myApprovees = [];
 function approverPopHtml(){
   const list = (myApproversCache||[]);
   const rows = list.length
-    ? list.map((a,i)=>`<div class="ap-row"><b>${i+1}.</b> ${escHtml(a.name)}</div>`).join('')
+    ? list.map((a,i)=>`<div class="ap-row"><b>${i+1}.</b> ${avatarHtml(a,26)} <span>${escHtml(a.name)}</span></div>`).join('')
     : `<div class="ap-row ap-none">${escHtml(t('appr_none'))}</div>`;
   const note = appSettingsCache['annual_over_3_days_needs_admin']==='true' ? `<div class="ap-note">${escHtml(t('appr_admin_note'))}</div>` : '';
-  return `<div class="ap-title">${escHtml(t('appr_title'))}</div>${rows}${note}<button type="button" class="ap-photo" onclick="hideApproverPop();openPhotoModal(null)">${escHtml(t('appr_change_photo'))}</button>`;
+  const team = (myApprovees||[]).length ? `<div class="ap-title" style="margin-top:10px">${escHtml(t('appr_team_title'))} <small style="font-weight:400">(${myApprovees.length})</small></div><div class="ap-scroll">${myApprovees.map(a=>`<div class="ap-row">${avatarHtml(a,26)} <span>${escHtml(a.name)}${a.step?` <small>${escHtml(t('appr_step').replace('{n}', a.step))}</small>`:''}</span></div>`).join('')}</div>` : '';
+  return `<div class="ap-title">${escHtml(t('appr_title'))}</div>${rows}${note}${team}<button type="button" class="ap-photo" onclick="hideApproverPop();openPhotoModal(null)">${escHtml(t('appr_change_photo'))}</button>`;
 }
 function showApproverPop(){
   const av = document.getElementById('userAvatar'); if(!av) return;
@@ -4510,7 +4532,7 @@ function showApproverPop(){
     pop.onmouseenter = ()=>{ clearTimeout(pop._t); }; pop.onmouseleave = ()=>hideApproverPop(true); document.body.appendChild(pop); }
   clearTimeout(pop._t);
   pop.innerHTML = approverPopHtml();
-  if(myApproversCache===null){ callApi('get_my_data').then(d=>{ myApproversCache=d.approvers||[]; pop.innerHTML=approverPopHtml(); }).catch(()=>{}); }
+  if(myApproversCache===null){ callApi('get_my_data').then(d=>{ myApproversCache=d.approvers||[]; myApprovees=d.approvees||[]; pop.innerHTML=approverPopHtml(); }).catch(()=>{}); }
   const r = av.getBoundingClientRect();
   pop.style.display = 'block';
   pop.style.top = (r.bottom + 8) + 'px';
@@ -5569,7 +5591,6 @@ const SETTING_DEFS = [
   { key: 'annual_over_3_days_needs_admin', titleKey: 'set_annualadmin_title', descKey: 'set_annualadmin_desc' },
   { key: 'leave_current_year_only', titleKey: 'set_curyear_title', descKey: 'set_curyear_desc' },
   { key: 'leave_prev_year_annual', titleKey: 'set_prevannual_title', descKey: 'set_prevannual_desc' },
-  { key: 'bridge_leave_warning', titleKey: 'set_bridge_title', descKey: 'set_bridge_desc' },
   { key: 'notify_admin_final_approval', titleKey: 'set_adminfinal_title', descKey: 'set_adminfinal_desc' },
 ];
 
@@ -5578,6 +5599,11 @@ const EXEMPT_TYPES = ['sick','annual_urgent','annual','annual_prev','personal','
 const EXEMPT_GROUPS = [
   { masterKey:'no_same_day_leave_except_sick', listKey:'same_day_exempt_types', def:'sick,annual_urgent', titleKey:'set_grp_sameday_title', descKey:'set_grp_sameday_desc' },
   { masterKey:'no_past_date_leave_except_sick', listKey:'past_date_exempt_types', def:'sick', titleKey:'set_grp_past_title', descKey:'set_grp_past_desc' },
+];
+// ── "เตือนเมื่อลา": รายการที่เปิด/ปิดได้ทีละข้อ (ขึ้นหน้าต่างให้ผู้ขอยืนยันอีกรอบก่อนส่ง) ──
+const WARN_LIST = [
+  { key:'bridge_leave_warning', titleKey:'set_warn_bridge', noteKey:'set_bridge_desc' },
+  { key:'urgent_leave_warning', titleKey:'set_warn_urgent', noteKey:'set_warn_urgent_note' },
 ];
 const ATTACH_LIST = [
   { key:'sick_leave_monfri_requires_attachment', type:'sick', noteKey:'set_att_sick_note' },
@@ -5621,7 +5647,14 @@ function renderSettingsGroups(settings){
         ${ATTACH_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(a.labelKey ? t(a.labelKey) : getLeaveTypeLabel(a.type))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
       </div></details>
     </div>`;
-  return exemptHtml + attachHtml;
+  const warnHtml = `<div class="setting-group">
+      <div class="setting-row" style="border-bottom:none;padding-bottom:6px"><div class="setting-text"><h4>${escHtml(t('set_grp_warn_title'))}</h4><p>${escHtml(t('set_grp_warn_desc'))}</p></div></div>
+      <details class="setting-details" open><summary>${escHtml(t('set_warn_list_hdr'))}</summary>
+      <div class="setting-sublist">
+        ${WARN_LIST.map(a=>`<div class="setting-subrow"><span>${escHtml(t(a.titleKey))}<small>${escHtml(t(a.noteKey))}</small></span>${settingsToggleHtml(settings[a.key]==='true', `toggleSetting('${a.key}', this.checked)`, true)}</div>`).join('')}
+      </div></details>
+    </div>`;
+  return exemptHtml + warnHtml + attachHtml;
 }
 async function savePrevCloseDate(){
   const m = Number(document.getElementById('prevCloseMonth').value), dMax = new Date(2024, m, 0).getDate();   // ปีอธิกสุรทินเพื่อให้ 29 ก.พ. เลือกได้
