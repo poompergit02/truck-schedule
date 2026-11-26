@@ -355,6 +355,8 @@ tr:hover td{background:var(--cream)}
 .yg-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.sc-blue-note{display:none}
+#specialCalGrid .cal-dot{--dc:#2F80ED;--sh:transparent}   /* ปฏิทินลาพิเศษ: ลูกบอลสีฟ้าเดียวกันทุกลูก ไม่ไล่เฉด */
 .cal-ev{position:absolute;top:3px;right:4px;font-size:.78rem;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));cursor:help}
 .cal-dot{--dc:var(--plum-600);--sh:transparent;width:11px;height:11px;border-radius:50%;cursor:default;
   background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0,rgba(255,255,255,.35) 22%,rgba(255,255,255,0) 46%),linear-gradient(var(--sh),var(--sh)),radial-gradient(circle at 68% 82%,rgba(0,0,0,.38) 0,rgba(0,0,0,0) 62%),var(--dc);
@@ -1259,6 +1261,12 @@ details.setting-details .setting-subrow{padding:3px 0;font-size:.8rem;border-bot
             <option value="count" data-i18n="freq_count">Number of requests</option>
             <option value="days" data-i18n="freq_days">Leave days</option>
           </select>
+          <select id="myFreqChartType" class="exp-select" onchange="renderMyFreq()">
+            <option value="line" data-i18n="freq_ct_line">📈 Line</option>
+            <option value="bar" data-i18n="freq_ct_bar">📊 Stacked bars</option>
+            <option value="area" data-i18n="freq_ct_area">🏔️ Stacked area</option>
+            <option value="donut" data-i18n="freq_ct_donut">🍩 Donut (share by type)</option>
+          </select>
         </div>
         <div id="myFreqChart" style="width:100%;overflow-x:auto"></div>
         <div id="myFreqLegend" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:.78rem;color:var(--text-dim)"></div>
@@ -1679,6 +1687,18 @@ const MSG_EN_TO_TH = [
   [/^Login failed$/, 'เข้าสู่ระบบไม่สำเร็จ'],
 ];
 const MSG_TH_TO_EN_EXACT = {
+  'ขอบเขตการมองเห็นไม่ถูกต้อง':'Invalid visibility scope',
+  'ไม่ระบุ Event':'No event specified',
+  'ลบได้เฉพาะ Event ของสาขาตัวเอง':'You can only delete events of your own branch',
+  'ลาป่วยที่ติดวันหยุดบริษัท (ติดเสาร์-อาทิตย์ หรือคั่นกลางวันหยุด) ต้องแนบไฟล์ใบรับรองแพทย์':'Sick leave next to a company holiday (joined to a weekend or sandwiched between holidays) requires a medical certificate attachment',
+  'ต้องมี admin ที่ใช้งานอยู่อย่างน้อย 1 คน ไม่สามารถลดสิทธิ์ admin คนสุดท้ายได้':'At least 1 active admin is required — the last admin cannot be demoted',
+  'ปีไม่ถูกต้อง':'Invalid year',
+  'ผู้ดูแลสาขาไม่สามารถตั้งสิทธิ์ผู้ดูแลระบบได้':'Branch admins cannot grant admin rights',
+  'มีผู้อนุมัติพิจารณาไปแล้ว จึงแก้ไข/ยกเลิกเองไม่ได้ กรุณาติดต่อผู้อนุมัติหรือ Admin':'An approver has already acted, so you can no longer edit/cancel it yourself. Please contact the approver or Admin',
+  'ยืนยันปีไม่ตรงกัน':'Year confirmation does not match',
+  'รูปแบบอีเมลไม่ถูกต้อง เช่น name@example.com':'Invalid email format, e.g. name@example.com',
+  'ไม่มีประเภทการลา "อื่นๆ" แล้ว กรุณาเลือกประเภทอื่น':'The "Other" leave type no longer exists. Please choose another type',
+  'ไม่สามารถเลือกประเภทนี้ได้ ระบบจะหักลาพักร้อนจากปีที่แล้วให้อัตโนมัติเมื่อลาพักร้อน':'This type cannot be chosen — last year\'s annual leave is deducted automatically when you request annual leave',
   'กรุณากรอกรหัสพนักงานและรหัสผ่าน':'Please enter your employee code and password',
   'ไม่พบรหัสพนักงานนี้ในระบบ':'Employee code not found in the system',
   'รหัสผ่านไม่ถูกต้อง':'Incorrect password',
@@ -1745,7 +1765,12 @@ const MSG_TH_TO_EN_EXACT = {
   'ลาประเภทนี้เลือกได้เฉพาะครึ่งวันเช้า (3.5 ชม.) หรือบ่าย (4.5 ชม.)':'This leave type allows only a half day: morning (3.5 hrs) or afternoon (4.5 hrs)',
   'ลาประเภทนี้ไม่สามารถลารายชั่วโมงได้':'This leave type cannot be taken by the hour',
 };
+const _UNIT_EN = x => String(x).replace(/(\d+)\s*วัน/g,'$1 day(s)').replace(/(\d+)\s*ชม\./g,'$1 hr').replace(/(\d+)\s*นาที/g,'$1 min');
+const _LT_EN = {'ลาพักร้อน':'Annual leave','ลาพักร้อนฉุกเฉิน':'Emergency annual leave','ลาพักร้อนปีที่แล้ว':'Annual leave (last year)','ลาป่วย':'Sick leave','ลากิจ':'Personal leave'};
 const MSG_TH_TO_EN_RULES = [
+  [/^วันลาคงเหลือไม่พอ: (.+) ปี (\d+) เหลือ (.+) \(รวมใบที่รออนุมัติแล้ว\) แต่ขอลา (.+)$/s, (_,lt,y,left,need)=>`Not enough leave balance: ${_LT_EN[lt]||lt} ${y} has ${_UNIT_EN(left)} left (including pending requests) but you requested ${_UNIT_EN(need)}`],
+  [/^มีคำขอลาวันนี้อยู่แล้ว( \(รออนุมัติ\))? กรุณายกเลิกคำขอเดิมก่อนจึงจะขอใหม่ได้ \((.*)\)$/s, (_,p,d)=>`You already have a${p?' pending':''} leave request on this day. Please cancel the existing request first (${d})`],
+  [/^ช่วงเวลานี้ทับกับคำขอลาที่มีอยู่แล้ว \((.*)\)$/s, 'This time overlaps an existing leave request ($1)'],
   [/^รหัสพนักงาน (.+) มีผู้ใช้งานอยู่แล้ว$/, 'Employee code $1 is already in use'],
   [/^ไม่สามารถเปลี่ยนรหัสพนักงานได้ เพราะพนักงานคนนี้เคยยื่นใบลาแล้ว (\d+) ใบ$/, 'Cannot change the employee code: this employee has already submitted $1 leave request(s)'],
   [/^ไม่สามารถเปลี่ยนรหัสพนักงานได้ เพราะมีใบลา (\d+) ใบรอพนักงานคนนี้อนุมัติอยู่$/, 'Cannot change the employee code: $1 leave request(s) are waiting for this employee to approve'],
@@ -2198,6 +2223,75 @@ async function loadMyFreq(){
     renderMyFreq();
   }catch(e){ /* non-fatal */ }
 }
+// ── กราฟความถี่แบบอื่น: แท่งซ้อน / พื้นที่ซ้อน / โดนัท ──
+function renderFreqAlt(ctype, c){
+  const { series, types, labels, n, colOf, legend, box, metric } = c;
+  const pendOf = k => k.endsWith('|p'), baseOf = k => k.replace('|p','');
+  const colK = k => pendOf(k) ? lightenHex(colOf(baseOf(k)), 0.45) : colOf(baseOf(k));
+  const lblK = k => stripLeadingSymbols(getLeaveTypeLabel(baseOf(k))) + (pendOf(k) ? ' ('+t('freq_pending')+')' : '');
+  const r2 = v => Math.round(v*100)/100;
+  const unit = metric==='days' ? t('freq_days') : t('freq_count');
+  const defs = `<defs><filter id="fxSh" x="-10%" y="-10%" width="125%" height="130%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.4" flood-color="#000" flood-opacity="0.32"/></filter>`
+    + types.map((k,i)=>`<linearGradient id="fxG${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${lightenHex(colK(k),0.28)}"/><stop offset="100%" stop-color="${colK(k)}"/></linearGradient>`).join('') + `</defs>`;
+  const setLegend = (withVals)=>{
+    legend.innerHTML = types.map(k=>{
+      const tot = series[k].reduce((a,b)=>a+b,0);
+      return `<span style="display:inline-flex;align-items:center;gap:5px"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${colK(k)};box-shadow:0 1px 2px rgba(0,0,0,.4)"></i>${escHtml(lblK(k))}${withVals?` <b>${r2(tot)}</b>`:''}</span>`;
+    }).join('');
+  };
+  if(ctype==='donut'){
+    const tots = types.map(k=>series[k].reduce((a,b)=>a+b,0)), sum = tots.reduce((a,b)=>a+b,0);
+    if(!sum){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
+    const S=260, cx=S/2, cy=S/2, R=104, r=62; let a0 = -Math.PI/2, svg = `<svg viewBox="0 0 ${S} ${S}" style="width:100%;max-width:${S}px;height:auto;display:block;margin:0 auto" role="img">${defs}`;
+    types.forEach((k,i)=>{
+      const frac = tots[i]/sum; if(frac<=0) return;
+      const a1 = a0 + frac*Math.PI*2 - (frac<0.999 ? 0.025 : 0), pt = (rad,a)=>[cx+rad*Math.cos(a), cy+rad*Math.sin(a)], large = (a1-a0)>Math.PI?1:0;
+      const [x0,y0]=pt(R,a0),[x1,y1]=pt(R,a1),[x2,y2]=pt(r,a1),[x3,y3]=pt(r,a0);
+      const d = frac>=0.999 ? `M${cx},${cy-R} A${R},${R} 0 1 1 ${cx-0.01},${cy-R} L${cx-0.01},${cy-r} A${r},${r} 0 1 0 ${cx},${cy-r} Z`
+        : `M${x0.toFixed(2)},${y0.toFixed(2)} A${R},${R} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)} L${x2.toFixed(2)},${y2.toFixed(2)} A${r},${r} 0 ${large} 0 ${x3.toFixed(2)},${y3.toFixed(2)} Z`;
+      svg += `<path d="${d}" fill="url(#fxG${i})" stroke="#fff" stroke-width="1.5" filter="url(#fxSh)"><title>${escHtml(lblK(k))}: ${r2(tots[i])} (${Math.round(frac*100)}%)</title></path>`;
+      a0 = a0 + frac*Math.PI*2;
+    });
+    svg += `<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="26" font-weight="800" fill="#4a2a63">${r2(sum)}</text><text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="10" fill="#8a8398">${escHtml(unit)}</text></svg>`;
+    box.innerHTML = svg;
+    legend.innerHTML = types.map((k,i)=>`<span style="display:inline-flex;align-items:center;gap:5px"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${colK(k)};box-shadow:0 1px 2px rgba(0,0,0,.4)"></i>${escHtml(lblK(k))} <b>${r2(tots[i])}</b> <span style="opacity:.75">(${Math.round(tots[i]/sum*100)}%)</span></span>`).join('');
+    return;
+  }
+  // แท่งซ้อน / พื้นที่ซ้อน
+  const W=640, H=240, L=36, R=12, T=14, B=28, iw=W-L-R, ih=H-T-B;
+  const stackTot = Array.from({length:n},(_,i)=>types.reduce((a,k)=>a+series[k][i],0));
+  let maxV = Math.max(1, Math.ceil(Math.max(...stackTot))); const steps = Math.min(maxV,5);
+  const yAt = v => T + ih*(1 - v/maxV);
+  const slot = iw/n, xC = i => L + slot*(i+0.5), xAt = i => L + (n===1 ? iw/2 : i*iw/(n-1));
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${n>16?640:420}px;height:auto" role="img">${defs}`;
+  for(let q=0;q<=steps;q++){ const v = maxV*q/steps, yy = yAt(v); svg += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e6e1ee"/><text x="${L-6}" y="${yy+3}" text-anchor="end" font-size="10" fill="#8a8398">${r2(v)}</text>`; }
+  const xfs = n>16 ? 9 : 10;
+  labels.forEach((lb,i)=>{ svg += `<text x="${(ctype==='bar'?xC(i):xAt(i)).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="${xfs}" fill="#8a8398">${escHtml(lb)}</text>`; });
+  if(ctype==='bar'){
+    const bw = Math.min(46, slot*0.62);
+    for(let i=0;i<n;i++){
+      let cum = 0; const segs = types.map((k,ki)=>({k,ki,v:series[k][i]})).filter(x=>x.v>0);
+      segs.forEach((sg,si)=>{
+        const y1 = yAt(cum+sg.v), h = yAt(cum)-y1; cum += sg.v;
+        svg += `<rect x="${(xC(i)-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h-0.6).toFixed(1)}" rx="${si===segs.length-1?4:1}" fill="url(#fxG${sg.ki})" ${pendOf(sg.k)?`stroke="${colOf(baseOf(sg.k))}" stroke-width="1.2" stroke-dasharray="4 3"`:''} ${si===segs.length-1?'filter="url(#fxSh)"':''}><title>${escHtml(labels[i])} — ${escHtml(lblK(sg.k))}: ${r2(sg.v)}</title></rect>`;
+      });
+    }
+  } else {
+    let base = new Array(n).fill(0);
+    types.forEach((k,ki)=>{
+      const top = base.map((b,i)=>b+series[k][i]);
+      if(top.some((v,i)=>v>base[i])){
+        const up = top.map((v,i)=>`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(' L'), dn = base.map((v,i)=>`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).reverse().join(' L');
+        svg += `<path d="M${up} L${dn} Z" fill="url(#fxG${ki})" fill-opacity="${pendOf(k)?0.55:0.88}" stroke="${colK(k)}" stroke-width="1.4" ${pendOf(k)?'stroke-dasharray="5 4"':''} ${ki===types.length-1?'filter="url(#fxSh)"':''}><title>${escHtml(lblK(k))}</title></path>`;
+      }
+      base = top;
+    });
+    stackTot.forEach((v,i)=>{ if(v>0) svg += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3" fill="#fff" stroke="#4a2a63" stroke-width="1.3"><title>${escHtml(labels[i])}: ${r2(v)}</title></circle>`; });
+  }
+  box.innerHTML = svg + '</svg>';
+  setLegend(false);
+}
+
 function renderMyFreq(){
   const box = document.getElementById('myFreqChart'); if(!box) return;
   const y = Number(document.getElementById('myFreqYear').value), m = Number(document.getElementById('myFreqMonth').value)||0;
@@ -2222,6 +2316,8 @@ function renderMyFreq(){
   const colOf = base => yearMode ? YEAR_PAL[baseList.indexOf(base) % YEAR_PAL.length] : (FREQ_COLORS[base] || '#8A8F98');
   const offOf = base => yearMode ? (baseList.indexOf(base) - (baseList.length-1)/2) * 3 : 0;   // เลื่อนเส้นเล็กน้อยกันเส้นทับกัน
   if(!types.length){ box.innerHTML = `<div class="empty-msg">${escHtml(t('freq_none'))}</div>`; legend.innerHTML=''; return; }
+  const ctype = document.getElementById('myFreqChartType')?.value || 'line';
+  if(ctype!=='line'){ renderFreqAlt(ctype, { series, types, labels, n, colOf, legend, box, metric }); return; }
   const W=640, H=240, L=36, R=12, T=14, B=28;
   // รายปี: รวมทุกประเภทเป็น "เส้นเดียว" (อนุมัติแล้ว) + เส้นประอ่อน (รออนุมัติ) สีไล่ผสมตามสัดส่วนประเภทของแต่ละเดือน
   const grp = { a:{}, p:{} };   // ต่อกลุ่ม: base → array
@@ -2819,7 +2915,7 @@ const I18N = {
     h3_nyq:'📊 Leave quotas for year', nyq_visible:'Show next year\'s quotas to employees', nyq_visible_hint:'Employees see next year\'s quota table (below their current one) on My Leave only in the months ticked here. Leave dated next year is deducted from it; with no data it counts as 0 and goes negative once approved.', msg_nyq_saved:'✅ Saved',
     ny_mode_replace:'Replace — the prepared quota overwrites the live quota', ny_mode_offset:'Offset — add the prepared quota to the existing quota of that year (e.g. existing −2 + plan 3 = 1)', ny_mode_tag:'(offset mode)',
     ny_emp_title:'Leave balance for {y}', ny_emp_badge:'NEXT YEAR {y}', ny_emp_hint:'Leave dated in {y} is deducted from this table. If no quota has been set yet it shows 0 and goes negative once your leave is approved.', lbl_personal_attach:'📎 Attachment (required for Personal Leave)',
-    set_adminfinal_title:'Email admin when the last approver approves', set_adminfinal_desc:'When the final approver in the chain approves a request (every employee, every branch), also send an email to admin (branch admins only receive their own branch).', set_grp_warn_title:'⚠️ Warn when requesting leave', set_grp_warn_desc:'Switch ON the warnings that ask the requester to confirm once more before sending.', set_warn_list_hdr:'Warning list', set_warn_bridge:'Leave next to a long company holiday', set_warn_urgent:'🚨 Emergency annual leave', set_warn_urgent_note:'Confirm that the requester will not receive the company diligence bonus', urgent_title:'⚠️ Emergency annual leave', urgent_body:'If you take emergency annual leave, you will not receive the company diligence bonus. Do you want to continue?', appr_team_title:'People who request approval from you', appr_step:'(step {n})', set_notifycancel_title:'Notify employee when admin cancels their leave',
+    set_adminfinal_title:'Email admin when the last approver approves', set_adminfinal_desc:'When the final approver in the chain approves a request (every employee, every branch), also send an email to admin (branch admins only receive their own branch).', set_grp_warn_title:'⚠️ Warn when requesting leave', set_grp_warn_desc:'Switch ON the warnings that ask the requester to confirm once more before sending.', set_warn_list_hdr:'Warning list', set_warn_bridge:'Leave next to a long company holiday', set_warn_urgent:'🚨 Emergency annual leave', set_warn_urgent_note:'Confirm that the requester will not receive the diligence bonus', urgent_title:'⚠️ Emergency annual leave', urgent_body:'If you take emergency annual leave, you will not receive the diligence bonus. Do you want to continue?', appr_team_title:'People who request approval from you', appr_step:'(step {n})', set_notifycancel_title:'Notify employee when admin cancels their leave',
     set_notifycancel_desc:'Send an email when an admin deletes one of their leave requests (e.g. an advance request that got called off).',
     h3_newrequest:'New Leave Request', lbl_unit_multi:'Multiple specific dates',
     lbl_specific_dates:'Specific Dates (same leave type applies to all)', btn_add_date:'+ Add Date',
@@ -2858,7 +2954,7 @@ const I18N = {
     hint_senddoc_queue:"Each row below will be sent as its own document to its own recipient.", doc_queue_empty:'No documents added yet',
     tk_unit_min:'min', tk_unit_minutes:'minutes', tk_unit_days:'days', tk_unit_hours:'hours', tk_unit_day:'day', tk_unit_hour:'hour',
     tk_used_fmt:'{v} used', tk_total_fmt:'{v} total', tk_remaining_fmt:'{v} left',
-    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_pending:'pending', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
+    btn_export_team:'📥 Export Excel', opt_all_months:'All months', lbl_month:'Month', h3_freq:'📈 My leave frequency', hint_freq:'Line colours follow the leave type (solid = approved, dashed light = pending). Default shows 12 months; pick a month to see each day.', freq_count:'Number of requests', freq_days:'Leave days', freq_ct_line:'📈 Line', freq_ct_bar:'📊 Stacked bars', freq_ct_area:'🏔️ Stacked area', freq_ct_donut:'🍩 Donut (share by type)', sc_leg_approved:'Approved', freq_pending:'pending', freq_all_year:'Whole year (12 months)', freq_none:'No leave in this period', tab_team_results:'🗂️ Team Leave Results', pg_teamresults_title:'Team Leave Results',
     pg_teamresults_sub:'See who submitted their leave request first — sorted by the date and time of submission',
     lbl_sort:'Sort', opt_sort_first:'Earliest submitted first', opt_sort_last:'Latest submitted first',
     th_submitted_at:'Submitted at', th_quota:'Leave balance', quota_left:'Left', quota_of:'of', quota_after:'After this:', lbl_show_pending:'Show pending requests', btn_export_special:'📥 Export Excel', tr_none:'No resolved requests for this year', unit_hr_short:'hr', unit_day_short:'days',
@@ -3017,7 +3113,7 @@ const I18N = {
     h3_nyq:'📊 โควตาวันลาปี', nyq_visible:'แสดงโควตาปีหน้าให้พนักงานเห็น', nyq_visible_hint:'พนักงานจะเห็นตารางโควตาปีหน้า (ต่อจากตารางปีปัจจุบัน) ในหน้า วันลาของฉัน เฉพาะเดือนที่ติ๊กไว้ การลาที่ตกปีหน้าจะหักจากตารางนี้ ถ้ายังไม่มีข้อมูลจะเป็น 0 และติดลบเมื่ออนุมัติ', msg_nyq_saved:'✅ บันทึกแล้ว',
     ny_mode_replace:'ทับของเดิม — โควตาที่เตรียมไว้แทนที่โควตาจริง', ny_mode_offset:'หักลบโควตา — เอาโควตาที่เตรียมไว้ไปบวก/หักลบกับโควตาเดิมของปีนั้น (เช่น เดิม −2 + แผน 3 = 1)', ny_mode_tag:'(แบบหักลบ)',
     ny_emp_title:'วันลาคงเหลือปี {y}', ny_emp_badge:'ปีหน้า {y}', ny_emp_hint:'การลาที่ตรงกับปี {y} จะหักจากตารางนี้ ถ้ายังไม่มีการตั้งโควตาจะแสดง 0 และติดลบเมื่อใบลาได้รับอนุมัติ', lbl_personal_attach:'📎 ไฟล์แนบ (จำเป็นสำหรับลากิจ)',
-    set_adminfinal_title:'แจ้ง admin ทางอีเมลล์เมื่อหัวหน้าลำดับสุดท้ายอนุมัติ', set_adminfinal_desc:'เมื่อหัวหน้าลำดับสุดท้ายในสายอนุมัติอนุมัติครบ (ทุกคน ทุกสาขา) ให้ส่งอีเมลแจ้ง admin ด้วย (admin สาขาจะได้รับเฉพาะสาขาตัวเอง)', set_grp_warn_title:'⚠️ เตือนเมื่อลา', set_grp_warn_desc:'เปิดรายการที่ต้องการให้ขึ้นหน้าต่างเตือน ให้ผู้ขอยืนยันอีกรอบก่อนส่งคำขอ', set_warn_list_hdr:'รายการเตือน', set_warn_bridge:'ลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_warn_urgent:'🚨 ลาพักร้อนฉุกเฉิน', set_warn_urgent_note:'ยืนยันอีกรอบว่าจะไม่ได้รับเบี้ยขยันของบริษัท', urgent_title:'⚠️ ลาพักร้อนฉุกเฉิน', urgent_body:'หากลาพักร้อนฉุกเฉิน จะไม่ได้รับเบี้ยขยันของบริษัท ต้องการดำเนินการต่อหรือไม่?', appr_team_title:'คนที่ขออนุมัติกับคุณ', appr_step:'(ลำดับ {n})', set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
+    set_adminfinal_title:'แจ้ง admin ทางอีเมลล์เมื่อหัวหน้าลำดับสุดท้ายอนุมัติ', set_adminfinal_desc:'เมื่อหัวหน้าลำดับสุดท้ายในสายอนุมัติอนุมัติครบ (ทุกคน ทุกสาขา) ให้ส่งอีเมลแจ้ง admin ด้วย (admin สาขาจะได้รับเฉพาะสาขาตัวเอง)', set_grp_warn_title:'⚠️ เตือนเมื่อลา', set_grp_warn_desc:'เปิดรายการที่ต้องการให้ขึ้นหน้าต่างเตือน ให้ผู้ขอยืนยันอีกรอบก่อนส่งคำขอ', set_warn_list_hdr:'รายการเตือน', set_warn_bridge:'ลาติดหัวท้ายวันหยุดบริษัทที่ยาว', set_warn_urgent:'🚨 ลาพักร้อนฉุกเฉิน', set_warn_urgent_note:'ยืนยันอีกรอบว่าจะไม่ได้รับเบี้ยขยัน', urgent_title:'⚠️ ลาพักร้อนฉุกเฉิน', urgent_body:'หากลาพักร้อนฉุกเฉิน จะไม่ได้รับเบี้ยขยัน ต้องการดำเนินการต่อหรือไม่?', appr_team_title:'คนที่ขออนุมัติกับคุณ', appr_step:'(ลำดับ {n})', set_notifycancel_title:'แจ้งพนักงานเมื่อ admin ยกเลิกคำขอลา',
     set_notifycancel_desc:'ส่งอีเมลแจ้งเมื่อ admin ลบคำขอลาของพนักงาน (เช่น คำขอล่วงหน้าที่ถูกยกเลิก)',
     h3_newrequest:'ยื่นคำขอลาใหม่', lbl_unit_multi:'หลายวันที่ไม่ติดกัน',
     lbl_specific_dates:'เลือกวันที่ (ใช้ประเภทการลาเดียวกันทุกวัน)', btn_add_date:'+ เพิ่มวันที่',
@@ -3056,7 +3152,7 @@ const I18N = {
     hint_senddoc_queue:'แต่ละแถวด้านล่างจะถูกส่งเป็นเอกสารของตัวเอง ให้ผู้รับของตัวเอง', doc_queue_empty:'ยังไม่มีเอกสารใน list',
     tk_unit_min:'นาที', tk_unit_minutes:'นาที', tk_unit_days:'วัน', tk_unit_hours:'ชั่วโมง', tk_unit_day:'วัน', tk_unit_hour:'ชั่วโมง',
     tk_used_fmt:'ใช้ไป {v}', tk_total_fmt:'รวม {v}', tk_remaining_fmt:'เหลือ {v}',
-    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา (เส้นทึบ = อนุมัติแล้ว เส้นประสีอ่อน = รออนุมัติ) ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_pending:'รออนุมัติ', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
+    btn_export_team:'📥 Export Excel', opt_all_months:'ทุกเดือน', lbl_month:'เดือน', h3_freq:'📈 ความถี่การลาของฉัน', hint_freq:'สีเส้นตามประเภทการลา (เส้นทึบ = อนุมัติแล้ว เส้นประสีอ่อน = รออนุมัติ) ค่าเริ่มต้นแสดง 12 เดือน เลือกเดือนเพื่อดูรายวัน', freq_count:'จำนวนครั้งที่ลา', freq_days:'จำนวนวันลา', freq_ct_line:'📈 เส้น', freq_ct_bar:'📊 แท่งซ้อน', freq_ct_area:'🏔️ พื้นที่ซ้อน', freq_ct_donut:'🍩 โดนัท (สัดส่วนตามประเภท)', sc_leg_approved:'อนุมัติแล้ว', freq_pending:'รออนุมัติ', freq_all_year:'ทั้งปี (12 เดือน)', freq_none:'ไม่มีการลาในช่วงนี้', tab_team_results:'🗂️ ผลการลาของทีม', pg_teamresults_title:'ผลการลาของทีม',
     pg_teamresults_sub:'ดูว่าใครยื่นคำขอลาก่อน-หลัง เรียงตามวันที่และเวลาที่ยื่น',
     lbl_sort:'เรียง', opt_sort_first:'ยื่นก่อนอยู่บน', opt_sort_last:'ยื่นล่าสุดอยู่บน',
     th_submitted_at:'ยื่นเมื่อ', th_quota:'โควตาวันลา', quota_left:'เหลือ', quota_of:'จากทั้งหมด', quota_after:'หลังอนุมัติเหลือ', lbl_show_pending:'แสดงรายการที่รออนุมัติ', btn_export_special:'📥 Export Excel', tr_none:'ไม่มีผลการลาของปีนี้', unit_hr_short:'ชม.', unit_day_short:'วัน',
@@ -3119,6 +3215,7 @@ function setLang(lang){
       const btn = document.querySelector(`[data-page="${previousPageId}"]`) || document.querySelector('.tab-btn');
       showPage(previousPageId, btn);
     }
+    try{ renderMyEvents(); }catch(e){}
   }
 }
 
@@ -4850,9 +4947,9 @@ function renderSpecialCalendar(requests){
     </div>`;
   }
   grid.innerHTML = html;
-  document.getElementById('specialCalLegend').innerHTML = legendLeaveTypes().map(t=>
-    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${t}"></span>${LEAVE_TYPE_LABEL[t]}</span>`
-  ).join('');
+  document.getElementById('specialCalLegend').innerHTML =
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot"></span>${escHtml(t('sc_leg_approved'))}</span>` +
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-pending"></span>${escHtml(t('ls_pending'))}</span>`;
 }
 
 let managerChainsCache = {};
