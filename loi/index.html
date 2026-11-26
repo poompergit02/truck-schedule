@@ -356,7 +356,7 @@ tr:hover td{background:var(--cream)}
 .cal-daynum{font-size:.72rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .cal-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .sc-blue-note{display:none}
-#specialCalGrid .cal-dot{--dc:#2F80ED;--sh:transparent}   /* ปฏิทินลาพิเศษ: ลูกบอลสีฟ้าเดียวกันทุกลูก ไม่ไล่เฉด */
+#specialCalGrid .cal-dot{--sh:transparent}   /* ปฏิทินลาพิเศษ: สีตามประเภทการลา แต่ไม่ไล่เฉดมืด/สว่างตามลำดับ */
 .cal-ev{position:absolute;top:3px;right:4px;font-size:.78rem;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));cursor:help}
 .cal-dot{--dc:var(--plum-600);--sh:transparent;width:11px;height:11px;border-radius:50%;cursor:default;
   background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0,rgba(255,255,255,.35) 22%,rgba(255,255,255,0) 46%),linear-gradient(var(--sh),var(--sh)),radial-gradient(circle at 68% 82%,rgba(0,0,0,.38) 0,rgba(0,0,0,0) 62%),var(--dc);
@@ -4947,9 +4947,9 @@ function renderSpecialCalendar(requests){
     </div>`;
   }
   grid.innerHTML = html;
-  document.getElementById('specialCalLegend').innerHTML =
-    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot"></span>${escHtml(t('sc_leg_approved'))}</span>` +
-    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-pending"></span>${escHtml(t('ls_pending'))}</span>`;
+  document.getElementById('specialCalLegend').innerHTML = legendLeaveTypes().map(lt=>
+    `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-${lt}"></span>${LEAVE_TYPE_LABEL[lt]}</span>`
+  ).join('') + `<span style="display:flex;align-items:center;gap:5px"><span class="cal-dot cal-dot-pending"></span>${escHtml(t('ls_pending'))}</span>`;
 }
 
 let managerChainsCache = {};
