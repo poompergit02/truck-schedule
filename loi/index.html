@@ -6869,7 +6869,158 @@ function bgSym(g, sx, sy, segs){
 // ─── 02 · วาฬนาร์วาล ผิว/สีการกะพริบแบบหอยเชลล์ (ส้มทองไล่เฉด) ───
 BG_ANIMALS['narwhal2'] = Object.assign({}, BG_ANIMALS['narwhal'], { th: '02', en: '02', colors: BG_ANIMALS['scallop'].colors.slice(), edgeDepth: 2, edgeKeep: 0.35 });
 
-const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop','narwhal2'];  // ลำดับในรายการเลือก (dropdown)
+
+// ═══ สัตว์ทะเลชุดใหม่ 10 ตัว (เคลื่อนไหวช้าๆ ระดับเดียวกับแมงกะพรุน) ═══
+// ─── 1) กระเบนราหู · น้ำเงินเข้ม ปีกกว้างกระพือช้า ───
+(function(){
+  BG_ANIMALS['manta'] = { th: 'กระเบนราหู', en: 'Manta Ray', colors: ['#0E1E3A', '#3B5F96', '#D8E6F8'], sz: 1, speed: 0.55, wob: 0.8,
+    wave: { amp: 10, exp: 1.5, base: 0.15 }, tb: 0.3,
+    parts: bgFlat([
+      bgP(1, g=>bgSym(g, 965, 300, [[930, 262, 780, 150, 600, 50], [520, 30, 440, 120, 380, 205], [350, 250, 320, 285, 300, 300]]), { t:'flap', py: 300, lo: 0.55, spd: 0.55, ph: 0 }, { spine: [650, 40] }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 930, 262, 28, 14, -0.5); g.fill(); }),
+      bgP(1, g=>{ g.beginPath(); bgChain(g, [[300, 300], [200, 300], [110, 300], [20, 300]], 12, 2, 24); g.fill(); }, { t:'swing', px: 300, py: 300, amp: 0.1, spd: 1, ph: 0 }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 640, 300, 190, 46); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); [[700,230],[610,200],[540,250],[640,150],[560,120]].forEach(s=>{ bgEll(g, s[0], s[1], 12, 8); bgEll(g, s[0], 600 - s[1], 12, 8); }); g.fill(); }, { t:'flap', py: 300, lo: 0.55, spd: 0.55, ph: 0 }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 880, 276, 7, 7); g.fill(); }),
+    ]) };
+})();
+
+// ─── 2) เต่าทะเล · เขียวมะกอก ───
+(function(){
+  const fl = (pts, amp, ph)=> bgPM(1, g=>{ g.beginPath(); bgPoly(g, pts); g.fill(); }, { t:'swing', px: pts[0][0], py: pts[0][1], amp: amp, spd: 1, ph: ph, alt: true });
+  BG_ANIMALS['turtle'] = { th: 'เต่าทะเล', en: 'Sea Turtle', colors: ['#16301C', '#5E9A4A', '#E9F2B8'], sz: 1, speed: 0.5, wob: 0.9,
+    wave: { amp: 6, exp: 1, base: 1 }, tb: 0.3,
+    parts: bgFlat([
+      fl([[700, 224], [760, 160], [800, 60], [722, 100], [640, 190]], 0.18, 0),
+      fl([[420, 232], [380, 190], [330, 120], [300, 170], [352, 230]], 0.12, 1.5),
+      bgP(1, g=>{ g.beginPath(); bgChain(g, [[320, 300], [270, 300], [240, 300], [200, 304]], 14, 3, 12); g.fill(); }, { t:'swing', px: 330, py: 300, amp: 0.1, spd: 1, ph: 0 }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 540, 300, 210, 160); g.fill(); }, null, { spine: [700, 40] }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 850, 300, 74, 52); g.fill(); }, { t:'swing', px: 760, py: 300, amp: 0.07, spd: 0.7, ph: 0 }),
+      bgP(2, g=>{ g.beginPath(); [[540,300,70,52],[430,250,44,36],[430,350,44,36],[650,250,44,36],[650,350,44,36],[540,210,50,28],[540,390,50,28]].forEach(s=> bgEll(g, s[0], s[1], s[2], s[3])); g.fill(); }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 540, 300, 28, 20); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 880, 270, 7, 7); g.fill(); }),
+    ]) };
+})();
+
+// ─── 3) ปลาดาว · ส้มแดง ───
+(function(){
+  const CX = 500, CY = 300, N = 5;
+  const spin = { t:'swing', px: CX, py: CY, amp: 0.12, spd: 0.5, ph: 0 };
+  const arm = k=>{ const a = k*BG_TAU/N, c = Math.cos(a), s = Math.sin(a), L = 280, W = 44; return [[CX - s*W, CY + c*W], [CX + c*L, CY + s*L], [CX + s*W, CY - c*W]]; };
+  BG_ANIMALS['starfish'] = { th: 'ปลาดาว', en: 'Starfish', colors: ['#5C1A10', '#E5683C', '#FFE0B8'], sz: 0.8, speed: 0.35, wob: 1.2,
+    wave: { amp: 0, exp: 1, base: 1 }, tb: 0.32,
+    parts: bgFlat([
+      bgP(1, g=>{ g.beginPath(); for(let k = 0; k < N; k++){ bgPoly(g, arm(k)); } bgEll(g, CX, CY, 70, 70); g.fill(); }, spin),
+      bgP(4, g=>{ g.beginPath(); for(let k = 0; k < N; k++){ const a = k*BG_TAU/N; for(let j = 1; j <= 5; j++){ const d = 40 + j*36; bgEll(g, CX + Math.cos(a)*d, CY + Math.sin(a)*d, 8, 8); } } g.fill(); }, spin),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, CX, CY, 24, 24); g.fill(); }, spin),
+    ]) };
+})();
+
+// ─── 4) ปลาหมึกยักษ์ · ม่วงแดง ───
+(function(){
+  const arm = (y, ey, bend, ph)=> bgP(1, g=>{ g.beginPath(); bgChain(g, [[560, y], [440, y + bend], [320, ey - bend], [150, ey]], 22, 4, 26); g.fill(); }, { t:'swing', px: 560, py: 300, amp: 0.14, spd: 1, ph: ph });
+  BG_ANIMALS['octopus'] = { th: 'ปลาหมึกยักษ์', en: 'Octopus', colors: ['#3A0F3A', '#B04A8A', '#FFD6EC'], sz: 1, speed: 0.5, wob: 1.2,
+    wave: { amp: 16, exp: 1.2, base: 0.3 }, tb: 0.3,
+    parts: bgFlat([
+      arm(262, 210, 30, 0), arm(278, 260, -24, 0.8), arm(292, 330, 26, 1.6), arm(308, 280, -30, 2.4),
+      arm(322, 350, 24, 3.2), arm(338, 400, -26, 4), arm(250, 150, -20, 4.8), arm(350, 460, 20, 5.6),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 690, 300, 210, 160); bgEll(g, 870, 300, 80, 70); g.fill(); }, { t:'flap', py: 300, lo: 0.9, spd: 0.5, ph: 0 }, { spine: [760, 40] }),
+      bgP(2, g=>{ g.beginPath(); [[700,240],[640,330],[760,330],[720,270],[820,260]].forEach(s=> bgEll(g, s[0], s[1], 14, 10)); g.fill(); }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 640, 300, 60, 30); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 880, 250, 11, 11); g.fill(); }),
+    ]) };
+})();
+
+// ─── 5) ปลาหมึกกล้วย · ชมพูอมขาว ───
+(function(){
+  const arm = (y, ey, ph)=> bgP(1, g=>{ g.beginPath(); bgChain(g, [[700, y], [790, (y + ey)/2], [880, ey], [980, ey + (ey - y)*0.6]], 10, 3, 18); g.fill(); }, { t:'swing', px: 700, py: 300, amp: 0.08, spd: 1, ph: ph });
+  BG_ANIMALS['squid'] = { th: 'ปลาหมึกกล้วย', en: 'Squid', colors: ['#2A1A3F', '#C56E9E', '#FFE9F3'], sz: 1, speed: 0.55, wob: 0.8,
+    wave: { amp: 12, exp: 1.6, base: 0.2 }, tb: 0.28,
+    parts: bgFlat([
+      arm(280, 240, 0), arm(290, 270, 0.7), arm(310, 330, 1.4), arm(320, 360, 2.1), arm(300, 300, 2.8),
+      bgP(1, g=>bgSym(g, 720, 300, [[720, 258, 660, 224, 560, 216], [420, 206, 270, 240, 140, 300]]), null, { spine: [560, 60] }),
+      bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[300, 262], [220, 190], [110, 236], [160, 284]]); g.fill(); }, { t:'swing', px: 300, py: 280, amp: 0.1, spd: 1.2, ph: 0, alt: true }),
+      bgP(2, g=>{ g.beginPath(); for(let k = 0; k < 10; k++){ const x = 320 + k*34; bgEll(g, x, 270 + (k%2)*10, 6, 5); bgEll(g, x, 330 - (k%2)*10, 6, 5); } g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 690, 270, 10, 10); g.fill(); }),
+    ]) };
+})();
+
+// ─── 6) ปลาโลมา · เทาฟ้า ───
+(function(){
+  BG_ANIMALS['dolphin'] = { th: 'ปลาโลมา', en: 'Dolphin', colors: ['#1F3345', '#6F94B2', '#EAF4FA'], sz: 1, speed: 0.6, wob: 1,
+    wave: { amp: 40, exp: 2, base: 0.04 }, tb: 0.2,
+    parts: bgFlat([
+      bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[170, 296], [120, 270], [50, 200], [34, 156], [96, 190], [140, 236], [176, 284]]); g.fill(); }),
+      bgP(1, g=>bgSym(g, 995, 300, [[990, 288, 960, 278, 925, 272], [880, 268, 850, 232, 760, 224], [630, 214, 440, 226, 320, 256], [250, 274, 200, 292, 170, 300]]), null, { spine: [850, 80] }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 700, 190, 66, 13, 0.75); g.fill(); }, { t:'swing', px: 750, py: 230, amp: 0.1, spd: 1, ph: 0 }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 640, 300, 280, 14); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 520, 300, 170, 8); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 842, 262, 7, 7); g.fill(); }),
+    ]) };
+})();
+
+// ─── 7) ปลาปักเป้า · เหลืองส้ม ───
+(function(){
+  const spikes = []; for(let k = 0; k < 22; k++){ const a = k*BG_TAU/22; spikes.push([600 + Math.cos(a)*212, 300 + Math.sin(a)*202]); }
+  BG_ANIMALS['puffer'] = { th: 'ปลาปักเป้า', en: 'Pufferfish', colors: ['#5A3410', '#E3A63C', '#FFF4C8'], sz: 1, speed: 0.5, wob: 1.2,
+    wave: { amp: 8, exp: 1.3, base: 0.3 }, tb: 0.3,
+    parts: bgFlat([
+      bgP(1, g=>{ g.beginPath(); bgPoly(g, [[420, 300], [300, 226], [250, 300], [300, 374]]); g.fill(); }, { t:'swing', px: 420, py: 300, amp: 0.2, spd: 1, ph: 0 }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 590, 96, 54, 16, 0.3); g.fill(); }, { t:'swing', px: 600, py: 160, amp: 0.4, spd: 1.6, ph: 0, alt: false }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 600, 300, 200, 190); g.fill(); }, null, { spine: [700, 40] }),
+      bgP(4, g=>{ g.beginPath(); spikes.forEach(s=> bgEll(g, s[0], s[1], 9, 9)); g.fill(); }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 640, 360, 150, 50); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); [[560,230],[640,210],[700,260],[500,280],[760,300]].forEach(s=>{ bgEll(g, s[0], s[1], 12, 12); bgEll(g, s[0], 600 - s[1], 12, 12); }); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 800, 304, 16, 8); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 730, 244, 16, 16); g.fill(); }),
+    ]) };
+})();
+
+// ─── 8) ปลาไหลมอเรย์ · เขียวมะกอก ลำตัวยาวส่ายเป็นคลื่น ───
+(function(){
+  BG_ANIMALS['eel'] = { th: 'ปลาไหลมอเรย์', en: 'Moray Eel', colors: ['#2B2A0E', '#9A9A3A', '#F4F0B0'], sz: 1, speed: 0.55, wob: 1,
+    wave: { amp: 90, exp: 0.8, base: 0.25 }, tb: 0.2,
+    parts: bgFlat([
+      bgP(1, g=>{ g.beginPath(); bgChain(g, [[930, 300], [700, 300], [400, 300], [50, 300]], 38, 14, 70); bgEll(g, 940, 300, 64, 40); g.fill(); }, null, { spine: [800, 40] }),
+      bgP(4, g=>{ g.beginPath(); bgChain(g, [[860, 300], [650, 300], [400, 300], [100, 300]], 10, 5, 60); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); for(let k = 0; k < 14; k++){ const x = 800 - k*52; bgEll(g, x, 300 + ((k%3) - 1)*14, 12, 9); } g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 984, 300, 14, 5); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 920, 280, 8, 8); g.fill(); }),
+    ]) };
+})();
+
+// ─── 9) ปลาสิงโต · ลายแดงขาว ครีบกางเป็นพัด ───
+(function(){
+  const fan = ()=> bgPM(4, g=>{ g.beginPath(); bgPoly(g, [[790, 236], [740, 110], [640, 40], [540, 90], [470, 200]]); g.fill(); }, { t:'swing', px: 790, py: 240, amp: 0.1, spd: 1, ph: 0 });
+  const spn = ()=> bgPM(2, g=>{ g.lineWidth = 5; g.lineCap = 'round'; for(let k = 0; k < 6; k++){ g.beginPath(); g.moveTo(790 - k*6, 238); g.lineTo(745 - k*50, 110 - Math.sin(k*0.6)*50); g.stroke(); } }, { t:'swing', px: 790, py: 240, amp: 0.1, spd: 1, ph: 0 });
+  BG_ANIMALS['lionfish'] = { th: 'ปลาสิงโต', en: 'Lionfish', colors: ['#4A0F0F', '#C8402E', '#FFEBD6'], sz: 1, speed: 0.55, wob: 1,
+    wave: { amp: 20, exp: 1.8, base: 0.1 }, tb: 0.26,
+    parts: bgFlat([
+      fan(),
+      bgP(1, g=>{ g.beginPath(); bgPoly(g, [[330, 300], [240, 220], [170, 250], [200, 300], [170, 350], [240, 380]]); g.fill(); }, { t:'swing', px: 330, py: 300, amp: 0.15, spd: 1, ph: 0 }),
+      bgP(1, g=>bgSym(g, 930, 300, [[930, 262, 890, 238, 810, 232], [660, 224, 500, 236, 400, 266], [360, 280, 340, 292, 320, 300]]), null, { spine: [760, 60] }),
+      bgP(2, g=>{ g.beginPath(); for(let k = 0; k < 6; k++){ const x = 760 - k*70; bgPoly(g, [[x, 222], [x + 22, 222], [x + 12, 378], [x - 10, 378]]); } g.fill(); }),
+      spn(),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 862, 262, 8, 8); g.fill(); }),
+    ]) };
+})();
+
+// ─── 10) ปลาจันทร์ (ปลาโมล่า) · เทาเงิน ตัวกลมแบน ครีบบนล่างยาว ───
+(function(){
+  BG_ANIMALS['sunfish'] = { th: 'ปลาจันทร์', en: 'Sunfish', colors: ['#2B3340', '#8E9CB0', '#F3F6FA'], sz: 1, speed: 0.5, wob: 1.1,
+    wave: { amp: 8, exp: 1.2, base: 0.4 }, tb: 0.3,
+    parts: bgFlat([
+      bgPM(1, g=>{ g.beginPath(); bgPoly(g, [[560, 150], [500, 50], [400, 20], [390, 110], [440, 180]]); g.fill(); }, { t:'swing', px: 520, py: 150, amp: 0.2, spd: 1, ph: 0, alt: true }),
+      bgP(1, g=>{ g.beginPath(); bgEll(g, 600, 300, 340, 190); g.fill(); bgPoly(g, [[300, 150], [210, 190], [200, 410], [300, 450]]); g.fill(); }, null, { spine: [700, 40] }),
+      bgPM(1, g=>{ g.beginPath(); bgEll(g, 740, 420, 60, 14, 0.8); g.fill(); }, { t:'swing', px: 770, py: 380, amp: 0.2, spd: 1.3, ph: 0 }),
+      bgP(4, g=>{ g.beginPath(); bgEll(g, 640, 320, 240, 70); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); [[500,250],[600,230],[700,250],[560,330],[660,350]].forEach(s=> bgEll(g, s[0], s[1], 14, 10)); g.fill(); }),
+      bgP(2, g=>{ g.beginPath(); bgEll(g, 925, 318, 14, 8); g.fill(); }),
+      bgPM(3, g=>{ g.beginPath(); bgEll(g, 850, 260, 12, 12); g.fill(); }),
+    ]) };
+})();
+
+const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop','narwhal2','manta','turtle','starfish','octopus','squid','dolphin','puffer','eel','lionfish','sunfish'];  // ลำดับในรายการเลือก (dropdown)
 
 
 // ══════════ BG ART — ภาพพื้นหลังอนุภาคพิกเซล สัตว์ประจำเดือน (ว่ายอยู่ด้านหลังเนื้อหา) ══════════
@@ -6878,7 +7029,7 @@ const BG_ORDER = ['shark','jellyfish','whale','crab','narwhal','scallop','narwha
 // อนุภาคที่ขอบหลุดเป็นฝุ่นแล้วกลับมารวมตัว / เมาส์เข้าใกล้อนุภาคจะกระจาย และสัตว์หลบเมาส์
 // ปรับแต่งทุกอย่างได้ที่ BG_CONFIG ด้านล่างที่เดียว (สีและรูปร่างของสัตว์แต่ละตัวแก้ที่ BG_ANIMALS)
 const BG_CONFIG = {
-  // ── เลือกสัตว์: 'shark' | 'jellyfish' | 'whale' | 'crab' | 'narwhal' | 'scallop' | 'narwhal2' | 'off' = ปิด ──
+  // ── เลือกสัตว์: 'shark' | 'jellyfish' | 'whale' | 'crab' | 'narwhal' | 'scallop' | 'narwhal2' | 'manta' | 'turtle' | 'starfish' | 'octopus' | 'squid' | 'dolphin' | 'puffer' | 'eel' | 'lionfish' | 'sunfish' | 'off' = ปิด ──
   // (ค่านี้ admin ตั้งได้ในหน้า "ความคืบหน้าการล็อกอิน" → ภาพพื้นหลัง และถูกเก็บใน Settings ของระบบ ค่าด้านล่างใช้เมื่อยังไม่เคยตั้ง)
   animal: 'shark',
 
@@ -6950,6 +7101,14 @@ const BgArt = (function(){
   const palCache = {};
   const palOf = key => palCache[key] || (palCache[key] = bgPalette(BG_ANIMALS[key].colors));
   const ALPHA_LEVELS = [0.55, 0.78, 1];
+  const POISON_CHANCE = 0.01, POISON_LIFE = 60;                 // อาหารพิษ 1% · สัตว์ที่ติดพิษหายไปภายใน 60 วินาที
+  const POISON_PAL = bgPalette(['#0A0000', '#7A0A0A', '#FF3B30']);
+  let respawnT = 0;
+  function infect(s){
+    if(s.poison) return;
+    s.poison = true; s.poisonT = 0; s.pf = 1;
+    for(let b = 0; b < 12; b++) bubbles.push({ x: s.x + rand(-20, 20), y: s.y + rand(-20, 20), vy: -rand(30, 80), vx: rand(-20, 20), r: rand(1.6, 4), life: rand(1, 1.6), age: 0, c: '#FF3B30' });
+  }
 
   // ───────── 1) สร้างอนุภาคจากชิ้นส่วนของสัตว์ (ทำครั้งเดียวต่อสัตว์/จำนวนอนุภาค แล้วเก็บไว้ใช้ซ้ำ) ─────────
   const shapeCache = {};
@@ -7155,8 +7314,8 @@ const BgArt = (function(){
         chaseD = Math.min(Math.hypot(chase.x - hx0, chase.y - hy0), Math.hypot(chase.x - s.x, chase.y - s.y));   // หัวหรือกลางลำตัวถึงอาหารก็งับได้
         if(chaseD < Math.max(24, s.L*0.22)){
           chase.eaten = true; s.munch = 1;
-          s.fed++;
-          if(s.fed >= 5){                                  // กินครบ 5 เม็ด: ตัวเล็ก→โตขึ้น, ตัวโต→แตกเป็น 2 ตัว
+          if(chase.poison) infect(s); else s.fed++;
+          if(s.fed >= 5 && !s.poison){                                  // กินครบ 5 เม็ด: ตัวเล็ก→โตขึ้น, ตัวโต→แตกเป็น 2 ตัว
             s.fed = 0;
             if(s.stage === 0){ s.stage = 1; s.g = 1.5; }
             else if(sharks.length < (view.mobile ? 4 : 9)){
@@ -7208,7 +7367,7 @@ const BgArt = (function(){
     if(chase) want = clamp(want*1.4, -1.6, 1.6);                                  // ตอนไล่อาหารเลี้ยวได้คม
     s.turn += (want - s.turn)*Math.min(1, dt*2.2);                                // ค่อยๆ เปลี่ยนอัตราเลี้ยว
     s.h += s.turn*dt;
-    const base = (26 + s.L*0.07)*C.speed*(A.speed || 1)*(calm ? 0.5 : 1);         // px/วินาที
+    const base = (26 + s.L*0.07)*C.speed*(A.speed || 1)*(calm ? 0.5 : 1)*(s.poison ? 0.75 : 1);         // px/วินาที
     s.speed += (base*boost*(1 - Math.min(Math.abs(s.turn), 1)*0.18) - s.speed)*Math.min(1, dt*1.5);
     s.x += Math.cos(s.h)*s.speed*dt;
     s.y += Math.sin(s.h)*s.speed*dt;
@@ -7310,7 +7469,7 @@ const BgArt = (function(){
     const C = BG_CONFIG, S = s.shape;
     const ps = Math.max(1.3, S.sp*sc*C.particleSize);        // ขนาดจุด (px)
     const px = s.px, py = s.py, sz = S.sz, start = S.start;
-    const pal = palOf(s.key), op = C.opacity*s.alpha*s.fade;
+    const pal = s.poison ? POISON_PAL : palOf(s.key), op = C.opacity*s.alpha*s.fade*(s.poison ? s.pf : 1);
     for(let b = 0; b < S.bucketCount; b++){
       const a = start[b], z = start[b + 1];
       if(a === z) continue;
@@ -7347,6 +7506,13 @@ const BgArt = (function(){
       if(f.eaten || f.age > 22){ foods.splice(i, 1); continue; }
       if(f.y < floor){ f.y += 20*dt; f.x += Math.sin(f.age*2 + f.ph)*6*dt; }
       ctx.globalAlpha = Math.min(1, (22 - f.age)/3);
+      if(f.poison){                                         // อาหารพิษ: ดำแดงกะพริบ
+        const pv = 0.5 + 0.5*Math.sin(simT*5 + f.ph), a1 = ctx.globalAlpha;
+        ctx.fillStyle = '#0A0000'; ctx.beginPath(); ctx.arc(f.x, f.y, 4.4, 0, TAU); ctx.fill();
+        ctx.globalAlpha = a1*(0.45 + 0.55*pv); ctx.strokeStyle = '#FF2A1F'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(f.x, f.y, 4.4, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = a1; ctx.lineWidth = 1.2;
+        continue;
+      }
       const pal = palOf(currentKey);                      // สีอาหารตามสีสัตว์ และกะพริบ 3 ระดับเหมือนพิกเซลริมขอบตัวสัตว์
       const v = Math.sin(simT*BG_CONFIG.twinkleSpeed*2.4 + f.ph), lv = v > 0.45 ? 2 : (v > -0.25 ? 1 : 0);
       const a0 = ctx.globalAlpha;
@@ -7360,7 +7526,7 @@ const BgArt = (function(){
       if(b.age > b.life){ bubbles.splice(i, 1); continue; }
       b.y += b.vy*dt; b.x += (b.vx + Math.sin(b.age*8 + i)*8)*dt;
       ctx.globalAlpha = 0.75*(1 - b.age/b.life);
-      ctx.strokeStyle = '#E8F4FF'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = b.c || '#E8F4FF'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
     }
   }
   const bgTarget = e => {                                 // คลิกเฉพาะที่ว่าง ไม่ทับปุ่ม/การ์ด
@@ -7377,7 +7543,7 @@ const BgArt = (function(){
     clearTimeout(clickTimer);
     clickTimer = setTimeout(()=>{                         // รอดูว่าเป็นดับเบิลคลิกหรือไม่ ถ้าไม่ใช่ค่อยโรยอาหาร
       if(foods.length >= 12) foods.shift();
-      foods.push({ x, y, age: 0, ph: Math.random()*TAU, eaten: false });
+      foods.push({ x, y, age: 0, ph: Math.random()*TAU, eaten: false, poison: Math.random() < POISON_CHANCE });
     }, 230);
   }
   function onDbl(e){
@@ -7407,6 +7573,26 @@ const BgArt = (function(){
     }
     drawFx(dt);
     ctx.globalAlpha = 1;
+    // พิษ: ติดต่อกันเมื่อตัวที่ติดพิษแตะตัวอื่น · ตายหายไปใน 1 นาที
+    for(let i = sharks.length - 1; i >= 0; i--){
+      const a = sharks[i]; if(!a.poison) continue;
+      a.poisonT += dt;
+      a.pf = a.poisonT < POISON_LIFE - 12 ? 1 : Math.max(0, (POISON_LIFE - a.poisonT)/12);   // 12 วินาทีสุดท้ายค่อยๆ จางหาย
+      for(const b of sharks){
+        if(b === a || b.poison) continue;
+        const ah = { x: a.x + Math.cos(a.h)*a.L*0.34, y: a.y + Math.sin(a.h)*a.L*0.34 }, bh = { x: b.x + Math.cos(b.h)*b.L*0.34, y: b.y + Math.sin(b.h)*b.L*0.34 };
+        const d = Math.min(Math.hypot(a.x - b.x, a.y - b.y), Math.hypot(ah.x - b.x, ah.y - b.y), Math.hypot(a.x - bh.x, a.y - bh.y), Math.hypot(ah.x - bh.x, ah.y - bh.y));
+        if(d < (a.L + b.L)*0.26) infect(b);
+      }
+      if(a.poisonT >= POISON_LIFE){
+        for(let k = 0; k < 8; k++) bubbles.push({ x: a.x + rand(-20, 20), y: a.y + rand(-20, 20), vy: -rand(20, 60), vx: rand(-15, 15), r: rand(2, 4), life: rand(1, 1.6), age: 0, c: '#FF3B30' });
+        sharks.splice(i, 1);
+      }
+    }
+    if(!sharks.length && currentKey !== 'off'){                    // ตายหมดทุกตัว → ว่ายตัวใหม่เข้ามาอีกครั้งหลังหยุดสักพัก
+      if(!respawnT) respawnT = simT + 5;
+      else if(simT >= respawnT){ respawnT = 0; rebuildSharks(); }
+    } else respawnT = 0;
     // ป้องกันเครื่องช้า: ถ้าแต่ละเฟรมใช้เวลานานต่อเนื่อง ให้ตัดตัวเล็กออก
     const cost = performance.now() - t0;
     slowMs = slowMs*0.95 + cost*0.05;
