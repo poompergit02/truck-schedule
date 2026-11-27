@@ -2458,8 +2458,8 @@ function renderMyCalendar(){
       const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
       const st = STATUS_LABEL[r.status]||{label:r.status};
       while(cur <= endD){
-        const day = cur.getUTCDate();
-        if(dayMap[day]) dayMap[day].push({ leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, statusLabel: st.label, pending: PENDING_STATUSES.includes(r.status) });
+        const day = cur.getUTCDate(), dw = cur.getUTCDay();   // ไม่ขึ้นจุดวันเสาร์-อาทิตย์
+        if(dw!==0 && dw!==6 && dayMap[day]) dayMap[day].push({ leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, statusLabel: st.label, pending: PENDING_STATUSES.includes(r.status) });
         cur.setUTCDate(cur.getUTCDate()+1);
       }
     });
@@ -4914,8 +4914,8 @@ function renderSpecialCalendar(requests){
     const endD = new Date(end+'T00:00:00Z');
     const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
     while(cur <= endD){
-      const day = cur.getUTCDate();
-      if(dayMap[day]) dayMap[day].push({
+      const day = cur.getUTCDate(), dw = cur.getUTCDay();   // ไม่ขึ้นจุดวันเสาร์-อาทิตย์
+      if(dw!==0 && dw!==6 && dayMap[day]) dayMap[day].push({
         name: r.employee?.name||'?', code: r.employee?.employee_code||'',
         leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix, pending: !!r.status && r.status!=='approved',
       });
@@ -6636,8 +6636,8 @@ function renderCalendar(requests){
     const endD = new Date(end+'T00:00:00Z');
     const timeSuffix = r.leave_unit==='hour' ? ` ${r.start_time?r.start_time.slice(0,5):''}–${r.end_time?r.end_time.slice(0,5):''}` : '';
     while(cur <= endD){
-      const day = cur.getUTCDate();
-      if(dayMap[day]) dayMap[day].push({
+      const day = cur.getUTCDate(), dw = cur.getUTCDay();   // ไม่ขึ้นจุดวันเสาร์-อาทิตย์
+      if(dw!==0 && dw!==6 && dayMap[day]) dayMap[day].push({
         name: r.employee?.name||'?', code: r.employee?.employee_code||'',
         leaveType: r.leave_type, reason: r.reason||'', suffix: timeSuffix,
       });
